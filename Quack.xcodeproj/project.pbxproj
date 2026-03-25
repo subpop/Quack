@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3BA00001300000000000F001 /* AgentRunKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00011300000000000F011 /* AgentRunKit */; };
+		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3BA00001300000000000F001 /* AgentRunKit in Frameworks */,
+				3BA00002300000000000F002 /* Markdown in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = Quack;
 			packageProductDependencies = (
 				3BA00011300000000000F011 /* AgentRunKit */,
+				3BA00012300000000000F012 /* Markdown */,
 			);
 			productName = Quack;
 			productReference = 3B84807F2F730847000F16F0 /* Quack.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */,
+				3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B8480802F730847000F16F0 /* Products */;
@@ -374,6 +378,14 @@
 				minimumVersion = 1.20.0;
 			};
 		};
+		3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/swiftlang/swift-markdown.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.7.3;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -381,6 +393,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
 			productName = AgentRunKit;
+		};
+		3BA00012300000000000F012 /* Markdown */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */;
+			productName = Markdown;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
