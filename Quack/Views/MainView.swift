@@ -25,7 +25,7 @@ struct MainView: View {
                 selectedSessionID: $selectedSessionID,
                 onNewChat: createNewChat
             )
-            .navigationSplitViewColumnWidth(min: 200, ideal: 240, max: 340)
+            .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
             if let session = selectedSession {
                 ChatView(session: session)
@@ -38,24 +38,32 @@ struct MainView: View {
                 ContentUnavailableView {
                     Label("No Chat Selected", systemImage: "bubble.left.and.bubble.right")
                 } description: {
-                    Text("Select a chat from the sidebar or create a new one.")
+                    Text("Select a conversation from the sidebar or start a new one.")
                 } actions: {
-                    Button("New Chat", action: createNewChat)
+                    Button(action: createNewChat) {
+                        Text("New Conversation")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
                 }
             }
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+        .toolbar(id: "main") {
+            ToolbarItem(id: "inspector", placement: .primaryAction) {
                 Button {
                     showInspector.toggle()
                 } label: {
-                    Label("Inspector", systemImage: "sidebar.trailing")
+                    Label("Inspector", systemImage: showInspector ? "sidebar.trailing" : "sidebar.trailing")
                 }
+                .help("Toggle Inspector")
                 .disabled(selectedSession == nil)
             }
         }
         .onAppear {
             seedProvidersIfNeeded()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .newChat)) { _ in
+            createNewChat()
         }
     }
 
@@ -91,5 +99,5 @@ struct MainView: View {
 
     MainView()
         .previewEnvironment(container: container)
-        .frame(width: 800, height: 600)
+        .frame(width: 900, height: 650)
 }

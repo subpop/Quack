@@ -12,6 +12,8 @@ struct SidebarView: View {
     @State private var renamingSessionID: UUID?
     @State private var renameText = ""
 
+    // MARK: - Filtered Sessions
+
     private var activeSessions: [ChatSession] {
         let active = allSessions.filter { !$0.isArchived }
         if searchText.isEmpty { return active }
@@ -36,44 +38,89 @@ struct SidebarView: View {
         }
     }
 
+    // MARK: - Date Grouping
+
+    private enum DateGroup: String, CaseIterable {
+        case today = "Today"
+        case yesterday = "Yesterday"
+        case previousWeek = "Previous 7 Days"
+        case previousMonth = "Previous 30 Days"
+        case older = "Older"
+    }
+
+    private func dateGroup(for date: Date) -> DateGroup {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) { return .today }
+        if calendar.isDateInYesterday(date) { return .yesterday }
+        let weekAgo = calendar.date(byAdding: .day, value: -7, to: calendar.startOfDay(for: Date()))!
+        if date >= weekAgo { return .previousWeek }
+        let monthAgo = calendar.date(byAdding: .day, value: -30, to: calendar.startOfDay(for: Date()))!
+        if date >= monthAgo { return .previousMonth }
+        return .older
+    }
+
+    private func groupedSessions(_ sessions: [ChatSession]) -> [(DateGroup, [ChatSession])] {
+        let grouped = Dictionary(grouping: sessions) { dateGroup(for: $0.updatedAt) }
+        return DateGroup.allCases.compactMap { group in
+            guard let sessions = grouped[group], !sessions.isEmpty else { return nil }
+            return (group, sessions)
+        }
+    }
+
+    // MARK: - Body
+
     var body: some View {
         List(selection: $selectedSessionID) {
             if !pinnedSessions.isEmpty {
-                Section("Pinned") {
+                Section {
                     ForEach(pinnedSessions) { session in
                         sessionRow(session)
                     }
+                } header: {
+                    Label("Pinned", systemImage: "pin.fill")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
 
-            Section {
-                ForEach(unpinnedSessions) { session in
-                    sessionRow(session)
-                }
-            } header: {
-                if !pinnedSessions.isEmpty {
-                    Text("Chats")
+            ForEach(groupedSessions(unpinnedSessions), id: \.0) { group, sessions in
+                Section {
+                    ForEach(sessions) { session in
+                        sessionRow(session)
+                    }
+                } header: {
+                    Text(group.rawValue)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
 
             if !archivedSessions.isEmpty {
-                DisclosureGroup("Archived") {
+                DisclosureGroup {
                     ForEach(archivedSessions) { session in
                         sessionRow(session)
                     }
+                } label: {
+                    Label("Archived", systemImage: "archivebox")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Search chats")
+        .listStyle(.sidebar)
+        .searchable(text: $searchText, placement: .sidebar, prompt: "Search")
         .toolbar {
-            ToolbarItem {
+            ToolbarItem(placement: .primaryAction) {
                 Button(action: onNewChat) {
-                    Label("New Chat", systemImage: "plus")
+                    Label("New Chat", systemImage: "square.and.pencil")
                 }
+                .help("New Conversation")
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
     }
+
+    // MARK: - Session Row
 
     @ViewBuilder
     private func sessionRow(_ session: ChatSession) -> some View {
@@ -84,27 +131,41 @@ struct SidebarView: View {
         )
         .tag(session.id)
         .contextMenu {
-            Button(session.isPinned ? "Unpin" : "Pin") {
+            Button {
                 session.isPinned.toggle()
                 try? modelContext.save()
+            } label: {
+                Label(
+                    session.isPinned ? "Unpin" : "Pin",
+                    systemImage: session.isPinned ? "pin.slash" : "pin"
+                )
             }
 
-            Button("Rename") {
+            Button {
                 renameText = session.title
                 renamingSessionID = session.id
+            } label: {
+                Label("Rename", systemImage: "pencil")
             }
 
             Divider()
 
-            Button(session.isArchived ? "Unarchive" : "Archive") {
+            Button {
                 withAnimation {
                     session.isArchived.toggle()
                     session.updatedAt = Date()
                     try? modelContext.save()
                 }
+            } label: {
+                Label(
+                    session.isArchived ? "Unarchive" : "Archive",
+                    systemImage: session.isArchived ? "tray.and.arrow.up" : "archivebox"
+                )
             }
 
-            Button("Delete", role: .destructive) {
+            Divider()
+
+            Button(role: .destructive) {
                 withAnimation {
                     if selectedSessionID == session.id {
                         selectedSessionID = nil
@@ -112,6 +173,8 @@ struct SidebarView: View {
                     modelContext.delete(session)
                     try? modelContext.save()
                 }
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -158,6 +221,6 @@ struct SidebarView: View {
     let _ = PreviewSupport.seed(container)
 
     SidebarView(selectedSessionID: $selectedID, onNewChat: {})
-        .frame(width: 260, height: 500)
+        .frame(width: 280, height: 500)
         .modelContainer(container)
 }

@@ -21,13 +21,12 @@ struct ChatView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            messageList
-            Divider()
-            inputArea
-        }
-        .navigationTitle(session.title)
-        .navigationSubtitle(modelSubtitle)
+        messageList
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                composer
+            }
+            .navigationTitle(session.title)
+            .navigationSubtitle(modelSubtitle)
     }
 
     // MARK: - Message List
@@ -35,7 +34,12 @@ struct ChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
+                LazyVStack(spacing: 2) {
+                    // Date header for first message
+                    if let first = session.sortedMessages.first {
+                        dateHeader(for: first.timestamp)
+                    }
+
                     ForEach(session.sortedMessages) { message in
                         MessageBubble(message: message)
                             .id(message.id)
@@ -50,10 +54,12 @@ struct ChatView: View {
                     if let error = chatService.streamingError,
                        chatService.streamingSessionID == session.id {
                         errorView(error)
+                            .padding(.horizontal, 16)
                     }
                 }
-                .padding()
+                .padding(.vertical, 12)
             }
+            .scrollContentBackground(.hidden)
             .onChange(of: session.messages.count) {
                 scrollToBottom(proxy: proxy)
             }
@@ -63,58 +69,82 @@ struct ChatView: View {
         }
     }
 
+    private func dateHeader(for date: Date) -> some View {
+        Text(date, format: .dateTime.month(.wide).day().year())
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.tertiary)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Streaming Content
+
     @ViewBuilder
     private var streamingBubble: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 4) {
             // Tool calls
             ForEach(chatService.activeToolCalls) { toolCall in
                 ToolCallView(toolCall: toolCall)
+                    .padding(.horizontal, 16)
             }
 
             // Reasoning
             if !chatService.streamingReasoning.isEmpty {
                 ReasoningView(reasoning: chatService.streamingReasoning, isStreaming: true)
+                    .padding(.horizontal, 16)
             }
 
             // Content
             if !chatService.streamingContent.isEmpty {
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(MarkdownRenderer.renderFull(chatService.streamingContent))
                         .textSelection(.enabled)
                     if isStreamingThisSession {
                         ProgressView()
                             .controlSize(.small)
-                            .padding(.leading, 4)
                     }
                 }
-                .padding(12)
-                .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Color(.controlBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+                .padding(.trailing, 60)
+                .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity, alignment: .leading)
             } else if isStreamingThisSession && chatService.activeToolCalls.isEmpty {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
                     Text("Thinking...")
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
-                .padding(12)
-                .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Color(.controlBackgroundColor),
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+                .padding(.horizontal, 16)
             }
         }
         .id("streaming")
     }
 
     private func errorView(_ error: String) -> some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+                .imageScale(.small)
             Text(error)
-                .foregroundStyle(.red)
-                .font(.callout)
+                .foregroundStyle(.secondary)
+                .font(.subheadline)
         }
         .padding(12)
-        .background(.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
@@ -127,44 +157,60 @@ struct ChatView: View {
         }
     }
 
-    // MARK: - Input Area
+    // MARK: - Composer
 
-    private var inputArea: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            TextField("Message...", text: $inputText, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineLimit(1...10)
-                .focused($isInputFocused)
-                .onSubmit {
-                    if !NSEvent.modifierFlags.contains(.shift) {
-                        sendMessage()
+    private var composer: some View {
+        GlassEffectContainer {
+            HStack(alignment: .bottom, spacing: 8) {
+                TextField("Message", text: $inputText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(1...12)
+                    .focused($isInputFocused)
+                    .font(.body)
+                    .onSubmit {
+                        if !NSEvent.modifierFlags.contains(.shift) {
+                            sendMessage()
+                        }
                     }
-                }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .glassEffect(in: .capsule)
 
-            if isStreamingThisSession {
-                Button {
-                    chatService.stopStreaming()
-                } label: {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.red)
+                if isStreamingThisSession {
+                    Button {
+                        chatService.stopStreaming()
+                    } label: {
+                        Image(systemName: "stop.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.red)
+                            .frame(width: 32, height: 32)
+                            .contentShape(Circle())
+                            .glassEffect(in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Stop generating")
+                } else {
+                    Button(action: sendMessage) {
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(
+                                inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                    ? Color.secondary
+                                    : Color.accentColor
+                            )
+                            .frame(width: 32, height: 32)
+                            .contentShape(Circle())
+                            .glassEffect(in: .circle)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Send message (Return)")
+                    .keyboardShortcut(.return, modifiers: [])
                 }
-                .buttonStyle(.plain)
-                .help("Stop generating")
-            } else {
-                Button(action: sendMessage) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
-                        .foregroundColor(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .secondary : .accentColor)
-                }
-                .buttonStyle(.plain)
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help("Send message (Return)")
-                .keyboardShortcut(.return, modifiers: [])
             }
         }
-        .padding(12)
-        .background(.bar)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
     }
 
     // MARK: - Actions
@@ -190,7 +236,7 @@ struct ChatView: View {
     private var modelSubtitle: String {
         let provider = providerService.resolvedProvider(for: session, providers: providers)
         let model = providerService.resolvedModel(for: session, providers: providers)
-        return "\(provider?.name ?? "No Provider") - \(model)"
+        return "\(provider?.name ?? "No Provider") · \(model)"
     }
 }
 

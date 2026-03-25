@@ -4,6 +4,8 @@ import SwiftData
 struct MessageBubble: View {
     let message: ChatMessageRecord
 
+    @State private var isHovering = false
+
     var body: some View {
         switch message.role {
         case .user:
@@ -20,19 +22,39 @@ struct MessageBubble: View {
     // MARK: - User Message
 
     private var userBubble: some View {
-        HStack {
-            Spacer(minLength: 60)
+        VStack(alignment: .trailing, spacing: 4) {
             Text(message.content)
                 .textSelection(.enabled)
-                .padding(12)
-                .background(Color.accentColor.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(
+                    Color.accentColor,
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+                .foregroundStyle(.white)
+
+            if isHovering {
+                Text(message.timestamp, style: .time)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.leading, 60)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 2)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
+            }
         }
     }
 
     // MARK: - Assistant Message
 
     private var assistantBubble: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             // Reasoning (collapsible)
             if let reasoning = message.reasoning, !reasoning.isEmpty {
                 ReasoningView(reasoning: reasoning, isStreaming: false)
@@ -42,22 +64,41 @@ struct MessageBubble: View {
             if !message.content.isEmpty {
                 Text(MarkdownRenderer.renderFull(message.content))
                     .textSelection(.enabled)
-                    .padding(12)
-                    .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        Color(.controlBackgroundColor),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
             }
 
-            // Token usage
-            if let input = message.inputTokens {
+            // Metadata row: timestamp + token usage
+            if isHovering {
                 HStack(spacing: 8) {
-                    tokenBadge("In: \(input)")
-                    if let output = message.outputTokens {
-                        tokenBadge("Out: \(output)")
-                    }
-                    if let reasoning = message.reasoningTokens, reasoning > 0 {
-                        tokenBadge("Think: \(reasoning)")
+                    Text(message.timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+
+                    if let input = message.inputTokens {
+                        tokenBadge("In: \(input)")
+                        if let output = message.outputTokens {
+                            tokenBadge("Out: \(output)")
+                        }
+                        if let reasoning = message.reasoningTokens, reasoning > 0 {
+                            tokenBadge("Think: \(reasoning)")
+                        }
                     }
                 }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, 60)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 2)
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) {
+                isHovering = hovering
             }
         }
     }
@@ -74,15 +115,17 @@ struct MessageBubble: View {
     // MARK: - System Message
 
     private var systemBubble: some View {
-        HStack {
-            Image(systemName: "gearshape")
-                .foregroundStyle(.secondary)
+        HStack(spacing: 6) {
+            Image(systemName: "gearshape.fill")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
             Text(message.content)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
                 .italic()
         }
-        .padding(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
@@ -91,17 +134,21 @@ struct MessageBubble: View {
     private var toolBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let name = message.toolName {
-                Label(name, systemImage: "wrench")
-                    .font(.caption)
+                Label(name, systemImage: "wrench.and.screwdriver")
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.secondary)
             }
             Text(String(message.content.prefix(200)))
-                .font(.callout)
+                .font(.subheadline.monospaced())
                 .foregroundStyle(.secondary)
-                .padding(8)
-                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
+                .lineLimit(4)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.trailing, 60)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 2)
     }
 }
 
@@ -127,21 +174,14 @@ struct MessageBubble: View {
     }()
 
     ScrollView {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("User").font(.caption).foregroundStyle(.tertiary)
+        VStack(alignment: .leading, spacing: 4) {
             MessageBubble(message: data.userMessage)
-
-            Text("Assistant (with reasoning + tokens)").font(.caption).foregroundStyle(.tertiary)
             MessageBubble(message: data.assistantMessage)
-
-            Text("System").font(.caption).foregroundStyle(.tertiary)
             MessageBubble(message: systemMsg)
-
-            Text("Tool").font(.caption).foregroundStyle(.tertiary)
             MessageBubble(message: toolMsg)
         }
-        .padding()
+        .padding(.vertical)
     }
-    .frame(width: 500, height: 600)
+    .frame(width: 550, height: 600)
     .modelContainer(container)
 }
