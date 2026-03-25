@@ -1,18 +1,18 @@
-//
-//  QuackApp.swift
-//  Quack
-//
-//  Created by Link Dupont on 3/24/26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct QuackApp: App {
+    @State private var providerService = ProviderService()
+    @State private var chatService = ChatService()
+    @State private var mcpService = MCPService()
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            ChatSession.self,
+            ChatMessageRecord.self,
+            Provider.self,
+            MCPServerConfig.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,8 +25,31 @@ struct QuackApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            MainView()
+                .environment(providerService)
+                .environment(chatService)
+                .environment(mcpService)
         }
         .modelContainer(sharedModelContainer)
+        .commands {
+            CommandGroup(replacing: .newItem) {
+                Button("New Chat") {
+                    NotificationCenter.default.post(name: .newChat, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: .command)
+            }
+        }
+
+        Settings {
+            SettingsView()
+                .environment(providerService)
+                .environment(chatService)
+                .environment(mcpService)
+                .modelContainer(sharedModelContainer)
+        }
     }
+}
+
+extension Notification.Name {
+    static let newChat = Notification.Name("newChat")
 }
