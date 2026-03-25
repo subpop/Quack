@@ -153,6 +153,102 @@ final class ChatService {
         }
     }
 
+    /// Resubmit a specific user message: delete the assistant response immediately
+    /// following it (and any associated tool messages), then re-send the user message
+    /// to regenerate a fresh response.
+    func resubmitMessage(
+        _ message: ChatMessageRecord,
+        in session: ChatSession,
+        modelContext: ModelContext,
+        providerService: ProviderService,
+        providers: [Provider],
+        mcpTools: [any AnyTool<EmptyContext>]
+    ) {
+        guard message.role == .user else { return }
+
+        let sorted = session.sortedMessages
+        guard let messageIndex = sorted.firstIndex(where: { $0.id == message.id }) else { return }
+
+        // Collect all messages after this user message up to (but not including)
+        // the next user message — these are the assistant/tool responses to remove.
+        var messagesToDelete: [ChatMessageRecord] = []
+        for i in (messageIndex + 1)..<sorted.count {
+            let msg = sorted[i]
+            if msg.role == .user { break }
+            messagesToDelete.append(msg)
+        }
+
+        // Delete the response messages
+        for msg in messagesToDelete {
+            session.messages.removeAll { $0.id == msg.id }
+            modelContext.delete(msg)
+        }
+        try? modelContext.save()
+
+        // Re-send the user message content (without creating a duplicate user message)
+        stopStreaming()
+
+        let text = message.content
+
+        guard let client = providerService.makeClient(
+            for: session,
+            providers: providers
+        ) else {
+            streamingError = "No provider configured. Set up a provider in Settings."
+            return
+        }
+
+        // Build history up to and including the resubmitted user message
+        let updatedSorted = session.sortedMessages
+        let history = MessageConverter.toChatMessages(updatedSorted)
+
+        let systemPrompt = session.systemPrompt
+        let temperature = session.temperature
+
+        var extraFields: [String: JSONValue] = [:]
+        if let temperature {
+            extraFields["temperature"] = .double(temperature)
+        }
+        let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
+
+        streamingContent = ""
+        streamingReasoning = ""
+        streamingError = nil
+        activeToolCalls = []
+        isStreaming = true
+        streamingSessionID = session.id
+
+        let chat = Chat<EmptyContext>(
+            client: client,
+            tools: mcpTools,
+            systemPrompt: systemPrompt
+        )
+
+        let sessionID = session.id
+
+        streamTask = Task { [weak self] in
+            do {
+                for try await event in chat.stream(
+                    text,
+                    history: Array(history.dropLast()),
+                    context: EmptyContext(),
+                    requestContext: requestContext
+                ) {
+                    guard !Task.isCancelled else { break }
+                    self?.handleStreamEvent(event, sessionID: sessionID)
+                }
+            } catch {
+                await MainActor.run {
+                    self?.streamingError = error.localizedDescription
+                }
+            }
+
+            await MainActor.run {
+                self?.finalizeStream(sessionID: sessionID, modelContext: modelContext)
+            }
+        }
+    }
+
     // MARK: - Private
 
     private func handleStreamEvent(_ event: StreamEvent, sessionID: UUID) {

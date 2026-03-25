@@ -3,8 +3,10 @@ import SwiftData
 
 struct MessageBubble: View {
     let message: ChatMessageRecord
+    var onResubmit: (() -> Void)? = nil
 
     @State private var isHovering = false
+    @State private var hoverDispatch: DispatchWorkItem?
 
     var body: some View {
         switch message.role {
@@ -34,10 +36,24 @@ struct MessageBubble: View {
                 .foregroundStyle(.white)
 
             if isHovering {
-                Text(message.timestamp, style: .time)
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
+                HStack(spacing: 6) {
+                    if let onResubmit {
+                        Button {
+                            onResubmit()
+                        } label: {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.caption2)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .help("Resubmit this message and regenerate response")
+                    }
+
+                    Text(message.timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -45,8 +61,20 @@ struct MessageBubble: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 2)
         .onHover { hovering in
-            withAnimation(.easeInOut(duration: 0.15)) {
-                isHovering = hovering
+            if hovering {
+                hoverDispatch?.cancel()
+                hoverDispatch = nil
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isHovering = true
+                }
+            } else {
+                let work = DispatchWorkItem { [self] in
+                    withAnimation(.easeInOut(duration: 0.15)) {
+                        isHovering = false
+                    }
+                }
+                hoverDispatch = work
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: work)
             }
         }
     }

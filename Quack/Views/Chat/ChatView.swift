@@ -41,8 +41,13 @@ struct ChatView: View {
                     }
 
                     ForEach(session.sortedMessages) { message in
-                        MessageBubble(message: message)
-                            .id(message.id)
+                        MessageBubble(
+                            message: message,
+                            onResubmit: message.role == .user ? {
+                                resubmitMessage(message)
+                            } : nil
+                        )
+                        .id(message.id)
                     }
 
                     // Streaming content
@@ -225,6 +230,19 @@ struct ChatView: View {
 
         chatService.sendMessage(
             text,
+            in: session,
+            modelContext: modelContext,
+            providerService: providerService,
+            providers: providers,
+            mcpTools: tools
+        )
+    }
+
+    private func resubmitMessage(_ message: ChatMessageRecord) {
+        let tools = mcpService.tools(for: session, allConfigs: mcpServerConfigs)
+
+        chatService.resubmitMessage(
+            message,
             in: session,
             modelContext: modelContext,
             providerService: providerService,
