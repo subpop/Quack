@@ -17,57 +17,36 @@ struct ChatSessionRow: View {
         return "No messages yet"
     }
 
-    private var sessionInitial: String {
-        let title = session.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let first = title.first {
-            return String(first).uppercased()
-        }
-        return "Q"
-    }
-
     var body: some View {
-        HStack(spacing: 10) {
-            // Circular avatar with initial
-            ZStack {
-                Circle()
-                    .fill(Color.accentColor.opacity(0.15))
-                    .frame(width: 32, height: 32)
-
-                Text(sessionInitial)
-                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                    .foregroundStyle(Color.accentColor)
-            }
-
-            VStack(alignment: .leading, spacing: 2) {
-                if isRenaming {
-                    TextField("Chat name", text: $renameText)
-                        .textFieldStyle(.plain)
+        VStack(alignment: .leading, spacing: 2) {
+            if isRenaming {
+                TextField("Chat name", text: $renameText)
+                    .textFieldStyle(.plain)
+                    .font(.body.weight(.medium))
+            } else {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(session.title)
                         .font(.body.weight(.medium))
-                } else {
-                    HStack(alignment: .firstTextBaseline) {
-                        Text(session.title)
-                            .font(.body.weight(.medium))
-                            .lineLimit(1)
+                        .lineLimit(1)
 
-                        Spacer()
+                    Spacer()
 
-                        Text(session.updatedAt, format: .dateTime.hour().minute())
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                    Text(session.updatedAt, format: .dateTime.hour().minute())
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
 
-                        if session.isPinned {
-                            Image(systemName: "pin.fill")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                    if session.isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
             }
+
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(2)
         }
         .padding(.vertical, 2)
     }
