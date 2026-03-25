@@ -6,7 +6,7 @@ struct SettingsView: View {
             Tab("General", systemImage: "gearshape") {
                 GeneralSettingsView()
             }
-            
+
             Tab("Providers", systemImage: "cloud") {
                 ProvidersSettingsView()
             }
@@ -15,7 +15,7 @@ struct SettingsView: View {
                 MCPSettingsView()
             }
         }
-        .frame(minWidth: 600, minHeight: 450)
+        .frame(width: 600, height: 480)
     }
 }
 

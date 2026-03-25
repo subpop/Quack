@@ -7,49 +7,45 @@ struct GeneralSettingsView: View {
 
     @AppStorage("defaultSystemPrompt") private var defaultSystemPrompt = ""
 
-    var body: some View {
-        Form {
-            defaultProviderSection
-            systemPromptSection
-        }
-        .formStyle(.grouped)
+    private var defaultProvider: Provider? {
+        guard let id = providerService.defaultProviderID else { return nil }
+        return providers.first { $0.id == id }
     }
 
-    // MARK: - Default Provider
+    var body: some View {
+        Form {
+            Section("New Chats") {
+                Picker("Provider", selection: Binding(
+                    get: { providerService.defaultProviderID },
+                    set: { providerService.defaultProviderID = $0 }
+                )) {
+                    Text("None").tag(nil as UUID?)
+                    Divider()
+                    ForEach(providers.filter(\.isEnabled)) { provider in
+                        Label(provider.name, systemImage: provider.iconName)
+                            .tag(provider.id as UUID?)
+                    }
+                }
 
-    @MainActor
-    private var defaultProviderSection: some View {
-        Section(content: {
-            Picker("Provider", selection: Binding(
-                get: { providerService.defaultProviderID },
-                set: { providerService.defaultProviderID = $0 }
-            )) {
-                Text("None").tag(nil as UUID?)
-                Divider()
-                ForEach(providers.filter(\.isEnabled)) { provider in
-                    Text("\(provider.name) (\(provider.defaultModel))")
-                        .tag(provider.id as UUID?)
+                if let provider = defaultProvider {
+                    LabeledContent("Model") {
+                        Text(provider.defaultModel)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 
-        }, header: {
-            Text("Default Provider")
-            Text("New chats will use this provider and its default model.")
-        })
-    }
-
-    // MARK: - System Prompt
-
-    private var systemPromptSection: some View {
-        Section(content: {
-            TextEditor(text: $defaultSystemPrompt)
-                .font(.body.monospaced())
-                .frame(minHeight: 100)
-                .scrollContentBackground(.hidden)
-        }, header: {
-            Text("Default System Prompt")
-            Text("Applied to new chats unless overridden in the chat inspector.")
-        })
+            Section {
+                TextField("System Prompt", text: $defaultSystemPrompt, axis: .vertical)
+                    .lineLimit(4...10)
+            } header: {
+                Text("Default System Prompt")
+            } footer: {
+                Text("Applied to all new chats. Override per chat in the inspector.")
+            }
+        }
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
     }
 }
 
@@ -59,5 +55,5 @@ struct GeneralSettingsView: View {
 
     GeneralSettingsView()
         .previewEnvironment(container: container)
-        .frame(width: 500, height: 400)
+        .frame(width: 600, height: 480)
 }
