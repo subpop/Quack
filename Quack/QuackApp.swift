@@ -40,6 +40,7 @@ struct QuackApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
             }
+            SidebarCommands()
             CommandGroup(after: .singleWindowList) {
                 Button("Quack", systemImage: "macwindow") {
                     if let window = NSApplication.shared.windows.first(where: { $0.canBecomeMain }) {
