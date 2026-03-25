@@ -7,6 +7,8 @@ struct QuackApp: App {
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
 
+    @Environment(\.openWindow) private var openWindow
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             ChatSession.self,
@@ -24,7 +26,7 @@ struct QuackApp: App {
     }()
 
     var body: some Scene {
-        WindowGroup {
+        WindowGroup(id: "main") {
             MainView()
                 .environment(providerService)
                 .environment(chatService)
@@ -37,6 +39,18 @@ struct QuackApp: App {
                     NotificationCenter.default.post(name: .newChat, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
+            }
+            CommandGroup(after: .singleWindowList) {
+                Button("Quack", systemImage: "macwindow") {
+                    if let window = NSApplication.shared.windows.first(where: { $0.canBecomeMain }) {
+                        window.deminiaturize(nil)
+                        window.makeKeyAndOrderFront(nil)
+                        NSApplication.shared.activate()
+                    } else {
+                        openWindow(id: "main")
+                    }
+                }
+                .keyboardShortcut("0")
             }
         }
 
