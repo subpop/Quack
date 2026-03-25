@@ -51,7 +51,7 @@ struct ChatSessionRow: View {
 
                         Spacer()
 
-                        Text(session.updatedAt, style: .relative)
+                        Text(session.updatedAt, format: .dateTime.hour().minute())
                             .font(.caption)
                             .foregroundStyle(.tertiary)
 
