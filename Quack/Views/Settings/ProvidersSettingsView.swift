@@ -84,8 +84,8 @@ struct ProvidersSettingsView: View {
             name: "New \(kind.displayName) Provider",
             kind: kind,
             sortOrder: providers.count,
-            baseURL: kind.defaultBaseURL,
-            requiresAPIKey: kind.requiresAPIKey
+            baseURL: kind.providerType.defaultBaseURL,
+            requiresAPIKey: kind.providerType.requiresAPIKey
         )
         modelContext.insert(provider)
         try? modelContext.save()

@@ -43,7 +43,11 @@ final class ProviderService {
         return providers.first(where: \.isEnabled) ?? providers.first
     }
 
-    /// Build an LLMClient for the given session.
+    /// Build an `LLMClient` for the given session.
+    ///
+    /// Delegates construction to the `LLMProvider` implementation registered
+    /// for the provider's kind. Each `LLMProvider` encapsulates its own
+    /// authentication, URL validation, and client construction logic.
     func makeClient(
         for session: ChatSession,
         providers: [Provider]
@@ -55,123 +59,17 @@ final class ProviderService {
 
         let model = session.modelIdentifier ?? provider.defaultModel
         let maxTokens = session.maxTokens ?? provider.maxTokens
-        let contextWindowSize = provider.contextWindowSize
-
-        let reasoningConfig = resolveReasoningConfig(
+        let reasoningConfig = Self.resolveReasoningConfig(
             sessionEffort: session.reasoningEffort,
             providerEffort: provider.reasoningEffort
         )
 
-        let retryPolicy = RetryPolicy(
-            maxAttempts: provider.retryMaxAttempts,
-            baseDelay: .seconds(Int64(provider.retryBaseDelay)),
-            maxDelay: .seconds(Int64(provider.retryMaxDelay))
+        return provider.kind.providerType.makeClient(
+            from: provider,
+            model: model,
+            maxTokens: maxTokens,
+            reasoningConfig: reasoningConfig
         )
-
-        switch provider.kind {
-        case .openAICompatible:
-            let apiKey: String
-            if provider.requiresAPIKey {
-                guard let key = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) else {
-                    return nil
-                }
-                apiKey = key
-            } else {
-                apiKey = "no-key-required"
-            }
-            guard let baseURLString = provider.baseURL,
-                  let baseURL = URL(string: baseURLString) else {
-                return nil
-            }
-            return OpenAIClient(
-                apiKey: apiKey,
-                model: model,
-                maxTokens: maxTokens,
-                contextWindowSize: contextWindowSize,
-                baseURL: baseURL,
-                retryPolicy: retryPolicy,
-                reasoningConfig: reasoningConfig
-            )
-
-        case .anthropic:
-            guard let apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) else {
-                return nil
-            }
-            let baseURL: URL? = if let urlStr = provider.baseURL { URL(string: urlStr) } else { nil }
-            return AnthropicClient(
-                apiKey: apiKey,
-                model: model,
-                maxTokens: maxTokens,
-                contextWindowSize: contextWindowSize,
-                baseURL: baseURL ?? AnthropicClient.anthropicBaseURL,
-                retryPolicy: retryPolicy,
-                reasoningConfig: reasoningConfig,
-                cachingEnabled: provider.cachingEnabled
-            )
-
-        case .foundationModels:
-            return FoundationModelsLLMClient()
-
-        case .gemini:
-            guard let apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) else {
-                return nil
-            }
-            guard let baseURLString = provider.baseURL,
-                  let baseURL = URL(string: baseURLString) else {
-                return nil
-            }
-            return GeminiClient(
-                apiKey: apiKey,
-                model: model,
-                maxOutputTokens: maxTokens,
-                contextWindowSize: contextWindowSize,
-                baseURL: baseURL,
-                retryPolicy: retryPolicy
-            )
-
-        case .vertexGemini:
-            let authProvider: GoogleAuthProvider
-            do {
-                authProvider = try GoogleAuthProvider()
-            } catch {
-                return nil
-            }
-            guard let baseURLString = provider.baseURL,
-                  let baseURL = URL(string: baseURLString) else {
-                return nil
-            }
-            return VertexGeminiClient(
-                authProvider: authProvider,
-                model: model,
-                maxOutputTokens: maxTokens,
-                contextWindowSize: contextWindowSize,
-                baseURL: baseURL,
-                retryPolicy: retryPolicy
-            )
-
-        case .vertexAnthropic:
-            // Vertex AI Anthropic: uses ADC for auth, no API key
-            let authProvider: GoogleAuthProvider
-            do {
-                authProvider = try GoogleAuthProvider()
-            } catch {
-                return nil
-            }
-
-            guard let baseURLString = provider.baseURL,
-                  let baseURL = URL(string: baseURLString) else {
-                return nil
-            }
-
-            return VertexAnthropicClient(
-                authProvider: authProvider,
-                model: model,
-                maxOutputTokens: maxTokens,
-                contextWindowSize: contextWindowSize,
-                baseURL: baseURL,
-                retryPolicy: retryPolicy
-            )
-        }
     }
 
     func invalidateCache() {
@@ -180,7 +78,7 @@ final class ProviderService {
 
     // MARK: - Private
 
-    private func resolveReasoningConfig(sessionEffort: String?, providerEffort: String?) -> ReasoningConfig? {
+    private static func resolveReasoningConfig(sessionEffort: String?, providerEffort: String?) -> ReasoningConfig? {
         guard let effortString = sessionEffort ?? providerEffort,
               let effort = ReasoningConfig.Effort(rawValue: effortString),
               effort != .none

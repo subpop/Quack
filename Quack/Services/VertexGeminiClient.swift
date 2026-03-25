@@ -293,3 +293,38 @@ actor GeminiStreamState {
         )
     }
 }
+
+// MARK: - LLMProvider
+
+extension VertexGeminiClient: LLMProvider {
+    static let kind: ProviderKind = .vertexGemini
+
+    static let requiresAPIKey: Bool = false
+    static let requiresBaseURL: Bool = true
+    static let defaultBaseURL: String? = "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1"
+
+    static func makeClient(
+        from provider: Provider,
+        model: String,
+        maxTokens: Int,
+        reasoningConfig: ReasoningConfig?
+    ) -> (any LLMClient)? {
+        let authProvider: GoogleAuthProvider
+        do {
+            authProvider = try GoogleAuthProvider()
+        } catch {
+            return nil
+        }
+
+        guard let baseURL = resolveBaseURL(from: provider) else { return nil }
+
+        return VertexGeminiClient(
+            authProvider: authProvider,
+            model: model,
+            maxOutputTokens: maxTokens,
+            contextWindowSize: provider.contextWindowSize,
+            baseURL: baseURL,
+            retryPolicy: resolveRetryPolicy(from: provider)
+        )
+    }
+}

@@ -228,3 +228,32 @@ nonisolated struct GeminiClient: LLMClient, Sendable {
         )
     }
 }
+
+// MARK: - LLMProvider
+
+extension GeminiClient: LLMProvider {
+    static let kind: ProviderKind = .gemini
+
+    static let requiresAPIKey: Bool = true
+    static let requiresBaseURL: Bool = true
+    static let defaultBaseURL: String? = "https://generativelanguage.googleapis.com/v1beta/models"
+
+    static func makeClient(
+        from provider: Provider,
+        model: String,
+        maxTokens: Int,
+        reasoningConfig: ReasoningConfig?
+    ) -> (any LLMClient)? {
+        guard let apiKey = resolveAPIKey(for: provider) else { return nil }
+        guard let baseURL = resolveBaseURL(from: provider) else { return nil }
+
+        return GeminiClient(
+            apiKey: apiKey,
+            model: model,
+            maxOutputTokens: maxTokens,
+            contextWindowSize: provider.contextWindowSize,
+            baseURL: baseURL,
+            retryPolicy: resolveRetryPolicy(from: provider)
+        )
+    }
+}

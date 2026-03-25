@@ -76,3 +76,21 @@ struct FoundationModelsLLMClient: LLMClient, Sendable {
         return parts.joined(separator: "\n\n")
     }
 }
+
+// MARK: - LLMProvider
+
+extension FoundationModelsLLMClient: LLMProvider {
+    static let kind: ProviderKind = .foundationModels
+
+    static let requiresAPIKey: Bool = false
+    static let requiresBaseURL: Bool = false
+
+    static func makeClient(
+        from provider: Provider,
+        model: String,
+        maxTokens: Int,
+        reasoningConfig: ReasoningConfig?
+    ) -> (any LLMClient)? {
+        FoundationModelsLLMClient()
+    }
+}

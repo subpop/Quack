@@ -1,4 +1,5 @@
 import Foundation
+import AgentRunKit
 
 /// The API wire protocol used to communicate with a provider's backend.
 /// This enum is intentionally small -- it represents the shape of the HTTP API,
@@ -36,33 +37,15 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var requiresAPIKey: Bool {
+    /// The `LLMProvider` conforming type that handles this provider kind.
+    var providerType: any LLMProvider.Type {
         switch self {
-        case .openAICompatible, .anthropic, .gemini: true
-        case .foundationModels, .vertexGemini, .vertexAnthropic: false
+        case .openAICompatible: OpenAIClient.self
+        case .anthropic: AnthropicClient.self
+        case .foundationModels: FoundationModelsLLMClient.self
+        case .gemini: GeminiClient.self
+        case .vertexGemini: VertexGeminiClient.self
+        case .vertexAnthropic: VertexAnthropicClient.self
         }
-    }
-
-    var requiresBaseURL: Bool {
-        switch self {
-        case .openAICompatible, .anthropic, .gemini, .vertexGemini, .vertexAnthropic: true
-        case .foundationModels: false
-        }
-    }
-
-    /// The default base URL for newly created providers of this kind.
-    var defaultBaseURL: String? {
-        switch self {
-        case .anthropic: "https://api.anthropic.com/v1"
-        case .gemini: "https://generativelanguage.googleapis.com/v1beta/models"
-        case .vertexGemini: "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1"
-        case .vertexAnthropic: "https://us-east5-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-east5"
-        case .openAICompatible, .foundationModels: nil
-        }
-    }
-
-    /// Whether this kind supports the Anthropic-specific prompt caching feature.
-    var supportsCaching: Bool {
-        self == .anthropic
     }
 }

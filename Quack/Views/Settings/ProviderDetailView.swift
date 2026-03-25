@@ -21,7 +21,7 @@ struct ProviderDetailView: View {
             connectionSection
             modelSection
             advancedSection
-            if provider.kind.supportsCaching {
+            if provider.kind.providerType.supportsCaching {
                 cachingSection
             }
             retrySection
@@ -121,7 +121,7 @@ struct ProviderDetailView: View {
 
     private var connectionSection: some View {
         Section("Connection") {
-            if provider.kind.requiresBaseURL {
+            if provider.kind.providerType.requiresBaseURL {
                 HStack {
                     Text("Base URL")
                     Spacer()
