@@ -99,5 +99,5 @@ struct MainView: View {
 
     MainView()
         .previewEnvironment(container: container)
-        .frame(width: 900, height: 650)
+        .frame(width: 700, height: 650)
 }
