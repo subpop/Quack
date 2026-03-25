@@ -6,99 +6,78 @@ struct ProvidersSettingsView: View {
     @Environment(ProviderService.self) private var providerService
     @Query(sort: \Provider.sortOrder) private var providers: [Provider]
 
-    @State private var editingProvider: Provider?
-    @State private var confirmDelete: Provider?
+    @State private var selectedProviderID: UUID?
+
+    private var selectedProvider: Provider? {
+        providers.first { $0.id == selectedProviderID }
+    }
 
     var body: some View {
-        Form {
-            Section {
-                if providers.isEmpty {
-                    ContentUnavailableView(
-                        "No Providers",
-                        systemImage: "cloud",
-                        description: Text("Add a provider to get started.")
-                    )
+        HSplitView {
+            providerList
+                .frame(minWidth: 180, maxWidth: 220, maxHeight: .infinity)
+
+            Group {
+                if let provider = selectedProvider {
+                    ProviderDetailView(provider: provider)
                 } else {
-                    ForEach(providers) { provider in
-                        HStack(spacing: 12) {
-                            Image(systemName: provider.iconName)
-                                .foregroundStyle(provider.isEnabled ? .primary : .secondary)
-                                .frame(width: 20)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(provider.name)
-
-                                Text("\(provider.kind.displayName) \(provider.isEnabled ? "" : " (Disabled)")")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Spacer()
-
-                            Text(provider.defaultModel)
-                                .font(.callout)
-                                .foregroundStyle(.secondary)
-
-                            if providerService.defaultProviderID == provider.id {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
-                                    .font(.callout)
-                                    .help("Default provider")
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editingProvider = provider
-                        }
-                    }
-                    .onDelete(perform: deleteProviders)
-                }
-            } header: {
-                Text("Providers")
-            } footer: {
-                Text("Click a provider to configure it. Swipe to delete.")
-            }
-
-            Section {
-                Menu {
-                    ForEach(ProviderKind.allCases) { kind in
-                        Button {
-                            addProvider(kind: kind)
-                        } label: {
-                            Label(kind.displayName, systemImage: kind == .openAICompatible ? "network" : kind == .anthropic ? "sparkle" : "apple.logo")
-                        }
-                    }
-                } label: {
-                    Label("Add Provider...", systemImage: "plus.circle")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
-            }
-        }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .sheet(item: $editingProvider) { provider in
-            ProviderDetailView(provider: provider)
-        }
-        .alert("Delete Provider?", isPresented: .init(
-            get: { confirmDelete != nil },
-            set: { if !$0 { confirmDelete = nil } }
-        )) {
-            Button("Cancel", role: .cancel) { confirmDelete = nil }
-            Button("Delete", role: .destructive) {
-                if let provider = confirmDelete {
-                    KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
-                    modelContext.delete(provider)
-                    try? modelContext.save()
-                    confirmDelete = nil
+                    ContentUnavailableView("Select a provider", systemImage: "cloud")
                 }
             }
-        } message: {
-            Text("This will permanently remove the provider and its API key.")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    // MARK: - Actions
+    private var providerList: some View {
+        VStack(spacing: 0) {
+            List(selection: $selectedProviderID) {
+                ForEach(providers) { provider in
+                    HStack(alignment: .center) {
+                        Image(systemName: provider.iconName)
+                        VStack(alignment: .leading) {
+                            Text(provider.name)
+                            Text(provider.kind.displayName)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer()
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(
+                                provider.isEnabled ? .green : .secondary
+                            )
+                    }
+                    .tag(provider.id)
+                    .padding(8)
+                }
+            }
+
+            Divider()
+
+            HStack {
+                Menu {
+                    ForEach(ProviderKind.allCases) { kind in
+                        Button(kind.displayName) {
+                            addProvider(kind: kind)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "plus")
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+
+                Button {
+                    removeSelectedProvider()
+                } label: {
+                    Image(systemName: "minus")
+                }
+                .buttonStyle(.borderless)
+                .disabled(selectedProvider == nil)
+
+                Spacer()
+            }
+            .padding(8)
+        }
+    }
 
     private func addProvider(kind: ProviderKind) {
         let provider = Provider(
@@ -110,15 +89,15 @@ struct ProvidersSettingsView: View {
         )
         modelContext.insert(provider)
         try? modelContext.save()
-        editingProvider = provider
+        selectedProviderID = provider.id
     }
 
-    private func deleteProviders(at offsets: IndexSet) {
-        for index in offsets {
-            let provider = providers[index]
-            KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
-            modelContext.delete(provider)
-        }
+    private func removeSelectedProvider() {
+        guard let provider = selectedProvider else { return }
+        // Clean up the API key from Keychain
+        KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
+        selectedProviderID = nil
+        modelContext.delete(provider)
         try? modelContext.save()
     }
 }
@@ -129,5 +108,5 @@ struct ProvidersSettingsView: View {
 
     ProvidersSettingsView()
         .previewEnvironment(container: container)
-        .frame(width: 600, height: 480)
+        .frame(width: 650, height: 500)
 }

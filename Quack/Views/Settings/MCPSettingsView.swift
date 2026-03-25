@@ -6,83 +6,90 @@ struct MCPSettingsView: View {
     @Environment(MCPService.self) private var mcpService
     @Query private var servers: [MCPServerConfig]
 
-    @State private var editingServer: MCPServerConfig?
+    @State private var selectedServerID: UUID?
+
+    private var selectedServer: MCPServerConfig? {
+        servers.first { $0.id == selectedServerID }
+    }
 
     var body: some View {
-        Form {
-            Section {
-                if servers.isEmpty {
-                    ContentUnavailableView(
-                        "No MCP Servers",
-                        systemImage: "puzzlepiece.extension",
-                        description: Text("Add an MCP server to enable tool calling.")
-                    )
+        HSplitView {
+            serverList
+                .frame(minWidth: 180, maxWidth: 220, maxHeight: .infinity)
+
+            Group {
+                if let server = selectedServer {
+                    MCPServerDetailView(server: server)
                 } else {
-                    ForEach(servers) { server in
-                        HStack(spacing: 12) {
-                            Circle()
-                                .fill(mcpService.connectedServerNames.contains(server.name) ? .green : .secondary.opacity(0.4))
-                                .frame(width: 8, height: 8)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(server.name.isEmpty ? "Unnamed Server" : server.name)
-
-                                Text(server.command.isEmpty ? "No command configured" : server.command)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-
-                            Spacer()
-
-                            if !server.isEnabled {
-                                Text("Disabled")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            editingServer = server
-                        }
-                    }
-                    .onDelete(perform: deleteServers)
+                    ContentUnavailableView(
+                        "Select a Server",
+                        systemImage: "puzzlepiece.extension",
+                        description: Text("Add or select an MCP server to configure it.")
+                    )
                 }
-            } header: {
-                Text("Servers")
-            } footer: {
-                Text("Click a server to configure it. Swipe to delete.")
             }
-
-            Section {
-                Button {
-                    addServer()
-                } label: {
-                    Label("Add Server...", systemImage: "plus.circle")
-                }
-                .buttonStyle(.borderless)
-            }
-        }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .sheet(item: $editingServer) { server in
-            MCPServerDetailView(server: server)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
-    // MARK: - Actions
+    private var serverList: some View {
+        VStack(spacing: 0) {
+            List(selection: $selectedServerID) {
+                ForEach(servers) { server in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(server.name.isEmpty ? "Unnamed Server" : server.name)
+                                .font(.headline)
+                            Text(server.command.isEmpty ? "No command" : server.command)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+
+                        Circle()
+                            .fill(mcpService.connectedServerNames.contains(server.name) ? .green : .secondary)
+                            .frame(width: 8, height: 8)
+                    }
+                    .tag(server.id)
+                }
+            }
+
+            Divider()
+
+            HStack {
+                Button {
+                    addServer()
+                } label: {
+                    Image(systemName: "plus")
+                }
+
+                Button {
+                    removeSelectedServer()
+                } label: {
+                    Image(systemName: "minus")
+                }
+                .disabled(selectedServer == nil)
+
+                Spacer()
+            }
+            .padding(8)
+            .buttonStyle(.borderless)
+        }
+    }
 
     private func addServer() {
         let server = MCPServerConfig(name: "New Server")
         modelContext.insert(server)
         try? modelContext.save()
-        editingServer = server
+        selectedServerID = server.id
     }
 
-    private func deleteServers(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(servers[index])
-        }
+    private func removeSelectedServer() {
+        guard let server = selectedServer else { return }
+        selectedServerID = nil
+        modelContext.delete(server)
         try? modelContext.save()
     }
 }
@@ -93,5 +100,5 @@ struct MCPSettingsView: View {
 
     MCPSettingsView()
         .previewEnvironment(container: container)
-        .frame(width: 600, height: 480)
+        .frame(width: 650, height: 450)
 }

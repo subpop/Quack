@@ -4,7 +4,6 @@ import SwiftData
 struct MCPServerDetailView: View {
     @Bindable var server: MCPServerConfig
 
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(MCPService.self) private var mcpService
 
@@ -13,61 +12,15 @@ struct MCPServerDetailView: View {
     @State private var argumentsText: String = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(server.name.isEmpty ? "Unnamed Server" : server.name)
-                        .font(.headline)
-                    HStack(spacing: 6) {
-                        Circle()
-                            .fill(mcpService.connectedServerNames.contains(server.name) ? .green : .secondary.opacity(0.4))
-                            .frame(width: 8, height: 8)
-                        Text(mcpService.connectedServerNames.contains(server.name) ? "Connected" : "Disconnected")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer()
-                Toggle("Enabled", isOn: $server.isEnabled)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .onChange(of: server.isEnabled) { save() }
-            }
-            .padding()
-
-            Divider()
-
-            // Content
-            Form {
-                generalSection
-                commandSection
-                argumentsSection
-                environmentSection
-                timeoutsSection
-            }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-
-            Divider()
-
-            // Footer
-            HStack {
-                if let error = mcpService.connectionErrors[server.name] {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.yellow)
-                    Text(error)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer()
-                Button("Done") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding()
+        Form {
+            generalSection
+            commandSection
+            argumentsSection
+            environmentSection
+            timeoutsSection
+            actionsSection
         }
-        .frame(width: 500, height: 560)
+        .formStyle(.grouped)
         .onAppear {
             argumentsText = server.arguments.joined(separator: "\n")
         }
@@ -78,7 +31,11 @@ struct MCPServerDetailView: View {
     private var generalSection: some View {
         Section("General") {
             TextField("Name", text: $server.name)
+                .textFieldStyle(.roundedBorder)
                 .onChange(of: server.name) { save() }
+
+            Toggle("Enabled", isOn: $server.isEnabled)
+                .onChange(of: server.isEnabled) { save() }
         }
     }
 
@@ -86,29 +43,59 @@ struct MCPServerDetailView: View {
 
     private var commandSection: some View {
         Section("Command") {
-            TextField("Command", text: $server.command, prompt: Text("/usr/local/bin/mcp-server"))
-                .font(.body.monospaced())
-                .onChange(of: server.command) { save() }
+            HStack {
+                TextField("Command path (e.g., /usr/local/bin/mcp-server)", text: $server.command)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body.monospaced())
+                    .onChange(of: server.command) { save() }
 
-            TextField(
-                "Working Directory",
-                text: Binding(
-                    get: { server.workingDirectory ?? "" },
-                    set: { server.workingDirectory = $0.isEmpty ? nil : $0 }
-                ),
-                prompt: Text("Inherit from parent")
-            )
-            .onChange(of: server.workingDirectory) { save() }
+                Button("Browse...") {
+                    let panel = NSOpenPanel()
+                    panel.canChooseFiles = true
+                    panel.canChooseDirectories = false
+                    panel.allowsMultipleSelection = false
+                    if panel.runModal() == .OK, let url = panel.url {
+                        server.command = url.path
+                        save()
+                    }
+                }
+            }
+
+            HStack {
+                Text("Working Directory")
+                Spacer()
+                TextField(
+                    "Inherit from parent",
+                    text: Binding(
+                        get: { server.workingDirectory ?? "" },
+                        set: { server.workingDirectory = $0.isEmpty ? nil : $0 }
+                    )
+                )
+                .textFieldStyle(.roundedBorder)
+                .frame(maxWidth: 300)
+                .onChange(of: server.workingDirectory) { save() }
+
+                Button("Browse...") {
+                    let panel = NSOpenPanel()
+                    panel.canChooseFiles = false
+                    panel.canChooseDirectories = true
+                    panel.allowsMultipleSelection = false
+                    if panel.runModal() == .OK, let url = panel.url {
+                        server.workingDirectory = url.path
+                        save()
+                    }
+                }
+            }
         }
     }
 
     // MARK: - Arguments
 
     private var argumentsSection: some View {
-        Section {
+        Section("Arguments") {
             TextEditor(text: $argumentsText)
-                .font(.callout.monospaced())
-                .frame(minHeight: 50, maxHeight: 100)
+                .font(.body.monospaced())
+                .frame(minHeight: 60)
                 .scrollContentBackground(.hidden)
                 .onChange(of: argumentsText) {
                     server.arguments = argumentsText
@@ -117,9 +104,10 @@ struct MCPServerDetailView: View {
                         .filter { !$0.isEmpty }
                     save()
                 }
-        } header: {
-            Text("Arguments")
-            Text("One argument per line.")
+
+            Text("One argument per line")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -129,35 +117,39 @@ struct MCPServerDetailView: View {
         Section("Environment Variables") {
             let envVars = server.environmentVariables
 
-            ForEach(Array(envVars.keys.sorted()), id: \.self) { key in
-                HStack {
-                    Text(key)
-                        .font(.callout.monospaced())
-                    Spacer()
-                    Text(envVars[key] ?? "")
-                        .font(.callout.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+            if !envVars.isEmpty {
+                ForEach(Array(envVars.keys.sorted()), id: \.self) { key in
+                    HStack {
+                        Text(key)
+                            .font(.body.monospaced())
+                        Spacer()
+                        Text(envVars[key] ?? "")
+                            .font(.body.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
 
-                    Button {
-                        var vars = server.environmentVariables
-                        vars.removeValue(forKey: key)
-                        server.environmentVariables = vars
-                        save()
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .foregroundStyle(.red)
+                        Button {
+                            var vars = server.environmentVariables
+                            vars.removeValue(forKey: key)
+                            server.environmentVariables = vars
+                            save()
+                        } label: {
+                            Image(systemName: "minus.circle")
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
 
             HStack {
                 TextField("KEY", text: $newEnvKey)
-                    .font(.callout.monospaced())
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body.monospaced())
 
                 TextField("VALUE", text: $newEnvValue)
-                    .font(.callout.monospaced())
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body.monospaced())
 
                 Button {
                     guard !newEnvKey.isEmpty else { return }
@@ -168,8 +160,7 @@ struct MCPServerDetailView: View {
                     newEnvValue = ""
                     save()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.green)
+                    Image(systemName: "plus.circle")
                 }
                 .buttonStyle(.borderless)
                 .disabled(newEnvKey.isEmpty)
@@ -181,31 +172,49 @@ struct MCPServerDetailView: View {
 
     private var timeoutsSection: some View {
         Section("Timeouts") {
-            LabeledContent("Initialization") {
-                HStack(spacing: 4) {
-                    TextField("", value: $server.initializationTimeout, format: .number)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                        .onChange(of: server.initializationTimeout) { save() }
-                    Text("s")
-                        .foregroundStyle(.secondary)
-                }
+            HStack {
+                Text("Initialization (seconds)")
+                Spacer()
+                TextField("30", value: $server.initializationTimeout, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                    .multilineTextAlignment(.trailing)
+                    .onChange(of: server.initializationTimeout) { save() }
             }
 
-            LabeledContent("Tool Call") {
-                HStack(spacing: 4) {
-                    TextField("", value: $server.toolCallTimeout, format: .number)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                        .onChange(of: server.toolCallTimeout) { save() }
-                    Text("s")
-                        .foregroundStyle(.secondary)
-                }
+            HStack {
+                Text("Tool Call (seconds)")
+                Spacer()
+                TextField("60", value: $server.toolCallTimeout, format: .number)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 80)
+                    .multilineTextAlignment(.trailing)
+                    .onChange(of: server.toolCallTimeout) { save() }
             }
         }
     }
 
-    // MARK: - Helpers
+    // MARK: - Actions
+
+    private var actionsSection: some View {
+        Section {
+            HStack {
+                let isConnected = mcpService.connectedServerNames.contains(server.name)
+                Circle()
+                    .fill(isConnected ? .green : .secondary)
+                    .frame(width: 8, height: 8)
+                Text(isConnected ? "Connected" : "Disconnected")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let error = mcpService.connectionErrors[server.name] {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+        }
+    }
 
     private func save() {
         try? modelContext.save()
@@ -218,4 +227,5 @@ struct MCPServerDetailView: View {
 
     MCPServerDetailView(server: data.mcpServer)
         .previewEnvironment(container: container)
+        .frame(width: 500, height: 600)
 }
