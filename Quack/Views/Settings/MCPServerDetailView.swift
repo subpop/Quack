@@ -86,45 +86,19 @@ struct MCPServerDetailView: View {
 
     private var commandSection: some View {
         Section("Command") {
-            HStack {
-                TextField("Command path", text: $server.command, prompt: Text("/usr/local/bin/mcp-server"))
-                    .font(.body.monospaced())
-                    .onChange(of: server.command) { save() }
+            TextField("Command", text: $server.command, prompt: Text("/usr/local/bin/mcp-server"))
+                .font(.body.monospaced())
+                .onChange(of: server.command) { save() }
 
-                Button("Browse...") {
-                    let panel = NSOpenPanel()
-                    panel.canChooseFiles = true
-                    panel.canChooseDirectories = false
-                    panel.allowsMultipleSelection = false
-                    if panel.runModal() == .OK, let url = panel.url {
-                        server.command = url.path
-                        save()
-                    }
-                }
-            }
-
-            HStack {
-                TextField(
-                    "Working Directory",
-                    text: Binding(
-                        get: { server.workingDirectory ?? "" },
-                        set: { server.workingDirectory = $0.isEmpty ? nil : $0 }
-                    ),
-                    prompt: Text("Inherit from parent")
-                )
-                .onChange(of: server.workingDirectory) { save() }
-
-                Button("Browse...") {
-                    let panel = NSOpenPanel()
-                    panel.canChooseFiles = false
-                    panel.canChooseDirectories = true
-                    panel.allowsMultipleSelection = false
-                    if panel.runModal() == .OK, let url = panel.url {
-                        server.workingDirectory = url.path
-                        save()
-                    }
-                }
-            }
+            TextField(
+                "Working Directory",
+                text: Binding(
+                    get: { server.workingDirectory ?? "" },
+                    set: { server.workingDirectory = $0.isEmpty ? nil : $0 }
+                ),
+                prompt: Text("Inherit from parent")
+            )
+            .onChange(of: server.workingDirectory) { save() }
         }
     }
 
@@ -145,7 +119,6 @@ struct MCPServerDetailView: View {
                 }
         } header: {
             Text("Arguments")
-        } footer: {
             Text("One argument per line.")
         }
     }
@@ -210,7 +183,7 @@ struct MCPServerDetailView: View {
         Section("Timeouts") {
             LabeledContent("Initialization") {
                 HStack(spacing: 4) {
-                    TextField("30", value: $server.initializationTimeout, format: .number)
+                    TextField("", value: $server.initializationTimeout, format: .number)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 60)
                         .onChange(of: server.initializationTimeout) { save() }
@@ -221,7 +194,7 @@ struct MCPServerDetailView: View {
 
             LabeledContent("Tool Call") {
                 HStack(spacing: 4) {
-                    TextField("60", value: $server.toolCallTimeout, format: .number)
+                    TextField("", value: $server.toolCallTimeout, format: .number)
                         .multilineTextAlignment(.trailing)
                         .frame(width: 60)
                         .onChange(of: server.toolCallTimeout) { save() }
