@@ -84,7 +84,7 @@ struct ProvidersSettingsView: View {
             name: "New \(kind.displayName) Provider",
             kind: kind,
             sortOrder: providers.count,
-            baseURL: kind == .anthropic ? "https://api.anthropic.com/v1" : nil,
+            baseURL: kind.defaultBaseURL,
             requiresAPIKey: kind.requiresAPIKey
         )
         modelContext.insert(provider)

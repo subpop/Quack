@@ -111,6 +111,66 @@ final class ProviderService {
 
         case .foundationModels:
             return FoundationModelsLLMClient()
+
+        case .gemini:
+            guard let apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) else {
+                return nil
+            }
+            guard let baseURLString = provider.baseURL,
+                  let baseURL = URL(string: baseURLString) else {
+                return nil
+            }
+            return GeminiClient(
+                apiKey: apiKey,
+                model: model,
+                maxOutputTokens: maxTokens,
+                contextWindowSize: contextWindowSize,
+                baseURL: baseURL,
+                retryPolicy: retryPolicy
+            )
+
+        case .vertexGemini:
+            let authProvider: GoogleAuthProvider
+            do {
+                authProvider = try GoogleAuthProvider()
+            } catch {
+                return nil
+            }
+            guard let baseURLString = provider.baseURL,
+                  let baseURL = URL(string: baseURLString) else {
+                return nil
+            }
+            return VertexGeminiClient(
+                authProvider: authProvider,
+                model: model,
+                maxOutputTokens: maxTokens,
+                contextWindowSize: contextWindowSize,
+                baseURL: baseURL,
+                retryPolicy: retryPolicy
+            )
+
+        case .vertexAnthropic:
+            // Vertex AI Anthropic: uses ADC for auth, no API key
+            let authProvider: GoogleAuthProvider
+            do {
+                authProvider = try GoogleAuthProvider()
+            } catch {
+                return nil
+            }
+
+            guard let baseURLString = provider.baseURL,
+                  let baseURL = URL(string: baseURLString) else {
+                return nil
+            }
+
+            return VertexAnthropicClient(
+                authProvider: authProvider,
+                model: model,
+                maxOutputTokens: maxTokens,
+                contextWindowSize: contextWindowSize,
+                baseURL: baseURL,
+                retryPolicy: retryPolicy
+            )
         }
     }
 

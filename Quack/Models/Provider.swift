@@ -144,6 +144,42 @@ final class Provider {
                 maxTokens: 4096,
                 contextWindowSize: 4096
             ),
+            Provider(
+                name: "Google AI",
+                kind: .gemini,
+                iconName: "sparkles",
+                sortOrder: 4,
+                baseURL: "https://generativelanguage.googleapis.com/v1beta/models",
+                requiresAPIKey: true,
+                defaultModel: "gemini-2.5-flash",
+                suggestedModels: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"],
+                maxTokens: 8192,
+                contextWindowSize: 1_048_576
+            ),
+            Provider(
+                name: "Vertex AI (Gemini)",
+                kind: .vertexGemini,
+                iconName: "cloud.fill",
+                sortOrder: 5,
+                baseURL: "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1",
+                requiresAPIKey: false,
+                defaultModel: "gemini-2.5-flash",
+                suggestedModels: ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"],
+                maxTokens: 8192,
+                contextWindowSize: 1_048_576
+            ),
+            Provider(
+                name: "Vertex AI (Claude)",
+                kind: .vertexAnthropic,
+                iconName: "cloud.fill",
+                sortOrder: 6,
+                baseURL: "https://us-east5-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-east5",
+                requiresAPIKey: false,
+                defaultModel: "claude-sonnet-4-6",
+                suggestedModels: ["claude-opus-4-6", "claude-sonnet-4-6", "claude-sonnet-4-5@20250929", "claude-haiku-4-5@20251001"],
+                maxTokens: 8192,
+                contextWindowSize: 200_000
+            ),
         ]
     }
 }
