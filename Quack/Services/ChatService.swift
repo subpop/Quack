@@ -15,6 +15,11 @@ final class ChatService {
     var activeToolCalls: [ActiveToolCall] = []
     var streamingSessionID: UUID?
 
+    /// Tracks which session an error belongs to, independently of streaming state.
+    /// Unlike `streamingSessionID`, this is not cleared when streaming ends,
+    /// allowing the error banner to persist until the user sends a new message.
+    var errorSessionID: UUID?
+
     private var streamTask: Task<Void, Never>?
 
     struct ActiveToolCall: Identifiable, Sendable {
@@ -61,6 +66,7 @@ final class ChatService {
             providers: providers
         ) else {
             streamingError = "No provider configured. Set up a provider in Settings."
+            errorSessionID = session.id
             return
         }
 
@@ -82,6 +88,7 @@ final class ChatService {
         streamingContent = ""
         streamingReasoning = ""
         streamingError = nil
+        errorSessionID = nil
         activeToolCalls = []
         isStreaming = true
         streamingSessionID = session.id
@@ -109,6 +116,7 @@ final class ChatService {
             } catch {
                 await MainActor.run {
                     self?.streamingError = error.localizedDescription
+                    self?.errorSessionID = sessionID
                 }
             }
 
@@ -124,6 +132,11 @@ final class ChatService {
         streamTask = nil
         isStreaming = false
         streamingSessionID = nil
+    }
+
+    func dismissError() {
+        streamingError = nil
+        errorSessionID = nil
     }
 
     func regenerateLastResponse(
@@ -195,6 +208,7 @@ final class ChatService {
             providers: providers
         ) else {
             streamingError = "No provider configured. Set up a provider in Settings."
+            errorSessionID = session.id
             return
         }
 
@@ -214,6 +228,7 @@ final class ChatService {
         streamingContent = ""
         streamingReasoning = ""
         streamingError = nil
+        errorSessionID = nil
         activeToolCalls = []
         isStreaming = true
         streamingSessionID = session.id
@@ -240,6 +255,7 @@ final class ChatService {
             } catch {
                 await MainActor.run {
                     self?.streamingError = error.localizedDescription
+                    self?.errorSessionID = sessionID
                 }
             }
 

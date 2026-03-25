@@ -57,9 +57,10 @@ struct ChatView: View {
 
                     // Error display
                     if let error = chatService.streamingError,
-                       chatService.streamingSessionID == session.id {
+                       chatService.errorSessionID == session.id {
                         errorView(error)
                             .padding(.horizontal, 16)
+                            .id("error")
                     }
                 }
                 .padding(.vertical, 12)
@@ -70,6 +71,11 @@ struct ChatView: View {
             }
             .onChange(of: chatService.streamingContent) {
                 scrollToBottom(proxy: proxy)
+            }
+            .onChange(of: chatService.streamingError) {
+                if chatService.streamingError != nil {
+                    scrollToBottom(proxy: proxy)
+                }
             }
         }
     }
@@ -146,6 +152,17 @@ struct ChatView: View {
             Text(error)
                 .foregroundStyle(.secondary)
                 .font(.subheadline)
+                .textSelection(.enabled)
+            Spacer()
+            Button {
+                chatService.dismissError()
+            } label: {
+                Image(systemName: "xmark")
+                    .foregroundStyle(.secondary)
+                    .imageScale(.small)
+            }
+            .buttonStyle(.plain)
+            .help("Dismiss error")
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -154,7 +171,9 @@ struct ChatView: View {
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
-            if isStreamingThisSession {
+            if chatService.streamingError != nil, chatService.errorSessionID == session.id {
+                proxy.scrollTo("error", anchor: .bottom)
+            } else if isStreamingThisSession {
                 proxy.scrollTo("streaming", anchor: .bottom)
             } else if let last = session.sortedMessages.last {
                 proxy.scrollTo(last.id, anchor: .bottom)
