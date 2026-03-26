@@ -70,6 +70,20 @@ struct ProviderDetailSheet: View {
                 TextField("Name", text: $provider.name, prompt: Text("Provider name"))
                     .onChange(of: provider.name) { save() }
 
+                Picker("Kind", selection: Binding(
+                    get: { provider.kind },
+                    set: { newValue in
+                        provider.kind = newValue
+                        provider.baseURL = newValue.providerType.defaultBaseURL
+                        save()
+                        providerService.invalidateCache()
+                    }
+                )) {
+                    ForEach(ProviderKind.allCases) { kind in
+                        Text(kind.displayName).tag(kind)
+                    }
+                }
+
                 Toggle("Enabled", isOn: $provider.isEnabled)
                     .onChange(of: provider.isEnabled) {
                         save()
