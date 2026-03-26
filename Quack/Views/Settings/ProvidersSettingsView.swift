@@ -189,117 +189,193 @@ private struct AddProviderSheet: View {
 
     var onAdd: (Provider) -> Void
 
-    @State private var selectedKind: ProviderKind = .openAICompatible
-    @State private var name: String = ""
-    @State private var baseURL: String = ""
+    @State private var selectedPreset: ProviderPreset = .ollama
 
     var body: some View {
         VStack(spacing: 0) {
             // Header
             VStack(spacing: 6) {
-                kindIcon
+                presetIcon(for: selectedPreset, size: 32)
                     .foregroundStyle(.white)
                     .frame(width: 52, height: 52)
                     .background(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(.blue.gradient)
+                            .fill(presetColor.gradient)
                     )
 
                 Text("Add a Provider")
                     .font(.headline)
-                Text("Enter the information for the provider.")
+                Text("Choose a provider to get started quickly.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             .padding(.top, 20)
             .padding(.bottom, 16)
 
-            // Form
-            Form {
-                Picker("Type", selection: $selectedKind) {
-                    ForEach(ProviderKind.allCases) { kind in
-                        Text(kind.displayName).tag(kind)
+            // Preset picker — grid of labelled buttons
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 8) {
+                ForEach(ProviderPreset.allCases) { preset in
+                    PresetButton(
+                        preset: preset,
+                        isSelected: selectedPreset == preset
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedPreset = preset
+                        }
                     }
                 }
-                .onChange(of: selectedKind) {
-                    // Auto-fill defaults when type changes
-                    if name.isEmpty || name.hasPrefix("New ") {
-                        name = ""
-                    }
-                    baseURL = selectedKind.providerType.defaultBaseURL ?? ""
-                }
-
-                if selectedKind.providerType.requiresBaseURL {
-                    TextField("URL", text: $baseURL, prompt: Text("https://api.example.com/v1"))
-                        .font(.system(.body, design: .monospaced))
-                }
-
-                TextField("Name", text: $name, prompt: Text(selectedKind.displayName))
             }
-            .formStyle(.grouped)
-            .scrollDisabled(true)
-
-            Spacer()
+            .padding(.horizontal, 20)
 
             // Footer
             HStack {
-                Spacer()
                 Button("Cancel") {
                     dismiss()
                 }
                 .keyboardShortcut(.cancelAction)
 
+                Spacer()
+
                 Button("Add") {
-                    addProvider()
+                    if selectedPreset == .custom {
+                        addCustomProvider()
+                    } else {
+                        addProvider()
+                    }
                 }
                 .keyboardShortcut(.defaultAction)
             }
             .padding(.horizontal, 20)
+            .padding(.top, 8)
             .padding(.bottom, 16)
         }
-        .frame(width: 420, height: 340)
-        .onAppear {
-            baseURL = selectedKind.providerType.defaultBaseURL ?? ""
+        .frame(width: 420, height: 380)
+    }
+
+    // MARK: - Helpers
+
+    @ViewBuilder
+    private func presetIcon(for preset: ProviderPreset, size: CGFloat) -> some View {
+        if preset.isCustomIcon {
+            preset.icon
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: size, height: size)
+        } else {
+            preset.icon
+                .font(.system(size: size * 0.75))
         }
     }
 
-    @ViewBuilder
-    private var kindIcon: some View {
-        if selectedKind.isCustomIcon {
-            selectedKind.icon
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 32, height: 32)
-        } else {
-            selectedKind.icon
-                .font(.system(size: 28))
+    private var presetColor: Color {
+        switch selectedPreset {
+        case .ollama:     .gray
+        case .openAI:     .green
+        case .anthropic:  .orange
+        case .gemini:     .blue
+        case .openRouter: .purple
+        case .groq:       .indigo
+        case .together:   .cyan
+        case .mistral:    .orange
+        case .custom:     .secondary
         }
     }
 
     private func addProvider() {
-        let providerName = name.isEmpty ? selectedKind.displayName : name
         let provider = Provider(
-            name: providerName,
-            kind: selectedKind,
+            name: selectedPreset.displayName,
+            kind: selectedPreset.kind,
             sortOrder: providers.count,
-            baseURL: baseURL.isEmpty ? nil : baseURL,
-            requiresAPIKey: selectedKind.providerType.requiresAPIKey
+            baseURL: selectedPreset.baseURL,
+            requiresAPIKey: selectedPreset.requiresAPIKey,
+            defaultModel: selectedPreset.defaultModel
         )
         modelContext.insert(provider)
         try? modelContext.save()
         dismiss()
-        // Slight delay so the add sheet dismisses before edit sheet opens
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            onAdd(provider)
+        }
+    }
+
+    private func addCustomProvider() {
+        let provider = Provider(
+            name: "New Provider",
+            kind: .openAICompatible,
+            sortOrder: providers.count
+        )
+        modelContext.insert(provider)
+        try? modelContext.save()
+        dismiss()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             onAdd(provider)
         }
     }
 }
 
-#Preview {
+// MARK: - Preset Button
+
+private struct PresetButton: View {
+    let preset: ProviderPreset
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                presetIcon
+                    .frame(height: 24)
+
+                Text(preset.displayName)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(isSelected ? Color.accentColor : Color.secondary.opacity(0.2), lineWidth: isSelected ? 1.5 : 0.5)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var presetIcon: some View {
+        if preset.isCustomIcon {
+            preset.icon
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+        } else {
+            preset.icon
+                .font(.title2)
+        }
+    }
+}
+
+#Preview("Provider List") {
     let container = PreviewSupport.container
     let _ = PreviewSupport.seed(container)
 
     ProvidersSettingsView()
         .previewEnvironment(container: container)
         .frame(width: 600, height: 480)
+}
+
+#Preview("Add Provider Sheet") {
+    let container = PreviewSupport.container
+    let _ = PreviewSupport.seed(container)
+
+    AddProviderSheet { _ in }
+        .previewEnvironment(container: container)
 }
