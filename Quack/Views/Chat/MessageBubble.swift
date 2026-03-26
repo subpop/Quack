@@ -83,6 +83,14 @@ struct MessageBubble: View {
 
     private var assistantBubble: some View {
         VStack(alignment: .leading, spacing: 6) {
+            // Tool calls (expandable, persisted)
+            let toolCalls = ChatService.decodeCompletedToolCalls(from: message.toolCallsJSON)
+            if !toolCalls.isEmpty {
+                ForEach(toolCalls.map(ToolCallDisplayData.init(from:))) { tc in
+                    ToolCallView(toolCall: tc)
+                }
+            }
+
             // Reasoning (collapsible)
             if let reasoning = message.reasoning, !reasoning.isEmpty {
                 ReasoningView(reasoning: reasoning, isStreaming: false)

@@ -6,6 +6,7 @@ struct ChatInspectorView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(ProviderService.self) private var providerService
+    @Environment(MCPService.self) private var mcpService
     @Query(sort: \Provider.sortOrder) private var providers: [Provider]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
@@ -129,14 +130,98 @@ struct ChatInspectorView: View {
 
     private var mcpSection: some View {
         Section("MCP Servers") {
-            if mcpServerConfigs.isEmpty {
+            let enabledServers = mcpServerConfigs.filter(\.isEnabled)
+
+            if enabledServers.isEmpty {
                 Text("No MCP servers configured.")
                     .foregroundStyle(.secondary)
                     .font(.callout)
             } else {
-                ForEach(mcpServerConfigs) { server in
-                    Toggle(server.name.isEmpty ? server.command : server.name, isOn: mcpToggleBinding(for: server))
+                ForEach(enabledServers) { server in
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Toggle(
+                                server.name.isEmpty ? server.command : server.name,
+                                isOn: mcpToggleBinding(for: server)
+                            )
+
+                            Spacer()
+
+                            mcpStatusIndicator(for: server)
+                        }
+
+                        // Show discovered tools with per-tool permission pickers
+                        let isEnabledForSession = session.enabledMCPServerIDs?.contains(server.id) ?? false
+                        if isEnabledForSession, mcpService.state(for: server.id) == .connected {
+                            let tools = mcpService.toolSummaries(for: server.id)
+                            if !tools.isEmpty {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    ForEach(tools) { tool in
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "wrench.and.screwdriver")
+                                                .font(.caption2)
+                                                .foregroundStyle(.tertiary)
+                                            Text(tool.name)
+                                                .font(.caption.monospaced())
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                                .help(tool.description)
+
+                                            Spacer()
+
+                                            toolPermissionPicker(
+                                                for: tool.name,
+                                                serverDefault: server.toolPermission
+                                            )
+                                        }
+                                    }
+                                }
+                                .padding(.leading, 20)
+                                .padding(.top, 4)
+                            }
+                        }
+                    }
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func mcpStatusIndicator(for server: MCPServerConfig) -> some View {
+        let isEnabledForSession = session.enabledMCPServerIDs?.contains(server.id) ?? false
+
+        if !isEnabledForSession {
+            // Not enabled for this session — no status to show
+            EmptyView()
+        } else {
+            switch mcpService.state(for: server.id) {
+            case .connecting:
+                ProgressView()
+                    .controlSize(.mini)
+                    .help("Connecting...")
+            case .connected:
+                let count = mcpService.toolCount(for: server.id)
+                HStack(spacing: 4) {
+                    Image(systemName: "circle.fill")
+                        .foregroundStyle(.green)
+                        .imageScale(.small)
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .help("Connected - \(count) tool(s)")
+            case .error(let message):
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .imageScale(.small)
+                    .help("Error: \(message)")
+            case .disconnected:
+                Image(systemName: "circle")
+                    .foregroundStyle(.secondary)
+                    .imageScale(.small)
+                    .help("Disconnected")
             }
         }
     }
@@ -251,20 +336,57 @@ struct ChatInspectorView: View {
     private func mcpToggleBinding(for server: MCPServerConfig) -> Binding<Bool> {
         Binding(
             get: {
-                guard let ids = session.enabledMCPServerIDs else { return true }
-                return ids.contains(server.id)
+                session.enabledMCPServerIDs?.contains(server.id) ?? false
             },
             set: { isEnabled in
-                var ids = session.enabledMCPServerIDs ?? mcpServerConfigs.map(\.id)
+                var ids = session.enabledMCPServerIDs ?? []
                 if isEnabled {
                     if !ids.contains(server.id) { ids.append(server.id) }
                 } else {
                     ids.removeAll { $0 == server.id }
                 }
-                session.enabledMCPServerIDs = ids
+                session.enabledMCPServerIDs = ids.isEmpty ? nil : ids
                 save()
+                // MainView observes enabledMCPServerIDsRaw and calls syncMCPServers()
             }
         )
+    }
+
+    private func toolPermissionPicker(for toolName: String, serverDefault: ToolPermission) -> some View {
+        let effective = session.effectivePermission(for: toolName, serverDefault: serverDefault)
+
+        return Picker("", selection: Binding(
+            get: { effective },
+            set: { newValue in
+                session.setToolPermission(newValue, for: toolName, serverDefault: serverDefault)
+                save()
+            }
+        )) {
+            ForEach(ToolPermission.allCases, id: \.self) { perm in
+                Label(perm.label, systemImage: permissionIcon(for: perm))
+                    .tag(perm)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .foregroundStyle(permissionColor(for: effective))
+    }
+
+    private func permissionIcon(for permission: ToolPermission) -> String {
+        switch permission {
+        case .always: "checkmark.circle.fill"
+        case .ask: "questionmark.circle.fill"
+        case .deny: "xmark.circle.fill"
+        }
+    }
+
+    private func permissionColor(for permission: ToolPermission) -> Color {
+        switch permission {
+        case .always: .green
+        case .ask: .orange
+        case .deny: .red
+        }
     }
 
     private func save() {

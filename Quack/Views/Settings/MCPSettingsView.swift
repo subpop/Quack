@@ -16,7 +16,7 @@ struct MCPSettingsView: View {
                 ForEach(servers) { server in
                     MCPServerRow(
                         server: server,
-                        isConnected: mcpService.connectedServerNames.contains(server.name)
+                        serverState: mcpService.state(for: server.id)
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -95,7 +95,7 @@ struct MCPSettingsView: View {
 
 private struct MCPServerRow: View {
     let server: MCPServerConfig
-    let isConnected: Bool
+    let serverState: MCPService.ServerState
 
     var body: some View {
         HStack(spacing: 12) {
@@ -125,9 +125,23 @@ private struct MCPServerRow: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             } else {
-                Circle()
-                    .fill(isConnected ? .green : .secondary.opacity(0.3))
-                    .frame(width: 8, height: 8)
+                switch serverState {
+                case .connected:
+                    Circle()
+                        .fill(.green)
+                        .frame(width: 8, height: 8)
+                case .connecting:
+                    ProgressView()
+                        .controlSize(.mini)
+                case .error:
+                    Circle()
+                        .fill(.red)
+                        .frame(width: 8, height: 8)
+                case .disconnected:
+                    Circle()
+                        .fill(.secondary.opacity(0.3))
+                        .frame(width: 8, height: 8)
+                }
             }
 
             Image(systemName: "chevron.right")

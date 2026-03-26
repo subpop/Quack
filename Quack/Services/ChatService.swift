@@ -25,6 +25,7 @@ final class ChatService {
     struct ActiveToolCall: Identifiable, Sendable {
         let id: String
         let name: String
+        var arguments: String?
         var state: State
 
         enum State: Sendable {
@@ -33,6 +34,17 @@ final class ChatService {
             case failed(String)
         }
     }
+
+    /// Pending tool call that requires user permission before executing.
+    struct PendingToolApproval: Identifiable, Sendable {
+        let id: String
+        let name: String
+        let arguments: String
+    }
+
+    /// User's response to a tool permission prompt.
+    var pendingApproval: PendingToolApproval?
+    var approvalContinuation: CheckedContinuation<Bool, Never>?
 
     // MARK: - Send Message
 
@@ -137,6 +149,35 @@ final class ChatService {
     func dismissError() {
         streamingError = nil
         errorSessionID = nil
+    }
+
+    /// Called by the permission wrapper when a tool needs user approval.
+    /// Suspends until the user approves or denies.
+    func requestApproval(toolName: String, arguments: String, description: String) async -> Bool {
+        await withCheckedContinuation { continuation in
+            Task { @MainActor in
+                self.pendingApproval = PendingToolApproval(
+                    id: UUID().uuidString,
+                    name: toolName,
+                    arguments: arguments
+                )
+                self.approvalContinuation = continuation
+            }
+        }
+    }
+
+    /// User approved the pending tool call.
+    func approveToolCall() {
+        approvalContinuation?.resume(returning: true)
+        approvalContinuation = nil
+        pendingApproval = nil
+    }
+
+    /// User denied the pending tool call.
+    func denyToolCall() {
+        approvalContinuation?.resume(returning: false)
+        approvalContinuation = nil
+        pendingApproval = nil
     }
 
     func regenerateLastResponse(
@@ -285,8 +326,18 @@ final class ChatService {
                     : .completed(result.content)
             }
 
-        case .finished(let tokenUsage, _, _, _):
-            _ = tokenUsage // Token usage is captured via the accumulated content
+        case .finished(_, _, _, let history):
+            // Extract tool call arguments from the finished history.
+            // The history contains AssistantMessages with ToolCalls that have arguments.
+            for message in history {
+                if case .assistant(let assistantMsg) = message {
+                    for toolCall in assistantMsg.toolCalls {
+                        if let index = activeToolCalls.firstIndex(where: { $0.id == toolCall.id }) {
+                            activeToolCalls[index].arguments = toolCall.arguments
+                        }
+                    }
+                }
+            }
 
         default:
             break
@@ -294,7 +345,7 @@ final class ChatService {
     }
 
     private func finalizeStream(sessionID: UUID, modelContext: ModelContext) {
-        guard !streamingContent.isEmpty || !streamingReasoning.isEmpty else {
+        guard !streamingContent.isEmpty || !streamingReasoning.isEmpty || !activeToolCalls.isEmpty else {
             isStreaming = false
             streamingSessionID = nil
             return
@@ -310,11 +361,15 @@ final class ChatService {
             return
         }
 
+        // Encode completed tool calls (with arguments + results) for persistence
+        let toolCallsJSON = Self.encodeCompletedToolCalls(activeToolCalls)
+
         // Create assistant message record
         let record = ChatMessageRecord(
             role: .assistant,
             content: streamingContent,
-            reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning
+            reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning,
+            toolCallsJSON: toolCallsJSON
         )
         record.session = session
         session.messages.append(record)
@@ -323,6 +378,49 @@ final class ChatService {
 
         isStreaming = false
         streamingSessionID = nil
+    }
+
+    // MARK: - Tool Call Serialization
+
+    /// Serializable representation of a completed tool call with arguments and result.
+    struct CompletedToolCallData: Codable {
+        let id: String
+        let name: String
+        let arguments: String?
+        let result: String?
+        let isError: Bool
+    }
+
+    static func encodeCompletedToolCalls(_ toolCalls: [ActiveToolCall]) -> String? {
+        let completed = toolCalls.compactMap { call -> CompletedToolCallData? in
+            switch call.state {
+            case .completed(let result):
+                return CompletedToolCallData(
+                    id: call.id, name: call.name,
+                    arguments: call.arguments, result: result, isError: false
+                )
+            case .failed(let error):
+                return CompletedToolCallData(
+                    id: call.id, name: call.name,
+                    arguments: call.arguments, result: error, isError: true
+                )
+            case .running:
+                return nil
+            }
+        }
+        guard !completed.isEmpty else { return nil }
+        guard let data = try? JSONEncoder().encode(completed),
+              let json = String(data: data, encoding: .utf8)
+        else { return nil }
+        return json
+    }
+
+    static func decodeCompletedToolCalls(from json: String?) -> [CompletedToolCallData] {
+        guard let json, !json.isEmpty,
+              let data = json.data(using: .utf8),
+              let calls = try? JSONDecoder().decode([CompletedToolCallData].self, from: data)
+        else { return [] }
+        return calls
     }
 }
 

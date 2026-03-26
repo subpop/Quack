@@ -42,6 +42,42 @@ final class MCPServerConfig {
         }
     }
 
+    /// Tool call permission level for this server.
+    var toolPermissionRaw: String?
+
+    var toolPermission: ToolPermission {
+        get { ToolPermission(rawValue: toolPermissionRaw ?? "") ?? .ask }
+        set { toolPermissionRaw = newValue.rawValue }
+    }
+
+    /// A snapshot of the configuration fields that affect MCP server connections.
+    /// Used by `onChange` to detect when a reconnection is needed.
+    var configSnapshot: ConfigSnapshot {
+        ConfigSnapshot(
+            id: id,
+            name: name,
+            command: command,
+            argumentsRaw: argumentsRaw,
+            environmentJSON: environmentJSON,
+            workingDirectory: workingDirectory,
+            isEnabled: isEnabled,
+            initializationTimeout: initializationTimeout,
+            toolCallTimeout: toolCallTimeout
+        )
+    }
+
+    struct ConfigSnapshot: Equatable {
+        let id: UUID
+        let name: String
+        let command: String
+        let argumentsRaw: String
+        let environmentJSON: String?
+        let workingDirectory: String?
+        let isEnabled: Bool
+        let initializationTimeout: Double
+        let toolCallTimeout: Double
+    }
+
     init(
         name: String = "",
         command: String = "",

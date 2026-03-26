@@ -11,11 +11,27 @@
 		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		3B7BF95F2F75862400C9A0FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B8480772F730847000F16F0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3B84807E2F730847000F16F0;
+			remoteInfo = Quack;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B84807F2F730847000F16F0 /* Quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		3B7BF95C2F75862400C9A0FD /* QuackTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = QuackTests;
+			sourceTree = "<group>";
+		};
 		3B8480812F730847000F16F0 /* Quack */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Quack;
@@ -24,6 +40,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		3B7BF9582F75862400C9A0FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B84807C2F730847000F16F0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -40,6 +63,7 @@
 			isa = PBXGroup;
 			children = (
 				3B8480812F730847000F16F0 /* Quack */,
+				3B7BF95C2F75862400C9A0FD /* QuackTests */,
 				3B8480802F730847000F16F0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -48,6 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				3B84807F2F730847000F16F0 /* Quack.app */,
+				3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -55,6 +80,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		3B7BF95A2F75862400C9A0FD /* QuackTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3B7BF9612F75862400C9A0FD /* Build configuration list for PBXNativeTarget "QuackTests" */;
+			buildPhases = (
+				3B7BF9572F75862400C9A0FD /* Sources */,
+				3B7BF9582F75862400C9A0FD /* Frameworks */,
+				3B7BF9592F75862400C9A0FD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3B7BF9602F75862400C9A0FD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3B7BF95C2F75862400C9A0FD /* QuackTests */,
+			);
+			name = QuackTests;
+			packageProductDependencies = (
+			);
+			productName = QuackTests;
+			productReference = 3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		3B84807E2F730847000F16F0 /* Quack */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3B84808C2F730848000F16F0 /* Build configuration list for PBXNativeTarget "Quack" */;
@@ -86,9 +134,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2630;
+				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					3B7BF95A2F75862400C9A0FD = {
+						CreatedOnToolsVersion = 26.4;
+						TestTargetID = 3B84807E2F730847000F16F0;
+					};
 					3B84807E2F730847000F16F0 = {
 						CreatedOnToolsVersion = 26.3;
 					};
@@ -113,11 +165,19 @@
 			projectRoot = "";
 			targets = (
 				3B84807E2F730847000F16F0 /* Quack */,
+				3B7BF95A2F75862400C9A0FD /* QuackTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		3B7BF9592F75862400C9A0FD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B84807D2F730847000F16F0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +188,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3B7BF9572F75862400C9A0FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B84807B2F730847000F16F0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,7 +204,57 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		3B7BF9602F75862400C9A0FD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3B84807E2F730847000F16F0 /* Quack */;
+			targetProxy = 3B7BF95F2F75862400C9A0FD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		3B7BF9622F75862400C9A0FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46UKXDYHHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Quack.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Quack";
+			};
+			name = Debug;
+		};
+		3B7BF9632F75862400C9A0FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 46UKXDYHHC;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 26.3;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Quack.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Quack";
+			};
+			name = Release;
+		};
 		3B84808A2F730848000F16F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -327,6 +444,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		3B7BF9612F75862400C9A0FD /* Build configuration list for PBXNativeTarget "QuackTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3B7BF9622F75862400C9A0FD /* Debug */,
+				3B7BF9632F75862400C9A0FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3B84807A2F730847000F16F0 /* Build configuration list for PBXProject "Quack" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

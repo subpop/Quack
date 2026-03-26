@@ -66,13 +66,20 @@ struct MCPServerDetailSheet: View {
                 .font(.headline)
 
             HStack(spacing: 6) {
-                let isConnected = mcpService.connectedServerNames.contains(server.name)
-                Circle()
-                    .fill(isConnected ? .green : .secondary.opacity(0.4))
-                    .frame(width: 7, height: 7)
-                Text(isConnected ? "Connected" : "Disconnected")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                switch mcpService.state(for: server.id) {
+                case .connected:
+                    Circle().fill(.green).frame(width: 7, height: 7)
+                    Text("Connected").font(.subheadline).foregroundStyle(.secondary)
+                case .connecting:
+                    ProgressView().controlSize(.mini)
+                    Text("Connecting...").font(.subheadline).foregroundStyle(.secondary)
+                case .error:
+                    Circle().fill(.red).frame(width: 7, height: 7)
+                    Text("Error").font(.subheadline).foregroundStyle(.red)
+                case .disconnected:
+                    Circle().fill(.secondary.opacity(0.4)).frame(width: 7, height: 7)
+                    Text("Not in use").font(.subheadline).foregroundStyle(.secondary)
+                }
             }
         }
         .padding(.top, 20)
@@ -90,6 +97,19 @@ struct MCPServerDetailSheet: View {
 
                 Toggle("Enabled", isOn: $server.isEnabled)
                     .onChange(of: server.isEnabled) { save() }
+
+                Picker("Tool Permissions", selection: Binding(
+                    get: { server.toolPermission },
+                    set: { newValue in
+                        server.toolPermission = newValue
+                        save()
+                    }
+                )) {
+                    ForEach(ToolPermission.allCases, id: \.self) { permission in
+                        Text(permission.label).tag(permission)
+                    }
+                }
+                .help(server.toolPermission.description)
             }
 
             // MARK: - Command
@@ -167,9 +187,9 @@ struct MCPServerDetailSheet: View {
                 }
 
                 // Connection error
-                if let error = mcpService.connectionErrors[server.name] {
+                if case .error(let message) = mcpService.state(for: server.id) {
                     Section {
-                        Text(error)
+                        Text(message)
                             .font(.caption)
                             .foregroundColor(.red)
                     }

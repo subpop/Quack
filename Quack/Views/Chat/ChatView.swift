@@ -55,6 +55,14 @@ struct ChatView: View {
                         streamingBubble
                     }
 
+                    // Tool permission prompt
+                    if let approval = chatService.pendingApproval,
+                       isStreamingThisSession {
+                        toolApprovalView(approval)
+                            .padding(.horizontal, 16)
+                            .id("approval")
+                    }
+
                     // Error display
                     if let error = chatService.streamingError,
                        chatService.errorSessionID == session.id {
@@ -94,7 +102,7 @@ struct ChatView: View {
     private var streamingBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
             // Tool calls
-            ForEach(chatService.activeToolCalls) { toolCall in
+            ForEach(chatService.activeToolCalls.map(ToolCallDisplayData.init(from:))) { toolCall in
                 ToolCallView(toolCall: toolCall)
                     .padding(.horizontal, 16)
             }
@@ -169,9 +177,67 @@ struct ChatView: View {
         .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
+    private func toolApprovalView(_ approval: ChatService.PendingToolApproval) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.shield.fill")
+                    .foregroundStyle(.orange)
+                    .font(.title3)
+                Text("Tool Permission Required")
+                    .font(.callout.weight(.semibold))
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "wrench.and.screwdriver")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text(approval.name)
+                    .font(.callout.monospaced())
+            }
+
+            if !approval.arguments.isEmpty {
+                Text(formatApprovalJSON(approval.arguments))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(6)
+                    .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            }
+
+            HStack(spacing: 12) {
+                Spacer()
+                Button("Deny") {
+                    chatService.denyToolCall()
+                }
+                .keyboardShortcut(.cancelAction)
+
+                Button("Allow") {
+                    chatService.approveToolCall()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func formatApprovalJSON(_ json: String) -> String {
+        guard let data = json.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: data),
+              let pretty = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]),
+              let result = String(data: pretty, encoding: .utf8)
+        else { return json }
+        return result
+    }
+
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
-            if chatService.streamingError != nil, chatService.errorSessionID == session.id {
+            if chatService.pendingApproval != nil, isStreamingThisSession {
+                proxy.scrollTo("approval", anchor: .bottom)
+            } else if chatService.streamingError != nil, chatService.errorSessionID == session.id {
                 proxy.scrollTo("error", anchor: .bottom)
             } else if isStreamingThisSession {
                 proxy.scrollTo("streaming", anchor: .bottom)
@@ -245,7 +311,13 @@ struct ChatView: View {
 
         inputText = ""
 
-        let tools = mcpService.tools(for: session, allConfigs: mcpServerConfigs)
+        let tools = mcpService.tools(
+            for: session,
+            allConfigs: mcpServerConfigs,
+            onApprovalNeeded: { [chatService] name, args, desc in
+                await chatService.requestApproval(toolName: name, arguments: args, description: desc)
+            }
+        )
 
         chatService.sendMessage(
             text,
@@ -258,7 +330,13 @@ struct ChatView: View {
     }
 
     private func resubmitMessage(_ message: ChatMessageRecord) {
-        let tools = mcpService.tools(for: session, allConfigs: mcpServerConfigs)
+        let tools = mcpService.tools(
+            for: session,
+            allConfigs: mcpServerConfigs,
+            onApprovalNeeded: { [chatService] name, args, desc in
+                await chatService.requestApproval(toolName: name, arguments: args, description: desc)
+            }
+        )
 
         chatService.resubmitMessage(
             message,

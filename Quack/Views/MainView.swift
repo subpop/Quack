@@ -61,6 +61,16 @@ struct MainView: View {
         }
         .onAppear {
             seedProvidersIfNeeded()
+            syncMCPServers()
+        }
+        .onChange(of: mcpServerConfigs.map(\.configSnapshot)) {
+            syncMCPServers()
+        }
+        .onChange(of: selectedSessionID) {
+            syncMCPServers()
+        }
+        .onChange(of: selectedSession?.enabledMCPServerIDsRaw) {
+            syncMCPServers()
         }
         .onReceive(NotificationCenter.default.publisher(for: .newChat)) { _ in
             createNewChat()
@@ -76,6 +86,25 @@ struct MainView: View {
         modelContext.insert(session)
         try? modelContext.save()
         selectedSessionID = session.id
+    }
+
+    /// Sync MCP server connections to match what the current session needs.
+    ///
+    /// Only servers that are both globally enabled and enabled for the current
+    /// session will be running. When switching sessions, servers that the new
+    /// session doesn't need are stopped, and servers it does need are started.
+    private func syncMCPServers() {
+        guard let session = selectedSession else {
+            mcpService.disconnectAll()
+            return
+        }
+
+        let enabledIDs = session.enabledMCPServerIDs ?? []
+        // Only include servers that are also globally enabled
+        let globallyEnabled = Set(mcpServerConfigs.filter(\.isEnabled).map(\.id))
+        let desired = Set(enabledIDs).intersection(globallyEnabled)
+
+        mcpService.syncServers(desired: desired, allConfigs: mcpServerConfigs)
     }
 
     /// On first launch, seed the built-in provider definitions.
