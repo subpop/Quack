@@ -1,4 +1,5 @@
 import SwiftUI
+import AgentRunKit
 
 // MARK: - Unified Tool Call Display Data
 
@@ -112,14 +113,14 @@ struct ToolCallView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     // Arguments
                     if let args = toolCall.arguments, !args.isEmpty {
-                        detailSection(title: "Parameters", content: formatJSON(args), style: .secondary)
+                        structuredDetailSection(title: "Parameters", jsonString: args)
                     }
 
                     // Result
                     switch toolCall.state {
                     case .completed(let result):
                         if !result.isEmpty {
-                            detailSection(title: "Result", content: result, style: .secondary)
+                            structuredDetailSection(title: "Result", jsonString: result)
                         }
                     case .failed(let error):
                         detailSection(title: "Error", content: error, style: .red)
@@ -151,14 +152,29 @@ struct ToolCallView: View {
         }
     }
 
-    /// Try to pretty-print JSON, fall back to raw string.
-    private func formatJSON(_ json: String) -> String {
-        guard let data = json.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data),
-              let pretty = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]),
-              let result = String(data: pretty, encoding: .utf8)
-        else { return json }
-        return result
+    /// Renders a JSON string as a structured key-value tree, falling back to
+    /// plain text if the string isn't valid JSON.
+    private func structuredDetailSection(title: String, jsonString: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+
+            Group {
+                if let jsonValue = JSONValue.parse(jsonString) {
+                    StructuredContentView(jsonValue)
+                } else {
+                    Text(jsonString)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(12)
+                }
+            }
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(6)
+            .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
+        }
     }
 
     private var iconName: String {

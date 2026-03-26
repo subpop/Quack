@@ -1,15 +1,6 @@
 {
-  "originHash" : "c67c573ba6066966aed1e6f744cd5860a2b86ebc9da07add83d4f4815e6bd5e6",
+  "originHash" : "c5dcd3a394f8f584efccf5660444a82b71d463fab02fd511ba03cac9c25ba12d",
   "pins" : [
-    {
-      "identity" : "agentrunkit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Tom-Ryder/AgentRunKit.git",
-      "state" : {
-        "revision" : "597966dd4680f05f29994c4db64bb18ab30e2775",
-        "version" : "1.22.0"
-      }
-    },
     {
       "identity" : "mlx-swift",
       "kind" : "remoteSourceControl",

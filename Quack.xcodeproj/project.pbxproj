@@ -159,7 +159,7 @@
 			mainGroup = 3B8480762F730847000F16F0;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */,
+				3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */,
 				3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -476,15 +476,14 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Tom-Ryder/AgentRunKit.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.22.0;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../AgentRunKit;
 		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
 		3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/swiftlang/swift-markdown.git";
@@ -498,18 +497,18 @@
 /* Begin XCSwiftPackageProductDependency section */
 		3BA00011300000000000F011 /* AgentRunKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
+			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
 			productName = AgentRunKit;
-		};
-		3BA00013300000000000F013 /* AgentRunKitFoundationModels */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
-			productName = AgentRunKitFoundationModels;
 		};
 		3BA00012300000000000F012 /* Markdown */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */;
 			productName = Markdown;
+		};
+		3BA00013300000000000F013 /* AgentRunKitFoundationModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			productName = AgentRunKitFoundationModels;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

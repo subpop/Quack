@@ -196,13 +196,20 @@ struct ChatView: View {
             }
 
             if !approval.arguments.isEmpty {
-                Text(formatApprovalJSON(approval.arguments))
-                    .font(.caption.monospaced())
-                    .foregroundStyle(.secondary)
-                    .lineLimit(6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(6)
-                    .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                if let jsonValue = JSONValue.parse(approval.arguments) {
+                    StructuredContentView(jsonValue)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(6)
+                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                } else {
+                    Text(approval.arguments)
+                        .font(.caption.monospaced())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(6)
+                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                }
             }
 
             HStack(spacing: 12) {
@@ -224,14 +231,7 @@ struct ChatView: View {
         .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func formatApprovalJSON(_ json: String) -> String {
-        guard let data = json.data(using: .utf8),
-              let obj = try? JSONSerialization.jsonObject(with: data),
-              let pretty = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]),
-              let result = String(data: pretty, encoding: .utf8)
-        else { return json }
-        return result
-    }
+
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
