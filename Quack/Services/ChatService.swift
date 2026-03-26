@@ -21,6 +21,9 @@ final class ChatService {
     var errorSessionID: UUID?
 
     private var streamTask: Task<Void, Never>?
+    private var streamedInputTokens: Int?
+    private var streamedOutputTokens: Int?
+    private var streamedReasoningTokens: Int?
 
     struct ActiveToolCall: Identifiable, Sendable {
         let id: String
@@ -102,6 +105,9 @@ final class ChatService {
         streamingError = nil
         errorSessionID = nil
         activeToolCalls = []
+        streamedInputTokens = nil
+        streamedOutputTokens = nil
+        streamedReasoningTokens = nil
         isStreaming = true
         streamingSessionID = session.id
 
@@ -271,6 +277,9 @@ final class ChatService {
         streamingError = nil
         errorSessionID = nil
         activeToolCalls = []
+        streamedInputTokens = nil
+        streamedOutputTokens = nil
+        streamedReasoningTokens = nil
         isStreaming = true
         streamingSessionID = session.id
 
@@ -326,7 +335,10 @@ final class ChatService {
                     : .completed(result.content)
             }
 
-        case .finished(_, _, _, let history):
+        case .finished(let usage, _, _, let history):
+            streamedInputTokens = usage.input
+            streamedOutputTokens = usage.output
+            streamedReasoningTokens = usage.reasoning
             // Extract tool call arguments from the finished history.
             // The history contains AssistantMessages with ToolCalls that have arguments.
             for message in history {
@@ -369,6 +381,9 @@ final class ChatService {
             role: .assistant,
             content: streamingContent,
             reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning,
+            inputTokens: streamedInputTokens,
+            outputTokens: streamedOutputTokens,
+            reasoningTokens: streamedReasoningTokens,
             toolCallsJSON: toolCallsJSON
         )
         record.session = session
