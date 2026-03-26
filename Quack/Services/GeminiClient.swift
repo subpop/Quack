@@ -256,4 +256,54 @@ extension GeminiClient: LLMProvider {
             retryPolicy: resolveRetryPolicy(from: provider)
         )
     }
+
+    // MARK: - Model Listing
+
+    /// Queries the Gemini `GET /v1beta/models` endpoint for available models.
+    ///
+    /// The base URL stored on the provider typically points at
+    /// `https://generativelanguage.googleapis.com/v1beta/models`.
+    /// This method queries that URL (with the API key) and extracts model names.
+    static func listModels(for provider: Provider) async throws -> [String] {
+        guard let apiKey = resolveAPIKey(for: provider) else { return [] }
+        guard let baseURL = resolveBaseURL(from: provider) else { return [] }
+
+        // The base URL is .../v1beta/models — query it directly with the API key
+        var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        // Preserve existing path, just add query parameter
+        var queryItems = components?.queryItems ?? []
+        queryItems.append(URLQueryItem(name: "key", value: apiKey))
+        components?.queryItems = queryItems
+
+        guard let listURL = components?.url else { return [] }
+
+        var request = URLRequest(url: listURL)
+        request.httpMethod = "GET"
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return []
+        }
+
+        struct GeminiModelsResponse: Decodable {
+            struct ModelInfo: Decodable {
+                let name: String  // e.g. "models/gemini-2.5-flash"
+            }
+            let models: [ModelInfo]
+        }
+
+        let decoded = try JSONDecoder().decode(GeminiModelsResponse.self, from: data)
+
+        return decoded.models
+            .map { name in
+                // Strip "models/" prefix if present
+                if name.name.hasPrefix("models/") {
+                    return String(name.name.dropFirst(7))
+                }
+                return name.name
+            }
+            .sorted()
+    }
 }

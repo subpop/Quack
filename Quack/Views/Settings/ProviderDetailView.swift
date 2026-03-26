@@ -12,7 +12,6 @@ struct ProviderDetailSheet: View {
 
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
-    @State private var suggestedModelsText: String = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,7 +24,6 @@ struct ProviderDetailSheet: View {
         .frame(width: 500, height: 580)
         .onAppear {
             loadAPIKey()
-            suggestedModelsText = provider.suggestedModels.joined(separator: "\n")
         }
     }
 
@@ -121,33 +119,17 @@ struct ProviderDetailSheet: View {
 
             // MARK: - Model
             Section {
-                LabeledContent("Model") {
-
-                    HStack {
-                        TextField("", text: $provider.defaultModel, prompt: Text("model-name"))
-                            .font(.system(.body, design: .monospaced))
-                            .onChange(of: provider.defaultModel) {
-                                save()
-                                providerService.invalidateCache()
-                            }
-
-                        if !provider.suggestedModels.isEmpty {
-                            Menu {
-                                ForEach(provider.suggestedModels, id: \.self) { model in
-                                    Button(model) {
-                                        provider.defaultModel = model
-                                        save()
-                                        providerService.invalidateCache()
-                                    }
-                                }
-                            } label: {
-                                Image(systemName: "chevron.down.circle")
-                            }
-                            .menuStyle(.borderlessButton)
-                            .fixedSize()
+                ModelPicker(
+                    selection: Binding(
+                        get: { provider.defaultModel },
+                        set: { newValue in
+                            provider.defaultModel = newValue
+                            save()
+                            providerService.invalidateCache()
                         }
-                    }
-                }
+                    ),
+                    provider: provider
+                )
 
                 Picker("Reasoning Effort", selection: Binding(
                     get: { provider.reasoningEffort },

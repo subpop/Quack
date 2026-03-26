@@ -68,4 +68,23 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .vertexAnthropic: VertexAnthropicClient.self
         }
     }
+
+    /// Hardcoded fallback model list used when the provider API is unavailable
+    /// or does not support model listing.
+    var knownModels: [String] {
+        switch self {
+        case .openAICompatible:
+            ["gpt-4o", "gpt-4o-mini", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o3", "o4-mini"]
+        case .anthropic:
+            ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-3-5-20241022"]
+        case .foundationModels:
+            []
+        case .gemini:
+            ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
+        case .vertexGemini:
+            ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
+        case .vertexAnthropic:
+            ["claude-opus-4-6", "claude-sonnet-4-6", "claude-sonnet-4-5@20250929", "claude-haiku-4-5@20251001"]
+        }
+    }
 }

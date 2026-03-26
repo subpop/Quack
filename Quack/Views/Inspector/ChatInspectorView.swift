@@ -37,30 +37,13 @@ struct ChatInspectorView: View {
             }
 
             let effectiveProvider = providerService.resolvedProvider(for: session, providers: providers)
-            let suggestions = effectiveProvider?.suggestedModels ?? []
 
-            HStack {
-                TextField(
-                    "Model",
-                    text: modelBinding,
-                    prompt: Text(providerService.resolvedModel(for: session, providers: providers))
+            if let effectiveProvider {
+                ModelPicker(
+                    selection: modelBinding,
+                    provider: effectiveProvider,
+                    placeholder: "Default (\(providerService.resolvedModel(for: session, providers: providers)))"
                 )
-                .textFieldStyle(.roundedBorder)
-
-                if !suggestions.isEmpty {
-                    Menu {
-                        ForEach(suggestions, id: \.self) { model in
-                            Button(model) {
-                                session.modelIdentifier = model
-                                save()
-                            }
-                        }
-                    } label: {
-                        Image(systemName: "chevron.down.circle")
-                    }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
-                }
             }
         }
     }

@@ -6,6 +6,7 @@ struct QuackApp: App {
     @State private var providerService = ProviderService()
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
+    @State private var modelListService = ModelListService()
 
     @Environment(\.openWindow) private var openWindow
 
@@ -31,6 +32,7 @@ struct QuackApp: App {
                 .environment(providerService)
                 .environment(chatService)
                 .environment(mcpService)
+                .environment(modelListService)
         }
         .modelContainer(sharedModelContainer)
         .commands {
@@ -60,6 +62,7 @@ struct QuackApp: App {
                 .environment(providerService)
                 .environment(chatService)
                 .environment(mcpService)
+                .environment(modelListService)
                 .modelContainer(sharedModelContainer)
         }
     }

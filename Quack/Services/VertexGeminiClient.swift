@@ -327,4 +327,59 @@ extension VertexGeminiClient: LLMProvider {
             retryPolicy: resolveRetryPolicy(from: provider)
         )
     }
+
+    // MARK: - Model Listing
+
+    /// Queries the Vertex AI endpoint for available Gemini models.
+    ///
+    /// URL: `{baseURL}/publishers/google/models`
+    /// Auth: OAuth2 bearer token from Application Default Credentials.
+    static func listModels(for provider: Provider) async throws -> [String] {
+        guard let baseURL = resolveBaseURL(from: provider) else { return [] }
+
+        let authProvider: GoogleAuthProvider
+        do {
+            authProvider = try GoogleAuthProvider()
+        } catch {
+            return []
+        }
+
+        var baseString = baseURL.absoluteString
+        if !baseString.hasSuffix("/") { baseString += "/" }
+        let urlString = "\(baseString)publishers/google/models"
+
+        guard let listURL = URL(string: urlString) else { return [] }
+
+        var request = URLRequest(url: listURL)
+        request.httpMethod = "GET"
+
+        let token = try await authProvider.accessToken()
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            return []
+        }
+
+        struct VertexModelsResponse: Decodable {
+            struct ModelInfo: Decodable {
+                let name: String  // e.g. "publishers/google/models/gemini-2.5-flash"
+            }
+            let models: [ModelInfo]?
+        }
+
+        let decoded = try JSONDecoder().decode(VertexModelsResponse.self, from: data)
+
+        return (decoded.models ?? [])
+            .map { info in
+                // Strip "publishers/google/models/" prefix
+                if let range = info.name.range(of: "publishers/google/models/") {
+                    return String(info.name[range.upperBound...])
+                }
+                return info.name
+            }
+            .sorted()
+    }
 }

@@ -38,6 +38,14 @@ protocol LLMProvider: Sendable {
         maxTokens: Int,
         reasoningConfig: ReasoningConfig?
     ) -> (any LLMClient)?
+
+    /// Query the provider's API for available model identifiers.
+    ///
+    /// Returns an array of model ID strings sorted alphabetically.
+    /// Throws if the network request fails or the response is unparseable.
+    /// The default implementation returns an empty array, signaling that
+    /// the caller should fall back to `ProviderKind.knownModels`.
+    static func listModels(for provider: Provider) async throws -> [String]
 }
 
 // MARK: - Defaults
@@ -45,6 +53,7 @@ protocol LLMProvider: Sendable {
 extension LLMProvider {
     static var defaultBaseURL: String? { nil }
     static var supportsCaching: Bool { false }
+    static func listModels(for provider: Provider) async throws -> [String] { [] }
 }
 
 // MARK: - Shared Helpers
