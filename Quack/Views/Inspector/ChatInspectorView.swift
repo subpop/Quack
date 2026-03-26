@@ -79,7 +79,8 @@ struct ChatInspectorView: View {
                 TextField(
                     "",
                     value: $session.maxTokens,
-                    format: .number
+                    format: .number,
+                    prompt: Text(effectiveMaxTokensPlaceholder)
                 )
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 100)
@@ -260,6 +261,12 @@ struct ChatInspectorView: View {
     }
 
     // MARK: - Bindings
+
+    private var effectiveMaxTokensPlaceholder: String {
+        let provider = providerService.resolvedProvider(for: session, providers: providers)
+        let tokens = provider?.maxTokens ?? 4096
+        return tokens.formatted()
+    }
 
     private var providerBinding: Binding<UUID?> {
         Binding(

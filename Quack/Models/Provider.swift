@@ -123,7 +123,7 @@ final class Provider {
                 baseURL: "https://api.anthropic.com/v1",
                 requiresAPIKey: true,
                 defaultModel: "claude-sonnet-4-20250514",
-                maxTokens: 8192,
+                maxTokens: 40_000,
                 contextWindowSize: 200_000
             ),
             Provider(
@@ -151,7 +151,7 @@ final class Provider {
                 sortOrder: 4,
                 requiresAPIKey: true,
                 defaultModel: "gemini-2.5-flash",
-                maxTokens: 8192,
+                maxTokens: 40_000,
                 contextWindowSize: 1_048_576
             ),
             Provider(
@@ -160,7 +160,7 @@ final class Provider {
                 sortOrder: 5,
                 requiresAPIKey: false,
                 defaultModel: "gemini-2.5-flash",
-                maxTokens: 8192,
+                maxTokens: 40_000,
                 contextWindowSize: 1_048_576,
                 projectID: "my-project",
                 location: "us-central1"
@@ -171,7 +171,7 @@ final class Provider {
                 sortOrder: 6,
                 requiresAPIKey: false,
                 defaultModel: "claude-sonnet-4-6",
-                maxTokens: 8192,
+                maxTokens: 40_000,
                 contextWindowSize: 200_000,
                 projectID: "my-project",
                 location: "us-east5"
