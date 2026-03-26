@@ -95,20 +95,19 @@ struct ProviderDetailSheet: View {
             if provider.requiresAPIKey || provider.kind.providerType.requiresBaseURL {
                 Section {
                     if provider.kind.providerType.requiresBaseURL {
-                        LabeledContent("URL") {
-                            TextField(
-                                "",
-                                text: Binding(
-                                    get: { provider.baseURL ?? "" },
-                                    set: { provider.baseURL = $0.isEmpty ? nil : $0 }
-                                ),
-                                prompt: Text("https://api.example.com/v1")
-                            )
-                            .font(.system(.body, design: .monospaced))
-                            .onChange(of: provider.baseURL) {
-                                save()
-                                providerService.invalidateCache()
-                            }
+                        TextField(
+                            text: Binding(
+                                get: { provider.baseURL ?? "" },
+                                set: { provider.baseURL = $0.isEmpty ? nil : $0 }
+                            ),
+                            prompt: Text("https://api.example.com/v1")
+                        ) {
+                            Text("URL").font(.body)
+                        }
+                        .font(.system(.body, design: .monospaced))
+                        .onChange(of: provider.baseURL) {
+                            save()
+                            providerService.invalidateCache()
                         }
                     }
 
@@ -348,3 +347,13 @@ struct ProviderDetailSheet: View {
     ProviderDetailSheet(provider: data.providers[1])
         .previewEnvironment(container: container)
 }
+#Preview("Provider Sheet - Google AI") {
+    let container = PreviewSupport.container
+    let data = PreviewSupport.seed(container)
+
+    ProviderDetailSheet(provider: data.providers[4])
+        .previewEnvironment(container: container)
+}
+
+
+
