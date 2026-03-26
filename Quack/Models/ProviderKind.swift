@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import AgentRunKit
+import AgentRunKitFoundationModels
 
 /// The API wire protocol used to communicate with a provider's backend.
 /// This enum is intentionally small -- it represents the shape of the HTTP API,
@@ -62,9 +63,9 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
         switch self {
         case .openAICompatible: OpenAIClient.self
         case .anthropic: AnthropicClient.self
-        case .foundationModels: FoundationModelsLLMClient.self
+        case .foundationModels: FoundationModelsClient<EmptyContext>.self
         case .gemini: GeminiClient.self
-        case .vertexGemini: VertexGeminiClient.self
+        case .vertexGemini: VertexGoogleClient.self
         case .vertexAnthropic: VertexAnthropicClient.self
         }
     }

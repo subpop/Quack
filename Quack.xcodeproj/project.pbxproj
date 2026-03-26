@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		3BA00001300000000000F001 /* AgentRunKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00011300000000000F011 /* AgentRunKit */; };
 		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
+		3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00013300000000000F013 /* AgentRunKitFoundationModels */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +53,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3BA00001300000000000F001 /* AgentRunKit in Frameworks */,
+				3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */,
 				3BA00002300000000000F002 /* Markdown in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -121,6 +123,7 @@
 			name = Quack;
 			packageProductDependencies = (
 				3BA00011300000000000F011 /* AgentRunKit */,
+				3BA00013300000000000F013 /* AgentRunKitFoundationModels */,
 				3BA00012300000000000F012 /* Markdown */,
 			);
 			productName = Quack;
@@ -479,7 +482,7 @@
 			repositoryURL = "https://github.com/Tom-Ryder/AgentRunKit.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.20.0;
+				minimumVersion = 1.22.0;
 			};
 		};
 		3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
@@ -497,6 +500,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
 			productName = AgentRunKit;
+		};
+		3BA00013300000000000F013 /* AgentRunKitFoundationModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
+			productName = AgentRunKitFoundationModels;
 		};
 		3BA00012300000000000F012 /* Markdown */ = {
 			isa = XCSwiftPackageProductDependency;

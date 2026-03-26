@@ -19,6 +19,11 @@ final class Provider {
     var baseURL: String?
     var requiresAPIKey: Bool
 
+    // MARK: - Vertex AI
+
+    var projectID: String?
+    var location: String?
+
     // MARK: - Model Defaults
 
     var defaultModel: String
@@ -58,7 +63,9 @@ final class Provider {
         defaultModel: String = "",
         maxTokens: Int = 4096,
         contextWindowSize: Int? = nil,
-        cachingEnabled: Bool = false
+        cachingEnabled: Bool = false,
+        projectID: String? = nil,
+        location: String? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -71,6 +78,8 @@ final class Provider {
         self.maxTokens = maxTokens
         self.contextWindowSize = contextWindowSize
         self.cachingEnabled = cachingEnabled
+        self.projectID = projectID
+        self.location = location
         self.retryMaxAttempts = 3
         self.retryBaseDelay = 1.0
         self.retryMaxDelay = 30.0
@@ -140,7 +149,6 @@ final class Provider {
                 name: "Google AI",
                 kind: .gemini,
                 sortOrder: 4,
-                baseURL: "https://generativelanguage.googleapis.com/v1beta/models",
                 requiresAPIKey: true,
                 defaultModel: "gemini-2.5-flash",
                 maxTokens: 8192,
@@ -150,21 +158,23 @@ final class Provider {
                 name: "Vertex AI (Gemini)",
                 kind: .vertexGemini,
                 sortOrder: 5,
-                baseURL: "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1",
                 requiresAPIKey: false,
                 defaultModel: "gemini-2.5-flash",
                 maxTokens: 8192,
-                contextWindowSize: 1_048_576
+                contextWindowSize: 1_048_576,
+                projectID: "my-project",
+                location: "us-central1"
             ),
             Provider(
                 name: "Vertex AI (Claude)",
                 kind: .vertexAnthropic,
                 sortOrder: 6,
-                baseURL: "https://us-east5-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-east5",
                 requiresAPIKey: false,
                 defaultModel: "claude-sonnet-4-6",
                 maxTokens: 8192,
-                contextWindowSize: 200_000
+                contextWindowSize: 200_000,
+                projectID: "my-project",
+                location: "us-east5"
             ),
         ]
     }

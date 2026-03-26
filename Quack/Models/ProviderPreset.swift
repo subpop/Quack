@@ -80,7 +80,7 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
         case .ollama:     "http://localhost:11434/v1"
         case .openAI:     "https://api.openai.com/v1"
         case .anthropic:  "https://api.anthropic.com/v1"
-        case .gemini:     "https://generativelanguage.googleapis.com/v1beta/models"
+        case .gemini:     nil
         case .openRouter: "https://openrouter.ai/api/v1"
         case .groq:       "https://api.groq.com/openai/v1"
         case .together:   "https://api.together.xyz/v1"

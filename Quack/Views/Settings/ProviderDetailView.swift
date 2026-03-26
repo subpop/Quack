@@ -92,7 +92,7 @@ struct ProviderDetailSheet: View {
             }
 
             // MARK: - Connection
-            if provider.requiresAPIKey || provider.kind.providerType.requiresBaseURL {
+            if provider.requiresAPIKey || provider.kind.providerType.requiresBaseURL || isVertexProvider {
                 Section {
                     if provider.kind.providerType.requiresBaseURL {
                         TextField(
@@ -106,6 +106,38 @@ struct ProviderDetailSheet: View {
                         }
                         .font(.system(.body, design: .monospaced))
                         .onChange(of: provider.baseURL) {
+                            save()
+                            providerService.invalidateCache()
+                        }
+                    }
+
+                    if isVertexProvider {
+                        TextField(
+                            text: Binding(
+                                get: { provider.projectID ?? "" },
+                                set: { provider.projectID = $0.isEmpty ? nil : $0 }
+                            ),
+                            prompt: Text("my-gcp-project")
+                        ) {
+                            Text("Project ID").font(.body)
+                        }
+                        .font(.system(.body, design: .monospaced))
+                        .onChange(of: provider.projectID) {
+                            save()
+                            providerService.invalidateCache()
+                        }
+
+                        TextField(
+                            text: Binding(
+                                get: { provider.location ?? "" },
+                                set: { provider.location = $0.isEmpty ? nil : $0 }
+                            ),
+                            prompt: Text("us-central1")
+                        ) {
+                            Text("Location").font(.body)
+                        }
+                        .font(.system(.body, design: .monospaced))
+                        .onChange(of: provider.location) {
                             save()
                             providerService.invalidateCache()
                         }
@@ -280,6 +312,10 @@ struct ProviderDetailSheet: View {
     }
 
     // MARK: - Helpers
+
+    private var isVertexProvider: Bool {
+        provider.kind == .vertexGemini || provider.kind == .vertexAnthropic
+    }
 
     @ViewBuilder
     private var providerIcon: some View {
