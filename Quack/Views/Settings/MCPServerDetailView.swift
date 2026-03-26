@@ -19,6 +19,7 @@ struct MCPServerDetailSheet: View {
 
     @State private var argumentsText: String = ""
     @State private var envVariables: [EnvVariable] = []
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,6 +35,17 @@ struct MCPServerDetailSheet: View {
             envVariables = server.environmentVariables
                 .sorted(by: { $0.key < $1.key })
                 .map { EnvVariable(key: $0.key, value: $0.value) }
+        }
+        .alert(
+            "Delete Server",
+            isPresented: $showingDeleteConfirmation
+        ) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteServer()
+            }
+        } message: {
+            Text("Are you sure you want to delete \"\(server.name.isEmpty ? "Unnamed Server" : server.name)\"? This action cannot be undone.")
         }
     }
 
@@ -171,6 +183,9 @@ struct MCPServerDetailSheet: View {
 
     private var sheetFooter: some View {
         HStack {
+            Button("Delete\u{2026}", role: .destructive) {
+                showingDeleteConfirmation = true
+            }
             Spacer()
             Button("Done") {
                 dismiss()
@@ -239,6 +254,12 @@ struct MCPServerDetailSheet: View {
 
     private func save() {
         try? modelContext.save()
+    }
+
+    private func deleteServer() {
+        modelContext.delete(server)
+        try? modelContext.save()
+        dismiss()
     }
 }
 

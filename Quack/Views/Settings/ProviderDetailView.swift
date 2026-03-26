@@ -12,6 +12,7 @@ struct ProviderDetailSheet: View {
 
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
+    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -24,6 +25,17 @@ struct ProviderDetailSheet: View {
         .frame(width: 500, height: 580)
         .onAppear {
             loadAPIKey()
+        }
+        .alert(
+            "Delete Provider",
+            isPresented: $showingDeleteConfirmation
+        ) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteProvider()
+            }
+        } message: {
+            Text("Are you sure you want to delete \"\(provider.name)\"? This action cannot be undone.")
         }
     }
 
@@ -241,6 +253,9 @@ struct ProviderDetailSheet: View {
 
     private var sheetFooter: some View {
         HStack {
+            Button("Delete\u{2026}", role: .destructive) {
+                showingDeleteConfirmation = true
+            }
             Spacer()
             Button("Done") {
                 dismiss()
@@ -289,6 +304,16 @@ struct ProviderDetailSheet: View {
 
     private func save() {
         try? modelContext.save()
+    }
+
+    private func deleteProvider() {
+        KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
+        if providerService.defaultProviderID == provider.id {
+            providerService.defaultProviderID = nil
+        }
+        modelContext.delete(provider)
+        try? modelContext.save()
+        dismiss()
     }
 }
 
