@@ -95,6 +95,23 @@ final class Provider {
     static func builtInProviders() -> [Provider] {
         [
             Provider(
+                name: "Apple Intelligence",
+                kind: .foundationModels,
+                isEnabled: true,
+                sortOrder: 3,
+                requiresAPIKey: false,
+                defaultModel: "on-device",
+                suggestedModels: ["on-device"],
+                maxTokens: 4096,
+                contextWindowSize: 4096
+            ),
+        ]
+    }
+
+    /// Create a set of providers for use in previews.
+    static func previewProviders() -> [Provider] {
+        [
+            Provider(
                 name: "OpenAI",
                 kind: .openAICompatible,
                 sortOrder: 0,

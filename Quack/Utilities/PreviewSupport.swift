@@ -23,7 +23,7 @@ enum PreviewSupport {
         let context = container.mainContext
 
         // Providers
-        let providers = Provider.builtInProviders()
+        let providers = Provider.previewProviders()
         for p in providers { context.insert(p) }
 
         let openAI = providers[0]
