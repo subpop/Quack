@@ -98,7 +98,7 @@ struct MCPServerDetailSheet: View {
                 Toggle("Enabled", isOn: $server.isEnabled)
                     .onChange(of: server.isEnabled) { save() }
 
-                Picker("Tool Permissions", selection: Binding(
+                Picker("Default Tool Permission", selection: Binding(
                     get: { server.toolPermission },
                     set: { newValue in
                         server.toolPermission = newValue

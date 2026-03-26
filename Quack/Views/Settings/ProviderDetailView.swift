@@ -246,7 +246,7 @@ struct ProviderDetailSheet: View {
                         .multilineTextAlignment(.trailing)
                         .onChange(of: provider.retryMaxDelay) { save() }
                 }, label: {
-                    Text("Max Delay")
+                    Text("Maximum Delay")
                     Text("The maximum number of seconds the app will wait between retries, capping the exponential backoff so delays don't grow indefinitely.")
                 })
             }
