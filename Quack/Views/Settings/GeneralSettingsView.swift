@@ -22,8 +22,18 @@ struct GeneralSettingsView: View {
                     Text("None").tag(nil as UUID?)
                     Divider()
                     ForEach(providers.filter(\.isEnabled)) { provider in
-                        Label(provider.name, systemImage: provider.iconName)
-                            .tag(provider.id as UUID?)
+                        Label {
+                            Text(provider.name)
+                        } icon: {
+                            if provider.kind.isCustomIcon {
+                                provider.kind.icon
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } else {
+                                provider.kind.icon
+                            }
+                        }
+                        .tag(provider.id as UUID?)
                     }
                 }
 

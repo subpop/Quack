@@ -1,328 +1,308 @@
 import SwiftUI
 import SwiftData
 
-struct ProviderDetailView: View {
+// MARK: - Provider Detail Sheet
+
+struct ProviderDetailSheet: View {
     @Bindable var provider: Provider
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Environment(ProviderService.self) private var providerService
 
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
-    @State private var keychainSaveStatus: String?
     @State private var suggestedModelsText: String = ""
 
     var body: some View {
-        Form {
-            identitySection
-            if provider.requiresAPIKey {
-                apiKeySection
-            }
-            connectionSection
-            modelSection
-            advancedSection
-            if provider.kind.providerType.supportsCaching {
-                cachingSection
-            }
-            retrySection
-            defaultProviderSection
+        VStack(spacing: 0) {
+            sheetHeader
+            Divider()
+            sheetForm
+            Divider()
+            sheetFooter
         }
-        .formStyle(.grouped)
+        .frame(width: 500, height: 580)
         .onAppear {
             loadAPIKey()
             suggestedModelsText = provider.suggestedModels.joined(separator: "\n")
         }
     }
 
-    // MARK: - Identity
+    // MARK: - Header
 
-    private var identitySection: some View {
-        Section {
-            Toggle("Enabled", isOn: $provider.isEnabled)
-                .onChange(of: provider.isEnabled) {
-                    save()
-                    providerService.invalidateCache()
-                }
+    private var sheetHeader: some View {
+        VStack(spacing: 6) {
+            providerIcon
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(iconColor.gradient)
+                )
 
-            TextField("Name", text: $provider.name)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: provider.name) { save() }
-
-            HStack {
-                Text("Icon")
-                Spacer()
-                TextField("SF Symbol name", text: $provider.iconName)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 200)
-                    .onChange(of: provider.iconName) { save() }
-                Image(systemName: provider.iconName)
-                    .frame(width: 20)
-            }
-
-            LabeledContent("Type") {
-                Text(provider.kind.displayName)
-                    .foregroundStyle(.secondary)
-            }
-        } header: {
             Text(provider.name)
+                .font(.headline)
+            Text(provider.kind.displayName)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
+        .padding(.top, 20)
+        .padding(.bottom, 16)
     }
 
-    // MARK: - API Key
+    // MARK: - Form
 
-    private var apiKeySection: some View {
-        Section("API Key") {
-            HStack {
-                if showAPIKey {
-                    TextField("API Key", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.body.monospaced())
-                } else {
-                    SecureField("API Key", text: $apiKey)
-                        .textFieldStyle(.roundedBorder)
-                }
+    private var sheetForm: some View {
+        Form {
+            // MARK: - Identity
+            Section {
+                TextField("Name", text: $provider.name, prompt: Text("Provider name"))
+                    .onChange(of: provider.name) { save() }
 
-                Button {
-                    showAPIKey.toggle()
-                } label: {
-                    Image(systemName: showAPIKey ? "eye.slash" : "eye")
-                }
-                .buttonStyle(.borderless)
-            }
-
-            HStack {
-                Button("Save Key") {
-                    saveAPIKey()
-                }
-                .disabled(apiKey.isEmpty)
-
-                if !apiKey.isEmpty {
-                    Button("Clear Saved Key") {
-                        KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
-                        apiKey = ""
-                        keychainSaveStatus = "Key cleared"
-                        providerService.invalidateCache()
-                    }
-                }
-
-                if let status = keychainSaveStatus {
-                    Text(status)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Toggle("Requires API Key", isOn: $provider.requiresAPIKey)
-                .onChange(of: provider.requiresAPIKey) { save() }
-        }
-    }
-
-    // MARK: - Connection
-
-    private var connectionSection: some View {
-        Section("Connection") {
-            if provider.kind.providerType.requiresBaseURL {
-                HStack {
-                    Text("Base URL")
-                    Spacer()
-                    TextField(
-                        "https://api.example.com/v1",
-                        text: Binding(
-                            get: { provider.baseURL ?? "" },
-                            set: { provider.baseURL = $0.isEmpty ? nil : $0 }
-                        )
-                    )
-                    .textFieldStyle(.roundedBorder)
-                    .frame(maxWidth: 300)
-                    .onChange(of: provider.baseURL) {
+                Toggle("Enabled", isOn: $provider.isEnabled)
+                    .onChange(of: provider.isEnabled) {
                         save()
                         providerService.invalidateCache()
                     }
-                }
             }
-        }
-    }
 
-    // MARK: - Model
-
-    private var modelSection: some View {
-        Section("Model") {
-            HStack {
-                TextField("Default Model", text: $provider.defaultModel)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: provider.defaultModel) {
-                        save()
-                        providerService.invalidateCache()
-                    }
-
-                if !provider.suggestedModels.isEmpty {
-                    Menu {
-                        ForEach(provider.suggestedModels, id: \.self) { model in
-                            Button(model) {
-                                provider.defaultModel = model
+            // MARK: - Connection
+            if provider.requiresAPIKey || provider.kind.providerType.requiresBaseURL {
+                Section {
+                    if provider.kind.providerType.requiresBaseURL {
+                        LabeledContent("URL") {
+                            TextField(
+                                "",
+                                text: Binding(
+                                    get: { provider.baseURL ?? "" },
+                                    set: { provider.baseURL = $0.isEmpty ? nil : $0 }
+                                ),
+                                prompt: Text("https://api.example.com/v1")
+                            )
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: provider.baseURL) {
                                 save()
                                 providerService.invalidateCache()
                             }
                         }
-                    } label: {
-                        Image(systemName: "chevron.down.circle")
                     }
-                    .menuStyle(.borderlessButton)
-                    .fixedSize()
+
+                    if provider.requiresAPIKey {
+                        LabeledContent("API Key") {
+                            HStack {
+                                if showAPIKey {
+                                    TextField("", text: $apiKey, prompt: Text("•••••••••••••••"))
+                                        .font(.system(.body, design: .monospaced))
+                                } else {
+                                    SecureField("", text: $apiKey, prompt: Text("sk-01234deadbeef"))
+                                }
+
+                                Button {
+                                    showAPIKey.toggle()
+                                } label: {
+                                    Image(systemName: showAPIKey ? "eye.slash" : "eye")
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                            .onChange(of: apiKey) {
+                                if apiKey.isEmpty {
+                                    KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
+                                    apiKey = ""
+                                    providerService.invalidateCache()
+                                } else {
+                                    saveAPIKey()
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            DisclosureGroup("Suggested Models") {
-                TextEditor(text: $suggestedModelsText)
-                    .font(.body.monospaced())
-                    .frame(minHeight: 80)
-                    .scrollContentBackground(.hidden)
-                    .onChange(of: suggestedModelsText) {
-                        provider.suggestedModels = suggestedModelsText
-                            .split(separator: "\n", omittingEmptySubsequences: false)
-                            .map(String.init)
-                            .filter { !$0.isEmpty }
-                        save()
+            // MARK: - Model
+            Section {
+                LabeledContent("Model") {
+
+                    HStack {
+                        TextField("", text: $provider.defaultModel, prompt: Text("model-name"))
+                            .font(.system(.body, design: .monospaced))
+                            .onChange(of: provider.defaultModel) {
+                                save()
+                                providerService.invalidateCache()
+                            }
+
+                        if !provider.suggestedModels.isEmpty {
+                            Menu {
+                                ForEach(provider.suggestedModels, id: \.self) { model in
+                                    Button(model) {
+                                        provider.defaultModel = model
+                                        save()
+                                        providerService.invalidateCache()
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "chevron.down.circle")
+                            }
+                            .menuStyle(.borderlessButton)
+                            .fixedSize()
+                        }
                     }
+                }
 
-                Text("One model per line")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Picker("Reasoning Effort", selection: Binding(
+                    get: { provider.reasoningEffort },
+                    set: { newValue in
+                        provider.reasoningEffort = newValue
+                        save()
+                        providerService.invalidateCache()
+                    }
+                )) {
+                    Text("None").tag(nil as String?)
+                    Text("Low").tag("low" as String?)
+                    Text("Medium").tag("medium" as String?)
+                    Text("High").tag("high" as String?)
+                    Text("Extra High").tag("xhigh" as String?)
+                }
             }
-        }
-    }
 
-    // MARK: - Advanced
-
-    private var advancedSection: some View {
-        Section("Advanced") {
-            HStack {
-                Text("Max Tokens")
-                Spacer()
-                TextField("Max Tokens", value: $provider.maxTokens, format: .number)
-                    .textFieldStyle(.roundedBorder)
+            // MARK: - Advanced
+            Section("Advanced") {
+                LabeledContent(content: {
+                    TextField("",
+                              value: $provider.maxTokens,
+                              format: .number,
+                              prompt: Text("4096"))
                     .frame(width: 100)
                     .multilineTextAlignment(.trailing)
                     .onChange(of: provider.maxTokens) {
                         save()
                         providerService.invalidateCache()
                     }
-            }
+                }, label: {
+                    Text("Maximum Tokens")
+                    Text("The maximum number of tokens the model can generate in a single response before it stops producing output.")
+                })
 
-            HStack {
-                Text("Context Window Size")
-                Spacer()
-                TextField(
-                    "Auto",
-                    value: $provider.contextWindowSize,
-                    format: .number
-                )
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 100)
-                .multilineTextAlignment(.trailing)
-                .onChange(of: provider.contextWindowSize) {
-                    save()
-                    providerService.invalidateCache()
-                }
-            }
+                LabeledContent(content: {
+                    TextField("",
+                              value: $provider.contextWindowSize,
+                              format: .number,
+                              prompt: Text("auto"))
+                        .frame(width: 100)
+                        .multilineTextAlignment(.trailing)
+                        .onChange(of: provider.contextWindowSize) {
+                            save()
+                            providerService.invalidateCache()
+                        }
+                }, label: {
+                    Text("Context Window")
+                    Text("The total number of tokens the conversation can consume before the app compresses (summarizes) the context to free up space.")
+                })
 
-            Picker("Reasoning Effort", selection: Binding(
-                get: { provider.reasoningEffort },
-                set: { newValue in
-                    provider.reasoningEffort = newValue
-                    save()
-                    providerService.invalidateCache()
-                }
-            )) {
-                Text("None").tag(nil as String?)
-                Text("Low").tag("low" as String?)
-                Text("Medium").tag("medium" as String?)
-                Text("High").tag("high" as String?)
-                Text("Extra High").tag("xhigh" as String?)
-            }
-        }
-    }
-
-    // MARK: - Caching (Anthropic)
-
-    private var cachingSection: some View {
-        Section("Prompt Caching") {
-            Toggle("Enable Prompt Caching", isOn: $provider.cachingEnabled)
-                .onChange(of: provider.cachingEnabled) {
-                    save()
-                    providerService.invalidateCache()
+                if provider.kind.providerType.supportsCaching {
+                    LabeledContent(content: {
+                        Toggle("", isOn: $provider.cachingEnabled)
+                            .onChange(of: provider.cachingEnabled) {
+                                save()
+                                providerService.invalidateCache()
+                            }
+                    }, label: {
+                        Text("Prompt Caching")
+                        Text("When enabled, allows the provider to cache prompt prefixes so repeated or similar requests can be processed faster and at lower cost (only shown for providers that support it).")
+                    })
                 }
 
-            Text("Caches system prompts and tool definitions for 5 minutes, reducing input token costs by up to 90%.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                LabeledContent(content:  {
+                    TextField("", value: $provider.retryMaxAttempts, format: .number)
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                        .onChange(of: provider.retryMaxAttempts) { save() }
+                }, label: {
+                    Text("Maximum Retry Attempts")
+                    Text("The number of times a failed API request will be retried before the app gives up and surfaces an error.")
+                })
+
+                LabeledContent(content: {
+                    TextField("", value: $provider.retryBaseDelay, format: .number, prompt: Text("30"))
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                        .onChange(of: provider.retryBaseDelay) { save() }
+                }, label: {
+                    Text("Base Delay")
+                    Text("The initial number of seconds to wait before retrying a failed request, typically used as the base for exponential backoff.")
+                })
+
+                LabeledContent(content: {
+                    TextField("", value: $provider.retryMaxDelay, format: .number, prompt: Text("30"))
+                        .frame(width: 80)
+                        .multilineTextAlignment(.trailing)
+                        .onChange(of: provider.retryMaxDelay) { save() }
+                }, label: {
+                    Text("Max Delay")
+                    Text("The maximum number of seconds the app will wait between retries, capping the exponential backoff so delays don't grow indefinitely.")
+                })
+            }
+
+            // Default Provider
+            Section {
+                let isDefault = providerService.defaultProviderID == provider.id
+                Button(isDefault ? "This is the default provider" : "Set as Default Provider") {
+                    providerService.defaultProviderID = provider.id
+                }
+                .disabled(isDefault)
+            }
         }
+        .formStyle(.grouped)
     }
 
-    // MARK: - Retry Policy
+    // MARK: - Footer
 
-    private var retrySection: some View {
-        Section("Retry Policy") {
-            HStack {
-                Text("Max Attempts")
-                Spacer()
-                TextField("3", value: $provider.retryMaxAttempts, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                    .multilineTextAlignment(.trailing)
-                    .onChange(of: provider.retryMaxAttempts) { save() }
+    private var sheetFooter: some View {
+        HStack {
+            Spacer()
+            Button("Done") {
+                dismiss()
             }
-
-            HStack {
-                Text("Base Delay (seconds)")
-                Spacer()
-                TextField("1.0", value: $provider.retryBaseDelay, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                    .multilineTextAlignment(.trailing)
-                    .onChange(of: provider.retryBaseDelay) { save() }
-            }
-
-            HStack {
-                Text("Max Delay (seconds)")
-                Spacer()
-                TextField("30.0", value: $provider.retryMaxDelay, format: .number)
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 80)
-                    .multilineTextAlignment(.trailing)
-                    .onChange(of: provider.retryMaxDelay) { save() }
-            }
+            .keyboardShortcut(.defaultAction)
         }
-    }
-
-    // MARK: - Default Provider
-
-    @MainActor
-    private var defaultProviderSection: some View {
-        Section {
-            let isDefault = providerService.defaultProviderID == provider.id
-            Button(isDefault ? "This is the default provider" : "Set as Default Provider") {
-                providerService.defaultProviderID = provider.id
-            }
-            .disabled(isDefault)
-        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
     }
 
     // MARK: - Helpers
 
+    @ViewBuilder
+    private var providerIcon: some View {
+        if provider.kind.isCustomIcon {
+            provider.kind.icon
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 32, height: 32)
+        } else {
+            provider.kind.icon
+                .font(.system(size: 28))
+        }
+    }
+
+    private var iconColor: Color {
+        switch provider.kind {
+        case .openAICompatible: .green
+        case .anthropic: .orange
+        case .foundationModels: .blue
+        case .gemini: .blue
+        case .vertexGemini: .indigo
+        case .vertexAnthropic: .purple
+        }
+    }
+
     private func loadAPIKey() {
         apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) ?? ""
-        keychainSaveStatus = nil
     }
 
     private func saveAPIKey() {
-        do {
-            try KeychainService.save(key: KeychainService.apiKeyKey(for: provider.id), value: apiKey)
-            keychainSaveStatus = "Key saved"
-            providerService.invalidateCache()
-        } catch {
-            keychainSaveStatus = "Failed to save: \(error.localizedDescription)"
-        }
+        guard !apiKey.isEmpty else { return }
+        try? KeychainService.save(key: KeychainService.apiKeyKey(for: provider.id), value: apiKey)
+        providerService.invalidateCache()
     }
 
     private func save() {
@@ -330,20 +310,20 @@ struct ProviderDetailView: View {
     }
 }
 
-#Preview("OpenAI Compatible") {
+// MARK: - Previews
+
+#Preview("Provider Sheet - OpenAI") {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ProviderDetailView(provider: data.providers[0])
+    ProviderDetailSheet(provider: data.providers[0])
         .previewEnvironment(container: container)
-        .frame(width: 500, height: 700)
 }
 
-#Preview("Anthropic") {
+#Preview("Provider Sheet - Anthropic") {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ProviderDetailView(provider: data.providers[1])
+    ProviderDetailSheet(provider: data.providers[1])
         .previewEnvironment(container: container)
-        .frame(width: 500, height: 700)
 }

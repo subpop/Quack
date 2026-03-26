@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 import AgentRunKit
 
 /// The API wire protocol used to communicate with a provider's backend.
@@ -34,6 +35,25 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
         case .gemini: "Gemini"
         case .vertexGemini: "Vertex AI (Gemini)"
         case .vertexAnthropic: "Vertex AI (Claude)"
+        }
+    }
+
+    var icon: Image {
+        switch self {
+        case .foundationModels: Image(systemName: "apple.intelligence")
+        case .openAICompatible: Image("openai")
+        case .gemini: Image("gemini")
+        case .anthropic: Image("anthropic")
+        default: Image(systemName: "cloud")
+        }
+    }
+
+    /// Whether the icon is a custom asset (as opposed to an SF Symbol).
+    /// Custom assets need explicit sizing via `.resizable()` to match SF Symbol scale.
+    var isCustomIcon: Bool {
+        switch self {
+        case .openAICompatible, .gemini, .anthropic: true
+        default: false
         }
     }
 

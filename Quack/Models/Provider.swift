@@ -10,7 +10,6 @@ final class Provider {
 
     var id: UUID
     var name: String
-    var iconName: String
     var kindRaw: String
     var isEnabled: Bool
     var sortOrder: Int
@@ -63,7 +62,6 @@ final class Provider {
     init(
         name: String,
         kind: ProviderKind,
-        iconName: String = "cloud",
         isEnabled: Bool = false,
         sortOrder: Int = 0,
         baseURL: String? = nil,
@@ -77,7 +75,6 @@ final class Provider {
         self.id = UUID()
         self.name = name
         self.kindRaw = kind.rawValue
-        self.iconName = iconName
         self.isEnabled = isEnabled
         self.sortOrder = sortOrder
         self.baseURL = baseURL
@@ -100,7 +97,6 @@ final class Provider {
             Provider(
                 name: "OpenAI",
                 kind: .openAICompatible,
-                iconName: "brain",
                 sortOrder: 0,
                 baseURL: "https://api.openai.com/v1",
                 requiresAPIKey: true,
@@ -112,7 +108,6 @@ final class Provider {
             Provider(
                 name: "Anthropic",
                 kind: .anthropic,
-                iconName: "sparkle",
                 sortOrder: 1,
                 baseURL: "https://api.anthropic.com/v1",
                 requiresAPIKey: true,
@@ -124,7 +119,6 @@ final class Provider {
             Provider(
                 name: "Ollama",
                 kind: .openAICompatible,
-                iconName: "desktopcomputer",
                 sortOrder: 2,
                 baseURL: "http://localhost:11434/v1",
                 requiresAPIKey: false,
@@ -135,7 +129,6 @@ final class Provider {
             Provider(
                 name: "Apple Intelligence",
                 kind: .foundationModels,
-                iconName: "apple.logo",
                 isEnabled: true,
                 sortOrder: 3,
                 requiresAPIKey: false,
@@ -147,7 +140,6 @@ final class Provider {
             Provider(
                 name: "Google AI",
                 kind: .gemini,
-                iconName: "sparkles",
                 sortOrder: 4,
                 baseURL: "https://generativelanguage.googleapis.com/v1beta/models",
                 requiresAPIKey: true,
@@ -159,7 +151,6 @@ final class Provider {
             Provider(
                 name: "Vertex AI (Gemini)",
                 kind: .vertexGemini,
-                iconName: "cloud.fill",
                 sortOrder: 5,
                 baseURL: "https://us-central1-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-central1",
                 requiresAPIKey: false,
@@ -171,7 +162,6 @@ final class Provider {
             Provider(
                 name: "Vertex AI (Claude)",
                 kind: .vertexAnthropic,
-                iconName: "cloud.fill",
                 sortOrder: 6,
                 baseURL: "https://us-east5-aiplatform.googleapis.com/v1/projects/PROJECT_ID/locations/us-east5",
                 requiresAPIKey: false,
