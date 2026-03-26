@@ -54,45 +54,39 @@ struct ChatInspectorView: View {
     private var parametersSection: some View {
         Section("Parameters") {
             // Temperature
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Temperature")
-                    Spacer()
-                    if let temp = session.temperature {
-                        Text(String(format: "%.1f", temp))
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                        Button("Reset") {
-                            session.temperature = nil
-                            save()
-                        }
-                        .font(.caption)
-                    } else {
-                        Text("Default")
-                            .foregroundStyle(.tertiary)
-                    }
-                }
+            LabeledContent(content: {
                 Slider(
                     value: temperatureBinding,
                     in: 0...2,
                     step: 0.1
                 )
-            }
+                if session.temperature != nil {
+                    Button {
+                        session.temperature = nil
+                        save()
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Reset to default")
+                }
+            }, label: {
+                Text("Temperature")
+            })
 
             // Max Tokens
-            HStack {
-                Text("Max Tokens")
-                Spacer()
+            LabeledContent(content:  {
                 TextField(
-                    "Default",
+                    "",
                     value: $session.maxTokens,
                     format: .number
                 )
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 100)
-                .multilineTextAlignment(.trailing)
                 .onChange(of: session.maxTokens) { save() }
-            }
+            }, label: {
+                Text("Maximum Tokens")
+            })
 
             // Reasoning Effort
             Picker("Reasoning", selection: reasoningBinding) {
@@ -230,44 +224,38 @@ struct ChatInspectorView: View {
 
     private var contextSection: some View {
         Section("Context Management") {
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Compaction Threshold")
-                    Spacer()
-                    if let threshold = session.compactionThreshold {
-                        Text("\(Int(threshold * 100))%")
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-                        Button("Reset") {
-                            session.compactionThreshold = nil
-                            save()
-                        }
-                        .font(.caption)
-                    } else {
-                        Text("Default")
-                            .foregroundStyle(.tertiary)
-                    }
-                }
+            LabeledContent(content: {
                 Slider(
                     value: compactionBinding,
                     in: 0.3...0.95,
                     step: 0.05
                 )
-            }
+                if session.compactionThreshold != nil {
+                    Button {
+                        session.compactionThreshold = nil
+                        save()
+                    } label: {
+                        Image(systemName: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Reset to default")
+                }
+            }, label: {
+                Text("Compaction Threshold")
+            })
 
-            HStack {
-                Text("Max Messages")
-                Spacer()
+            LabeledContent(content:  {
                 TextField(
-                    "Default",
+                    "",
                     value: $session.maxMessages,
                     format: .number
                 )
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 100)
-                .multilineTextAlignment(.trailing)
                 .onChange(of: session.maxMessages) { save() }
-            }
+            }, label: {
+                Text("Maximum Messages")
+            })
         }
     }
 
