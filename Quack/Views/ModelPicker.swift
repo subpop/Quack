@@ -51,6 +51,11 @@ struct ModelPicker: View {
                 Task { await modelListService.fetchModels(for: profile) }
                 syncCustomState()
             }
+            .onChange(of: profile.platform) {
+                modelListService.invalidate(for: profile)
+                Task { await modelListService.fetchModels(for: profile) }
+                syncCustomState()
+            }
         }
     }
 
@@ -80,7 +85,7 @@ struct ModelPicker: View {
     // MARK: - Custom Text Field
 
     private var customTextField: some View {
-        TextField("Model identifier", text: $customText)
+        TextField("", text: $customText)
             .textFieldStyle(.roundedBorder)
             .font(.system(.body, design: .monospaced))
             .onSubmit {
