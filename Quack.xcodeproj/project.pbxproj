@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3B4165552F76954D007C292E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B84807F2F730847000F16F0 /* Quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -66,6 +67,7 @@
 		3B8480762F730847000F16F0 = {
 			isa = PBXGroup;
 			children = (
+				3B4165552F76954D007C292E /* README.md */,
 				3B8480812F730847000F16F0 /* Quack */,
 				3B7BF95C2F75862400C9A0FD /* QuackTests */,
 				3B8480802F730847000F16F0 /* Products */,
