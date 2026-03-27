@@ -28,12 +28,35 @@ struct QuackApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var sharedModelContainer: ModelContainer = {
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first!
+
+        #if DEBUG
+        let storeURL = appSupport
+            .appendingPathComponent("app.subpop.Quack")
+            .appendingPathComponent("QuackDebug.store")
+        #else
+        let storeURL = appSupport
+            .appendingPathComponent("app.subpop.Quack")
+            .appendingPathComponent("Quack.store")
+        #endif
+
+        try? FileManager.default.createDirectory(
+            at: storeURL.deletingLastPathComponent(),
+            withIntermediateDirectories: true
+        )
+
+        let config = ModelConfiguration(url: storeURL)
+
         do {
             return try ModelContainer(
                 for: ChatSession.self, ChatMessageRecord.self,
                      ProviderProfile.self, MCPServerConfig.self,
                      Assistant.self,
-                migrationPlan: QuackMigrationPlan.self
+                migrationPlan: QuackMigrationPlan.self,
+                configurations: config
             )
         } catch {
             Logger.database.error(
