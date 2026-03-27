@@ -21,7 +21,7 @@ fi
 # Check if DMG is provided
 if [[ -z "$1" ]]; then
     echo "❌ No DMG file provided!"
-    echo "Usage: ./publish-update.sh /path/to/MCP Inspector.dmg"
+    echo "Usage: ./publish-update.sh /path/to/${NAME}.dmg"
     exit 1
 fi
 
