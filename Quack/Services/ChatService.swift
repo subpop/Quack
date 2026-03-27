@@ -83,10 +83,21 @@ final class ChatService {
         session.updatedAt = Date()
         try? modelContext.save()
 
-        // Auto-generate title from first message
+        // Auto-generate title from first message using on-device Foundation Model
         if session.messages.count == 1 {
-            session.title = String(text.prefix(50))
-            if text.count > 50 { session.title += "..." }
+            let sessionID = session.id
+            let messageText = text
+            Task { @MainActor in
+                let title = await TitleGenerationService.generateTitle(for: messageText)
+                // Re-fetch session to avoid stale reference
+                let descriptor = FetchDescriptor<ChatSession>(
+                    predicate: #Predicate { $0.id == sessionID }
+                )
+                if let session = try? modelContext.fetch(descriptor).first {
+                    session.title = title
+                    try? modelContext.save()
+                }
+            }
         }
 
         // Build the client
