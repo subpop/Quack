@@ -194,8 +194,7 @@ struct ToolCallView: View {
     private var iconName: String {
         switch toolCall.state {
         case .running: "wrench.and.screwdriver"
-        case .completed: "wrench.and.screwdriver.fill"
-        case .failed: "wrench.trianglebadge.exclamationmark"
+        case .completed, .failed: "wrench.and.screwdriver.fill"
         }
     }
 
