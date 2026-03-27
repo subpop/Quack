@@ -205,8 +205,9 @@ enum QuackSchemaV1: VersionedSchema {
 // MARK: - Schema V2 (Content Segments + Max Tool Rounds)
 
 /// Adds `contentSegmentsJSON` to `ChatMessageRecord` for interleaved
-/// tool call / text rendering, and `maxToolRounds` to `ChatSession` and
-/// `Assistant` for configurable tool-calling iteration limits.
+/// tool call / text rendering, `maxToolRounds` to `ChatSession` and
+/// `Assistant` for configurable tool-calling iteration limits, and
+/// `toolPermissionDefaultsJSON` to `Assistant` for per-tool permission defaults.
 enum QuackSchemaV2: VersionedSchema {
     nonisolated(unsafe) static var versionIdentifier: Schema.Version = .init(2, 0, 0)
 
@@ -380,6 +381,7 @@ enum QuackSchemaV2: VersionedSchema {
         var maxToolRounds: Int?
 
         var enabledMCPServerIDsRaw: String?
+        var toolPermissionDefaultsJSON: String?
 
         init(id: UUID = UUID(), name: String = "", isDefault: Bool = false, sortOrder: Int = 0) {
             self.id = id

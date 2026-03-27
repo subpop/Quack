@@ -42,6 +42,13 @@ final class Assistant {
     // MCP server IDs enabled by default (stored as comma-separated UUIDs)
     var enabledMCPServerIDsRaw: String?
 
+    /// Per-tool permission defaults for this assistant.
+    /// JSON-encoded `[String: String]` mapping tool name -> ToolPermission raw value.
+    /// When a new ChatSession is created from this assistant, these defaults are
+    /// copied into the session's `toolPermissionOverridesJSON`. The session can then
+    /// override them independently via the inspector.
+    var toolPermissionDefaultsJSON: String?
+
     /// The provider profile UUID for this assistant, if set.
     var providerID: UUID? {
         get {
@@ -49,6 +56,51 @@ final class Assistant {
             return UUID(uuidString: str)
         }
         set { providerIDString = newValue?.uuidString }
+    }
+
+    /// Per-tool permission defaults. Key is the tool name, value is the permission.
+    /// Returns nil if no defaults are set (use server-level defaults for everything).
+    var toolPermissionDefaults: [String: ToolPermission]? {
+        get {
+            guard let json = toolPermissionDefaultsJSON,
+                  let data = json.data(using: .utf8),
+                  let dict = try? JSONDecoder().decode([String: String].self, from: data)
+            else { return nil }
+            let mapped = dict.compactMapValues { ToolPermission(rawValue: $0) }
+            return mapped.isEmpty ? nil : mapped
+        }
+        set {
+            guard let newValue, !newValue.isEmpty else {
+                toolPermissionDefaultsJSON = nil
+                return
+            }
+            let raw = newValue.mapValues(\.rawValue)
+            guard let data = try? JSONEncoder().encode(raw),
+                  let json = String(data: data, encoding: .utf8)
+            else {
+                toolPermissionDefaultsJSON = nil
+                return
+            }
+            toolPermissionDefaultsJSON = json
+        }
+    }
+
+    /// Get the effective default permission for a specific tool in this assistant.
+    /// Checks assistant-level per-tool override first, then falls back to the server default.
+    func effectivePermission(for toolName: String, serverDefault: ToolPermission) -> ToolPermission {
+        toolPermissionDefaults?[toolName] ?? serverDefault
+    }
+
+    /// Set a per-tool permission default for this assistant.
+    /// If the new value matches the server default, the override is removed (keeping storage clean).
+    func setToolPermission(_ permission: ToolPermission?, for toolName: String, serverDefault: ToolPermission) {
+        var defaults = toolPermissionDefaults ?? [:]
+        if let permission, permission != serverDefault {
+            defaults[toolName] = permission
+        } else {
+            defaults.removeValue(forKey: toolName)
+        }
+        toolPermissionDefaults = defaults.isEmpty ? nil : defaults
     }
 
     var enabledMCPServerIDs: [UUID]? {

@@ -132,6 +132,7 @@ struct AssistantsSettingsView: View {
         copy.maxMessages = assistant.maxMessages
         copy.maxToolRounds = assistant.maxToolRounds
         copy.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
+        copy.toolPermissionDefaultsJSON = assistant.toolPermissionDefaultsJSON
         copy.iconName = assistant.iconName
         copy.colorRaw = assistant.colorRaw
         modelContext.insert(copy)
@@ -207,10 +208,15 @@ struct AssistantDetailSheet: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(MCPService.self) private var mcpService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     @State private var showingDeleteConfirmation = false
+
+    /// Server IDs that we started temporarily for tool discovery in this sheet.
+    /// When the sheet closes, these will be stopped if no active session needs them.
+    @State private var temporarilyStartedServers: Set<UUID> = []
 
     var body: some View {
         VStack(spacing: 0) {
@@ -220,7 +226,9 @@ struct AssistantDetailSheet: View {
             Divider()
             sheetFooter
         }
-        .frame(width: 500, height: 620)
+        .frame(width: 500, height: 720)
+        .onAppear { startEnabledServers() }
+        .onDisappear { stopTemporaryServers() }
         .alert(
             "Delete Assistant",
             isPresented: $showingDeleteConfirmation
@@ -441,16 +449,55 @@ struct AssistantDetailSheet: View {
                         .font(.callout)
                 } else {
                     ForEach(enabledServers) { server in
-                        Toggle(
-                            server.name.isEmpty ? server.command : server.name,
-                            isOn: mcpToggleBinding(for: server)
-                        )
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack {
+                                Toggle(
+                                    server.name.isEmpty ? server.command : server.name,
+                                    isOn: mcpToggleBinding(for: server)
+                                )
+
+                                Spacer()
+
+                                mcpStatusIndicator(for: server)
+                            }
+
+                            // Show discovered tools with per-tool permission pickers
+                            let isEnabledForAssistant = assistant.enabledMCPServerIDs?.contains(server.id) ?? false
+                            if isEnabledForAssistant, mcpService.state(for: server.id) == .connected {
+                                let tools = mcpService.toolSummaries(for: server.id)
+                                if !tools.isEmpty {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        ForEach(tools) { tool in
+                                            HStack(spacing: 6) {
+                                                Image(systemName: "wrench.and.screwdriver")
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.tertiary)
+                                                Text(tool.name)
+                                                    .font(.caption.monospaced())
+                                                    .foregroundStyle(.secondary)
+                                                    .lineLimit(1)
+                                                    .help(tool.description)
+
+                                                Spacer()
+
+                                                toolPermissionPicker(
+                                                    for: tool.name,
+                                                    serverDefault: server.toolPermission
+                                                )
+                                            }
+                                        }
+                                    }
+                                    .padding(.leading, 20)
+                                    .padding(.top, 4)
+                                }
+                            }
+                        }
                     }
                 }
             } header: {
                 Text("MCP Servers")
             } footer: {
-                Text("Servers enabled here will be active by default in new chats.")
+                Text("Servers enabled here will be active by default in new chats. Set per-tool permissions to control how tools are executed.")
             }
 
             // Default
@@ -632,13 +679,135 @@ struct AssistantDetailSheet: View {
                 var ids = assistant.enabledMCPServerIDs ?? []
                 if isEnabled {
                     if !ids.contains(server.id) { ids.append(server.id) }
+                    // Start the server so tools can be discovered
+                    if mcpService.state(for: server.id) == .disconnected {
+                        mcpService.startServer(config: server)
+                        temporarilyStartedServers.insert(server.id)
+                    }
                 } else {
                     ids.removeAll { $0 == server.id }
+                    // Clear any per-tool permission defaults for this server's tools
+                    clearToolPermissions(for: server)
+                    // Stop the server if we started it temporarily
+                    if temporarilyStartedServers.contains(server.id) {
+                        mcpService.stopServer(id: server.id)
+                        temporarilyStartedServers.remove(server.id)
+                    }
                 }
                 assistant.enabledMCPServerIDs = ids.isEmpty ? nil : ids
                 save()
             }
         )
+    }
+
+    // MARK: - Tool Permission Helpers
+
+    private func toolPermissionPicker(for toolName: String, serverDefault: ToolPermission) -> some View {
+        let effective = assistant.effectivePermission(for: toolName, serverDefault: serverDefault)
+
+        return Picker("", selection: Binding(
+            get: { effective },
+            set: { newValue in
+                assistant.setToolPermission(newValue, for: toolName, serverDefault: serverDefault)
+                save()
+            }
+        )) {
+            ForEach(ToolPermission.allCases, id: \.self) { perm in
+                Label(perm.label, systemImage: permissionIcon(for: perm))
+                    .tag(perm)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .foregroundStyle(permissionColor(for: effective))
+    }
+
+    private func permissionIcon(for permission: ToolPermission) -> String {
+        switch permission {
+        case .always: "checkmark.circle.fill"
+        case .ask: "questionmark.circle.fill"
+        case .deny: "xmark.circle.fill"
+        }
+    }
+
+    private func permissionColor(for permission: ToolPermission) -> Color {
+        switch permission {
+        case .always: .green
+        case .ask: .orange
+        case .deny: .red
+        }
+    }
+
+    @ViewBuilder
+    private func mcpStatusIndicator(for server: MCPServerConfig) -> some View {
+        let isEnabledForAssistant = assistant.enabledMCPServerIDs?.contains(server.id) ?? false
+
+        if !isEnabledForAssistant {
+            EmptyView()
+        } else {
+            switch mcpService.state(for: server.id) {
+            case .connecting:
+                ProgressView()
+                    .controlSize(.mini)
+                    .help("Connecting...")
+            case .connected:
+                let count = mcpService.toolCount(for: server.id)
+                HStack(spacing: 4) {
+                    Image(systemName: "circle.fill")
+                        .foregroundStyle(.green)
+                        .imageScale(.small)
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .help("Connected - \(count) tool(s)")
+            case .error(let message):
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.red)
+                    .imageScale(.small)
+                    .help("Error: \(message)")
+            case .disconnected:
+                Image(systemName: "circle")
+                    .foregroundStyle(.secondary)
+                    .imageScale(.small)
+                    .help("Disconnected")
+            }
+        }
+    }
+
+    // MARK: - MCP Server Lifecycle
+
+    /// Start servers that are enabled for this assistant so we can discover their tools.
+    private func startEnabledServers() {
+        guard let enabledIDs = assistant.enabledMCPServerIDs else { return }
+        for id in enabledIDs {
+            if mcpService.state(for: id) == .disconnected,
+               let config = mcpServerConfigs.first(where: { $0.id == id && $0.isEnabled }) {
+                mcpService.startServer(config: config)
+                temporarilyStartedServers.insert(id)
+            }
+        }
+    }
+
+    /// Stop servers that we started temporarily for tool discovery.
+    private func stopTemporaryServers() {
+        for id in temporarilyStartedServers {
+            mcpService.stopServer(id: id)
+        }
+        temporarilyStartedServers.removeAll()
+    }
+
+    /// Clear tool permission defaults for all tools belonging to a server.
+    private func clearToolPermissions(for server: MCPServerConfig) {
+        let tools = mcpService.toolSummaries(for: server.id)
+        guard !tools.isEmpty, var defaults = assistant.toolPermissionDefaults else { return }
+        for tool in tools {
+            defaults.removeValue(forKey: tool.name)
+        }
+        assistant.toolPermissionDefaults = defaults.isEmpty ? nil : defaults
     }
 
     private func save() {

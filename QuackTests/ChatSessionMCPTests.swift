@@ -162,4 +162,116 @@ struct ChatSessionMCPTests {
         let tools = service.tools(forServerIDs: [UUID(), UUID()])
         #expect(tools.isEmpty)
     }
+
+    // MARK: - Assistant tool permission defaults
+
+    @Test("Assistant toolPermissionDefaults roundtrips correctly")
+    @MainActor
+    func assistantToolPermissionDefaultsRoundtrip() {
+        let assistant = Assistant(name: "Test")
+
+        #expect(assistant.toolPermissionDefaults == nil)
+        #expect(assistant.toolPermissionDefaultsJSON == nil)
+
+        assistant.toolPermissionDefaults = [
+            "read_file": .always,
+            "write_file": .deny,
+            "search": .ask,
+        ]
+
+        let result = assistant.toolPermissionDefaults!
+        #expect(result.count == 3)
+        #expect(result["read_file"] == .always)
+        #expect(result["write_file"] == .deny)
+        #expect(result["search"] == .ask)
+    }
+
+    @Test("Assistant toolPermissionDefaults clears when set to empty")
+    @MainActor
+    func assistantToolPermissionDefaultsClear() {
+        let assistant = Assistant(name: "Test")
+        assistant.toolPermissionDefaults = ["read_file": .always]
+        #expect(assistant.toolPermissionDefaults != nil)
+
+        assistant.toolPermissionDefaults = [:]
+        #expect(assistant.toolPermissionDefaults == nil)
+        #expect(assistant.toolPermissionDefaultsJSON == nil)
+    }
+
+    @Test("Assistant effectivePermission checks defaults then falls back to server default")
+    @MainActor
+    func assistantEffectivePermission() {
+        let assistant = Assistant(name: "Test")
+        assistant.toolPermissionDefaults = ["read_file": .always]
+
+        // Tool with an assistant-level override
+        #expect(assistant.effectivePermission(for: "read_file", serverDefault: .ask) == .always)
+
+        // Tool without an override falls back to server default
+        #expect(assistant.effectivePermission(for: "write_file", serverDefault: .deny) == .deny)
+    }
+
+    @Test("Assistant setToolPermission removes override when matching server default")
+    @MainActor
+    func assistantSetToolPermissionCleansUp() {
+        let assistant = Assistant(name: "Test")
+        assistant.setToolPermission(.always, for: "read_file", serverDefault: .ask)
+        #expect(assistant.toolPermissionDefaults?["read_file"] == .always)
+
+        // Setting to the server default should remove the override
+        assistant.setToolPermission(.ask, for: "read_file", serverDefault: .ask)
+        #expect(assistant.toolPermissionDefaults == nil)
+    }
+
+    // MARK: - Session inherits assistant tool permission defaults
+
+    @Test("ChatSession.init(assistant:) copies toolPermissionDefaultsJSON")
+    @MainActor
+    func sessionInheritsToolPermissionDefaults() {
+        let assistant = Assistant(name: "Test")
+        assistant.toolPermissionDefaults = [
+            "read_file": .always,
+            "write_file": .deny,
+        ]
+
+        let session = ChatSession(assistant: assistant)
+
+        #expect(session.toolPermissionOverridesJSON == assistant.toolPermissionDefaultsJSON)
+        let overrides = session.toolPermissionOverrides!
+        #expect(overrides["read_file"] == .always)
+        #expect(overrides["write_file"] == .deny)
+    }
+
+    @Test("ChatSession.init(assistant:) with nil defaults results in nil overrides")
+    @MainActor
+    func sessionInheritsNilToolPermissionDefaults() {
+        let assistant = Assistant(name: "Test")
+        #expect(assistant.toolPermissionDefaultsJSON == nil)
+
+        let session = ChatSession(assistant: assistant)
+        #expect(session.toolPermissionOverridesJSON == nil)
+        #expect(session.toolPermissionOverrides == nil)
+    }
+
+    @Test("Session can override inherited assistant defaults independently")
+    @MainActor
+    func sessionOverridesInheritedDefaults() {
+        let assistant = Assistant(name: "Test")
+        assistant.toolPermissionDefaults = [
+            "read_file": .always,
+            "write_file": .deny,
+        ]
+
+        let session = ChatSession(assistant: assistant)
+
+        // Override one tool in the session
+        session.setToolPermission(.ask, for: "read_file", serverDefault: .ask)
+
+        // read_file is now .ask (session override), write_file is still .deny (inherited)
+        #expect(session.effectivePermission(for: "read_file", serverDefault: .ask) == .ask)
+        #expect(session.effectivePermission(for: "write_file", serverDefault: .ask) == .deny)
+
+        // Assistant is unchanged
+        #expect(assistant.effectivePermission(for: "read_file", serverDefault: .ask) == .always)
+    }
 }

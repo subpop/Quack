@@ -181,5 +181,6 @@ final class ChatSession {
         self.maxMessages = assistant.maxMessages
         self.maxToolRounds = assistant.maxToolRounds
         self.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
+        self.toolPermissionOverridesJSON = assistant.toolPermissionDefaultsJSON
     }
 }
