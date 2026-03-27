@@ -290,7 +290,7 @@ struct ChatView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .glassEffect(in: .capsule)
+                    .glassEffect(in: .rect(cornerRadius: 12))
 
                 if isStreamingThisSession {
                     Button {
