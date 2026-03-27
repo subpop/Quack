@@ -2,6 +2,8 @@
 
 A native macOS AI chat client that connects to multiple LLM providers from a single interface, with full support for MCP (Model Context Protocol) tool use.
 
+![Screenshot](./docs/Screenshot.png)
+
 ## Features
 
 - **Multi-provider support** -- Chat with models from OpenAI, Anthropic, Google Gemini, Vertex AI, Ollama, Apple Intelligence (on-device), OpenRouter, Groq, Together, Mistral, and any OpenAI-compatible endpoint.
