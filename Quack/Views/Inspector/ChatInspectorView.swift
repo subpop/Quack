@@ -33,7 +33,6 @@ struct ChatInspectorView: View {
             contextSection
         }
         .formStyle(.grouped)
-        .navigationTitle("Inspector")
     }
 
     // MARK: - Model Section
