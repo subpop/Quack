@@ -97,6 +97,13 @@ struct QuackApp: App {
                     NotificationCenter.default.post(name: .newChat, object: nil)
                 }
                 .keyboardShortcut("n", modifiers: .command)
+
+                Divider()
+
+                Button("Export Transcript…") {
+                    NotificationCenter.default.post(name: .exportTranscript, object: nil)
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
             }
             SidebarCommands()
             CommandGroup(after: .singleWindowList) {
@@ -126,6 +133,7 @@ struct QuackApp: App {
 
 extension Notification.Name {
     static let newChat = Notification.Name("newChat")
+    static let exportTranscript = Notification.Name("exportTranscript")
 }
 
 extension Logger {

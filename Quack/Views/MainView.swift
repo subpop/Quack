@@ -91,6 +91,9 @@ struct MainView: View {
         .onReceive(NotificationCenter.default.publisher(for: .newChat)) { _ in
             createNewChat()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .exportTranscript)) { _ in
+            exportActiveSession()
+        }
     }
 
     private func createNewChat(with assistant: Assistant? = nil) {
@@ -105,6 +108,17 @@ struct MainView: View {
         modelContext.insert(session)
         try? modelContext.save()
         selectedSessionID = session.id
+    }
+
+    private func exportActiveSession() {
+        guard let session = selectedSession else { return }
+        let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let model = providerService.resolvedModel(for: session, profiles: profiles)
+        TranscriptExporter.presentSavePanel(
+            session: session,
+            modelName: model,
+            providerName: profile?.name
+        )
     }
 
     /// Sync MCP server connections to match what the current session needs.

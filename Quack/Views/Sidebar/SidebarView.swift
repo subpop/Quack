@@ -17,7 +17,9 @@ import SwiftData
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProviderService.self) private var providerService
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
     @Binding var selectedSessionID: UUID?
     var assistants: [Assistant]
@@ -190,6 +192,18 @@ struct SidebarView: View {
                 renamingSessionID = session.id
             } label: {
                 Label("Rename", systemImage: "pencil")
+            }
+
+            Button {
+                let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+                let model = providerService.resolvedModel(for: session, profiles: profiles)
+                TranscriptExporter.presentSavePanel(
+                    session: session,
+                    modelName: model,
+                    providerName: profile?.name
+                )
+            } label: {
+                Label("Export as Markdown…", systemImage: "doc.text")
             }
 
             Divider()
