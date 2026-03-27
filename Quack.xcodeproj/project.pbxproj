@@ -10,6 +10,7 @@
 		3BA00001300000000000F001 /* AgentRunKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00011300000000000F011 /* AgentRunKit */; };
 		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
 		3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00013300000000000F013 /* AgentRunKitFoundationModels */; };
+		3BA00004300000000000F004 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00014300000000000F014 /* Sparkle */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +56,7 @@
 				3BA00001300000000000F001 /* AgentRunKit in Frameworks */,
 				3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */,
 				3BA00002300000000000F002 /* Markdown in Frameworks */,
+				3BA00004300000000000F004 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -125,6 +127,7 @@
 				3BA00011300000000000F011 /* AgentRunKit */,
 				3BA00013300000000000F013 /* AgentRunKitFoundationModels */,
 				3BA00012300000000000F012 /* Markdown */,
+				3BA00014300000000000F014 /* Sparkle */,
 			);
 			productName = Quack;
 			productReference = 3B84807F2F730847000F16F0 /* Quack.app */;
@@ -161,6 +164,7 @@
 			packageReferences = (
 				3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */,
 				3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */,
+				3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B8480802F730847000F16F0 /* Products */;
@@ -400,6 +404,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Quack-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -433,6 +438,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Quack-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -500,6 +506,14 @@
 				minimumVersion = 0.7.3;
 			};
 		};
+		3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.6.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -517,6 +531,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
 			productName = AgentRunKitFoundationModels;
+		};
+		3BA00014300000000000F014 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

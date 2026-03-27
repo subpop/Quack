@@ -4,6 +4,8 @@ import os
 
 @main
 struct QuackApp: App {
+    @StateObject private var updater = SoftwareUpdater()
+
     @State private var providerService = ProviderService()
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
@@ -47,6 +49,12 @@ struct QuackApp: App {
         }
         .modelContainer(sharedModelContainer)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") {
+                    updater.checkForUpdates()
+                }
+                .disabled(!updater.canCheckForUpdates)
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Chat") {
                     NotificationCenter.default.post(name: .newChat, object: nil)
@@ -69,7 +77,7 @@ struct QuackApp: App {
         }
 
         Settings {
-            SettingsView()
+            SettingsView(updater: updater)
                 .environment(providerService)
                 .environment(chatService)
                 .environment(mcpService)
