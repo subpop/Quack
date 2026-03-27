@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import os
 
 @main
 struct QuackApp: App {
@@ -11,18 +12,26 @@ struct QuackApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            ChatSession.self,
-            ChatMessageRecord.self,
-            ProviderProfile.self,
-            MCPServerConfig.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: ChatSession.self, ChatMessageRecord.self,
+                     ProviderProfile.self, MCPServerConfig.self,
+                migrationPlan: QuackMigrationPlan.self
+            )
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            Logger.database.error(
+                "Failed to create persistent ModelContainer, falling back to in-memory store: \(error)"
+            )
+            do {
+                let fallbackConfig = ModelConfiguration(isStoredInMemoryOnly: true)
+                return try ModelContainer(
+                    for: ChatSession.self, ChatMessageRecord.self,
+                         ProviderProfile.self, MCPServerConfig.self,
+                    configurations: fallbackConfig
+                )
+            } catch {
+                fatalError("Cannot create even an in-memory ModelContainer: \(error)")
+            }
         }
     }()
 
@@ -70,4 +79,8 @@ struct QuackApp: App {
 
 extension Notification.Name {
     static let newChat = Notification.Name("newChat")
+}
+
+extension Logger {
+    static let database = Logger(subsystem: "com.quack.app", category: "database")
 }
