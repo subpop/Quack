@@ -465,6 +465,28 @@ final class ChatService {
             )
             record.session = session
             session.messages.append(record)
+
+            // Create tool result records for any completed tool calls so the
+            // Anthropic API sees matching tool_result blocks for every tool_use.
+            for toolCall in activeToolCalls {
+                let resultContent: String
+                switch toolCall.state {
+                case .completed(let content):
+                    resultContent = content
+                case .failed(let content):
+                    resultContent = content
+                case .running:
+                    resultContent = "Tool call was interrupted."
+                }
+                let toolRecord = ChatMessageRecord(
+                    role: .tool,
+                    content: resultContent,
+                    toolCallId: toolCall.id,
+                    toolName: toolCall.name
+                )
+                toolRecord.session = session
+                session.messages.append(toolRecord)
+            }
         }
 
         session.updatedAt = Date()
@@ -496,8 +518,26 @@ final class ChatService {
             return false
         }) else { return }
 
-        let newMessages = Array(history[(lastUserIndex + 1)...])
+        var newMessages = Array(history[(lastUserIndex + 1)...])
         guard !newMessages.isEmpty else { return }
+
+        // Ensure every tool_use in the last assistant message has a matching
+        // tool result. During cancellation, the history may contain an
+        // assistant message with tool calls where some or all tool results
+        // are missing (tool execution was interrupted). We append synthetic
+        // tool results for any that are missing.
+        if case .assistant(let lastAssistant) = newMessages.last,
+           !lastAssistant.toolCalls.isEmpty {
+            let existingToolResultIds = Set(
+                newMessages.compactMap { msg -> String? in
+                    if case .tool(let id, _, _) = msg { return id }
+                    return nil
+                }
+            )
+            for tc in lastAssistant.toolCalls where !existingToolResultIds.contains(tc.id) {
+                newMessages.append(.tool(id: tc.id, name: tc.name, content: "Tool call was interrupted."))
+            }
+        }
 
         // Build a lookup of active tool calls by id for result/argument data
         let activeToolCallMap = Dictionary(
@@ -605,7 +645,7 @@ final class ChatService {
     }
 
     static func encodeCompletedToolCalls(_ toolCalls: [ActiveToolCall]) -> String? {
-        let completed = toolCalls.compactMap { call -> CompletedToolCallData? in
+        let completed = toolCalls.map { call -> CompletedToolCallData in
             switch call.state {
             case .completed(let result):
                 return CompletedToolCallData(
@@ -618,7 +658,10 @@ final class ChatService {
                     arguments: call.arguments, result: error, isError: true
                 )
             case .running:
-                return nil
+                return CompletedToolCallData(
+                    id: call.id, name: call.name,
+                    arguments: call.arguments, result: "Tool call was interrupted.", isError: true
+                )
             }
         }
         guard !completed.isEmpty else { return nil }

@@ -18,7 +18,7 @@ import AgentRunKit
 enum MessageConverter {
     /// Convert persisted SwiftData records to AgentRunKit ChatMessages for API calls.
     static func toChatMessages(_ records: [ChatMessageRecord]) -> [ChatMessage] {
-        records.compactMap { record in
+        var messages = records.compactMap { record -> ChatMessage? in
             switch record.role {
             case .system:
                 return .system(record.content)
@@ -52,6 +52,68 @@ enum MessageConverter {
                       let toolName = record.toolName
                 else { return nil }
                 return .tool(id: toolCallId, name: toolName, content: record.content)
+            }
+        }
+
+        // Ensure every tool_use has a matching tool_result and vice versa.
+        // This prevents API errors from corrupted persistence (e.g. stream
+        // cancellation during tool execution).
+        repairToolPairing(&messages)
+
+        return messages
+    }
+
+    /// Adds synthetic tool_result messages for orphaned tool_use blocks and
+    /// removes orphaned tool_result messages that have no matching tool_use.
+    private static func repairToolPairing(_ messages: inout [ChatMessage]) {
+        // Collect all tool_use ids from assistant messages and all tool_result
+        // ids from tool messages.
+        var toolUseIds = Set<String>()
+        var toolResultIds = Set<String>()
+
+        for message in messages {
+            switch message {
+            case .assistant(let msg):
+                for tc in msg.toolCalls {
+                    toolUseIds.insert(tc.id)
+                }
+            case .tool(let id, _, _):
+                toolResultIds.insert(id)
+            default:
+                break
+            }
+        }
+
+        // Remove tool_result messages that have no matching tool_use
+        let orphanedResults = toolResultIds.subtracting(toolUseIds)
+        if !orphanedResults.isEmpty {
+            messages.removeAll { msg in
+                if case .tool(let id, _, _) = msg {
+                    return orphanedResults.contains(id)
+                }
+                return false
+            }
+        }
+
+        // Add synthetic tool_result messages for tool_use without results.
+        // Insert them right after the assistant message that contains the
+        // tool_use, maintaining correct message ordering.
+        let missingResults = toolUseIds.subtracting(toolResultIds)
+        if !missingResults.isEmpty {
+            var insertions: [(index: Int, message: ChatMessage)] = []
+            for (i, message) in messages.enumerated() {
+                if case .assistant(let msg) = message {
+                    for tc in msg.toolCalls where missingResults.contains(tc.id) {
+                        insertions.append((
+                            index: i + 1,
+                            message: .tool(id: tc.id, name: tc.name, content: "Tool call was interrupted.")
+                        ))
+                    }
+                }
+            }
+            // Insert in reverse order so indices remain valid
+            for insertion in insertions.reversed() {
+                messages.insert(insertion.message, at: min(insertion.index, messages.count))
             }
         }
     }
