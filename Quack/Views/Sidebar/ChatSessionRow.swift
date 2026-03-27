@@ -32,7 +32,7 @@ struct ChatSessionRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
             if isRenaming {
                 TextField("Chat name", text: $renameText)
                     .textFieldStyle(.plain)
@@ -62,6 +62,7 @@ struct ChatSessionRow: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
         }
+        .padding(4)
         .padding(.vertical, 2)
     }
 }
