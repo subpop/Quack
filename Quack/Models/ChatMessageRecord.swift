@@ -33,6 +33,11 @@ final class ChatMessageRecord {
     // Tool call data (for assistant messages with tool calls)
     var toolCallsJSON: String?
 
+    /// Ordered segments describing how text and tool calls interleave.
+    /// JSON array of objects: `{"type":"text","value":"..."}` or `{"type":"toolCall","id":"..."}`.
+    /// When nil, legacy layout is used (tool calls first, then content).
+    var contentSegmentsJSON: String?
+
     // Tool result metadata (for tool role messages)
     var toolCallId: String?
     var toolName: String?
@@ -52,6 +57,7 @@ final class ChatMessageRecord {
         outputTokens: Int? = nil,
         reasoningTokens: Int? = nil,
         toolCallsJSON: String? = nil,
+        contentSegmentsJSON: String? = nil,
         toolCallId: String? = nil,
         toolName: String? = nil
     ) {
@@ -64,6 +70,7 @@ final class ChatMessageRecord {
         self.outputTokens = outputTokens
         self.reasoningTokens = reasoningTokens
         self.toolCallsJSON = toolCallsJSON
+        self.contentSegmentsJSON = contentSegmentsJSON
         self.toolCallId = toolCallId
         self.toolName = toolName
     }

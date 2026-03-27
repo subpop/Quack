@@ -75,7 +75,20 @@ enum MessageConverter {
     private struct ToolCallData: Codable {
         let id: String
         let name: String
-        let arguments: String
+        let arguments: String?
+
+        // Also decode optional fields from CompletedToolCallData format
+        // so the same struct can parse both serialization formats.
+        let result: String?
+        let isError: Bool?
+
+        init(id: String, name: String, arguments: String) {
+            self.id = id
+            self.name = name
+            self.arguments = arguments
+            self.result = nil
+            self.isError = nil
+        }
     }
 
     private static func decodeToolCalls(from json: String?) -> [ToolCall] {
@@ -83,7 +96,7 @@ enum MessageConverter {
               let data = json.data(using: .utf8),
               let calls = try? JSONDecoder().decode([ToolCallData].self, from: data)
         else { return [] }
-        return calls.map { ToolCall(id: $0.id, name: $0.name, arguments: $0.arguments) }
+        return calls.map { ToolCall(id: $0.id, name: $0.name, arguments: $0.arguments ?? "{}") }
     }
 
     private static func encodeToolCalls(_ toolCalls: [ToolCall]) -> String? {

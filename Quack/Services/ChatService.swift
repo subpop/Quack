@@ -29,6 +29,17 @@ final class ChatService {
     var activeToolCalls: [ActiveToolCall] = []
     var streamingSessionID: UUID?
 
+    /// Ordered segments representing the interleaved sequence of text and tool
+    /// calls as they arrive during streaming.
+    var streamingSegments: [StreamingSegment] = []
+
+    /// A segment of streaming content — either accumulated text or a reference
+    /// to a tool call (looked up by id in `activeToolCalls`).
+    enum StreamingSegment {
+        case text(String)
+        case toolCall(id: String)
+    }
+
     /// Tracks which session an error belongs to, independently of streaming state.
     /// Unlike `streamingSessionID`, this is not cleared when streaming ends,
     /// allowing the error banner to persist until the user sends a new message.
@@ -38,6 +49,9 @@ final class ChatService {
     private var streamedInputTokens: Int?
     private var streamedOutputTokens: Int?
     private var streamedReasoningTokens: Int?
+    /// The complete message history returned by the `.finished` event.
+    /// Used during finalization to persist intermediate assistant/tool messages.
+    private var finishedHistory: [ChatMessage]?
 
     struct ActiveToolCall: Identifiable, Sendable {
         let id: String
@@ -130,9 +144,11 @@ final class ChatService {
         streamingError = nil
         errorSessionID = nil
         activeToolCalls = []
+        streamingSegments = []
         streamedInputTokens = nil
         streamedOutputTokens = nil
         streamedReasoningTokens = nil
+        finishedHistory = nil
         isStreaming = true
         streamingSessionID = session.id
 
@@ -218,11 +234,16 @@ final class ChatService {
         profiles: [ProviderProfile],
         mcpTools: [any AnyTool<EmptyContext>]
     ) {
-        // Remove the last assistant message
+        // Remove all assistant and tool messages after the last user message.
+        // With multi-turn tool loops, there may be multiple assistant + tool
+        // messages forming a single response.
         let sorted = session.sortedMessages
-        if let last = sorted.last, last.role == .assistant {
-            modelContext.delete(last)
-            session.messages.removeAll { $0.id == last.id }
+        if let lastUserIndex = sorted.lastIndex(where: { $0.role == .user }) {
+            let messagesToDelete = sorted.suffix(from: sorted.index(after: lastUserIndex))
+            for msg in messagesToDelete {
+                session.messages.removeAll { $0.id == msg.id }
+                modelContext.delete(msg)
+            }
         }
 
         // Re-send the last user message
@@ -302,9 +323,11 @@ final class ChatService {
         streamingError = nil
         errorSessionID = nil
         activeToolCalls = []
+        streamingSegments = []
         streamedInputTokens = nil
         streamedOutputTokens = nil
         streamedReasoningTokens = nil
+        finishedHistory = nil
         isStreaming = true
         streamingSessionID = session.id
 
@@ -346,12 +369,20 @@ final class ChatService {
         switch event {
         case .delta(let text):
             streamingContent += text
+            // Append to the current text segment, or create one if the last
+            // segment is a tool call (or there are no segments yet).
+            if case .text(let existing) = streamingSegments.last {
+                streamingSegments[streamingSegments.count - 1] = .text(existing + text)
+            } else {
+                streamingSegments.append(.text(text))
+            }
 
         case .reasoningDelta(let text):
             streamingReasoning += text
 
         case .toolCallStarted(let name, let id):
             activeToolCalls.append(ActiveToolCall(id: id, name: name, state: .running))
+            streamingSegments.append(.toolCall(id: id))
 
         case .toolCallCompleted(let id, _, let result):
             if let index = activeToolCalls.firstIndex(where: { $0.id == id }) {
@@ -364,6 +395,7 @@ final class ChatService {
             streamedInputTokens = usage.input
             streamedOutputTokens = usage.output
             streamedReasoningTokens = usage.reasoning
+            finishedHistory = history
             // Extract tool call arguments from the finished history.
             // The history contains AssistantMessages with ToolCalls that have arguments.
             for message in history {
@@ -398,26 +430,159 @@ final class ChatService {
             return
         }
 
-        // Encode completed tool calls (with arguments + results) for persistence
-        let toolCallsJSON = Self.encodeCompletedToolCalls(activeToolCalls)
+        // Use the finished history to persist all messages from this streaming
+        // session. The history contains the full conversation including the
+        // original messages; we only need the new ones (everything after the
+        // last user message).
+        if let history = finishedHistory {
+            persistFromHistory(
+                history,
+                session: session,
+                modelContext: modelContext
+            )
+        } else {
+            // Fallback: no history available (e.g. stream was cancelled before
+            // finishing). Persist what we have as a single assistant message.
+            let toolCallsJSON = Self.encodeCompletedToolCalls(activeToolCalls)
+            let contentSegmentsJSON = Self.encodeContentSegments(streamingSegments)
+            let record = ChatMessageRecord(
+                role: .assistant,
+                content: streamingContent,
+                reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning,
+                inputTokens: streamedInputTokens,
+                outputTokens: streamedOutputTokens,
+                reasoningTokens: streamedReasoningTokens,
+                toolCallsJSON: toolCallsJSON,
+                contentSegmentsJSON: contentSegmentsJSON
+            )
+            record.session = session
+            session.messages.append(record)
+        }
 
-        // Create assistant message record
-        let record = ChatMessageRecord(
-            role: .assistant,
-            content: streamingContent,
-            reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning,
-            inputTokens: streamedInputTokens,
-            outputTokens: streamedOutputTokens,
-            reasoningTokens: streamedReasoningTokens,
-            toolCallsJSON: toolCallsJSON
-        )
-        record.session = session
-        session.messages.append(record)
         session.updatedAt = Date()
         try? modelContext.save()
 
         isStreaming = false
         streamingSessionID = nil
+    }
+
+    /// Persist new messages from the finished history into the session.
+    ///
+    /// The history from AgentRunKit contains the full conversation thread:
+    /// `[.system, ...prior history..., .user, .assistant(toolCalls), .tool, ..., .assistant(final)]`
+    ///
+    /// We extract only the new messages produced during this streaming session
+    /// (everything after the last `.user` message) and create `ChatMessageRecord`
+    /// objects for each. This ensures that assistant messages with `tool_use` blocks
+    /// are always followed by corresponding `tool_result` messages, which the
+    /// Anthropic API requires.
+    private func persistFromHistory(
+        _ history: [ChatMessage],
+        session: ChatSession,
+        modelContext: ModelContext
+    ) {
+        // Find the index of the last user message — everything after it is new
+        guard let lastUserIndex = history.lastIndex(where: { msg in
+            if case .user = msg { return true }
+            if case .userMultimodal = msg { return true }
+            return false
+        }) else { return }
+
+        let newMessages = Array(history[(lastUserIndex + 1)...])
+        guard !newMessages.isEmpty else { return }
+
+        // Build a lookup of active tool calls by id for result/argument data
+        let activeToolCallMap = Dictionary(
+            uniqueKeysWithValues: activeToolCalls.map { ($0.id, $0) }
+        )
+
+        // Track which assistant message index we're on to assign streaming
+        // metadata (segments, tokens, reasoning) to the correct one.
+        // The final assistant message (the one with no tool calls) gets the
+        // accumulated streaming content, reasoning, and token counts.
+        // Intermediate assistant messages get their tool calls from the history.
+        let lastAssistantIndex = newMessages.lastIndex(where: { msg in
+            if case .assistant = msg { return true }
+            return false
+        })
+
+        for (offset, message) in newMessages.enumerated() {
+            let record: ChatMessageRecord
+            let isLastAssistant = offset == lastAssistantIndex
+
+            switch message {
+            case .assistant(let assistantMsg):
+                if isLastAssistant {
+                    // Final assistant message: use the streamed content, reasoning,
+                    // and token usage. Also include tool calls if any (rare for
+                    // the final message but possible).
+                    let toolCalls = assistantMsg.toolCalls
+                    let toolCallsForRecord: [ActiveToolCall] = toolCalls.map { tc in
+                        activeToolCallMap[tc.id] ?? ActiveToolCall(
+                            id: tc.id, name: tc.name, arguments: tc.arguments,
+                            state: .completed("")
+                        )
+                    }
+                    let toolCallsJSON = Self.encodeCompletedToolCalls(toolCallsForRecord)
+                    let contentSegmentsJSON = Self.encodeContentSegments(streamingSegments)
+
+                    record = ChatMessageRecord(
+                        role: .assistant,
+                        content: streamingContent,
+                        reasoning: streamingReasoning.isEmpty ? nil : streamingReasoning,
+                        inputTokens: streamedInputTokens,
+                        outputTokens: streamedOutputTokens,
+                        reasoningTokens: streamedReasoningTokens,
+                        toolCallsJSON: toolCallsJSON,
+                        contentSegmentsJSON: contentSegmentsJSON
+                    )
+                } else {
+                    // Intermediate assistant message: has tool calls but
+                    // typically empty or minimal text content.
+                    let toolCalls = assistantMsg.toolCalls
+                    let toolCallsForRecord: [ActiveToolCall] = toolCalls.map { tc in
+                        activeToolCallMap[tc.id] ?? ActiveToolCall(
+                            id: tc.id, name: tc.name, arguments: tc.arguments,
+                            state: .completed("")
+                        )
+                    }
+                    let toolCallsJSON = Self.encodeCompletedToolCalls(toolCallsForRecord)
+
+                    // Build segments for this intermediate message
+                    var intermediateSegments: [StreamingSegment] = []
+                    if !assistantMsg.content.isEmpty {
+                        intermediateSegments.append(.text(assistantMsg.content))
+                    }
+                    for tc in toolCalls {
+                        intermediateSegments.append(.toolCall(id: tc.id))
+                    }
+                    let segmentsJSON = Self.encodeContentSegments(intermediateSegments)
+
+                    record = ChatMessageRecord(
+                        role: .assistant,
+                        content: assistantMsg.content,
+                        reasoning: assistantMsg.reasoning?.content,
+                        toolCallsJSON: toolCallsJSON,
+                        contentSegmentsJSON: segmentsJSON
+                    )
+                }
+
+            case .tool(let id, let name, let content):
+                record = ChatMessageRecord(
+                    role: .tool,
+                    content: content,
+                    toolCallId: id,
+                    toolName: name
+                )
+
+            default:
+                // Skip system/user messages — they're already persisted
+                continue
+            }
+
+            record.session = session
+            session.messages.append(record)
+        }
     }
 
     // MARK: - Tool Call Serialization
@@ -461,6 +626,39 @@ final class ChatService {
               let calls = try? JSONDecoder().decode([CompletedToolCallData].self, from: data)
         else { return [] }
         return calls
+    }
+
+    // MARK: - Content Segment Serialization
+
+    /// Serializable representation of a content segment for persistence.
+    struct ContentSegmentData: Codable {
+        let type: String   // "text" or "toolCall"
+        let value: String  // text content or tool call id
+    }
+
+    static func encodeContentSegments(_ segments: [StreamingSegment]) -> String? {
+        let data = segments.compactMap { segment -> ContentSegmentData? in
+            switch segment {
+            case .text(let text):
+                guard !text.isEmpty else { return nil }
+                return ContentSegmentData(type: "text", value: text)
+            case .toolCall(let id):
+                return ContentSegmentData(type: "toolCall", value: id)
+            }
+        }
+        guard !data.isEmpty else { return nil }
+        guard let jsonData = try? JSONEncoder().encode(data),
+              let json = String(data: jsonData, encoding: .utf8)
+        else { return nil }
+        return json
+    }
+
+    static func decodeContentSegments(from json: String?) -> [ContentSegmentData] {
+        guard let json, !json.isEmpty,
+              let data = json.data(using: .utf8),
+              let segments = try? JSONDecoder().decode([ContentSegmentData].self, from: data)
+        else { return [] }
+        return segments
     }
 }
 

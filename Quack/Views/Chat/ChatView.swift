@@ -54,7 +54,10 @@ struct ChatView: View {
                         dateHeader(for: first.timestamp)
                     }
 
-                    ForEach(session.sortedMessages) { message in
+                    // Filter out .tool role messages — their results are already
+                    // displayed inline within the preceding assistant message's
+                    // ToolCallView.
+                    ForEach(session.sortedMessages.filter { $0.role != .tool }) { message in
                         MessageBubble(
                             message: message,
                             onResubmit: message.role == .user ? {
@@ -115,38 +118,16 @@ struct ChatView: View {
     @ViewBuilder
     private var streamingBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
-            // Tool calls
-            ForEach(chatService.activeToolCalls.map(ToolCallDisplayData.init(from:))) { toolCall in
-                ToolCallView(toolCall: toolCall)
-                    .padding(.horizontal, 16)
-            }
-
-            // Reasoning
+            // Reasoning (before interleaved content)
             if !chatService.streamingReasoning.isEmpty {
                 ReasoningView(reasoning: chatService.streamingReasoning, isStreaming: true)
                     .padding(.horizontal, 16)
             }
 
-            // Content
-            if !chatService.streamingContent.isEmpty {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(MarkdownRenderer.renderFull(chatService.streamingContent))
-                        .textSelection(.enabled)
-                    if isStreamingThisSession {
-                        ProgressView()
-                            .controlSize(.small)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    Color(.controlBackgroundColor),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                )
-                .padding(.trailing, 60)
-                .padding(.horizontal, 16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            } else if isStreamingThisSession && chatService.activeToolCalls.isEmpty {
+            // Interleaved segments: text and tool calls in order
+            let segments = chatService.streamingSegments
+            if segments.isEmpty && isStreamingThisSession {
+                // No segments yet — show "Thinking..." placeholder
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
@@ -161,6 +142,37 @@ struct ChatView: View {
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                 )
                 .padding(.horizontal, 16)
+            } else {
+                ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
+                    switch segment {
+                    case .text(let text):
+                        if !text.isEmpty {
+                            let isLastSegment = index == segments.count - 1
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                Text(MarkdownRenderer.renderFull(text))
+                                    .textSelection(.enabled)
+                                if isStreamingThisSession && isLastSegment {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(
+                                Color(.controlBackgroundColor),
+                                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            )
+                            .padding(.trailing, 60)
+                            .padding(.horizontal, 16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    case .toolCall(let id):
+                        if let toolCall = chatService.activeToolCalls.first(where: { $0.id == id }) {
+                            ToolCallView(toolCall: ToolCallDisplayData(from: toolCall))
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                }
             }
         }
         .id("streaming")

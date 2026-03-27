@@ -97,29 +97,58 @@ struct MessageBubble: View {
 
     private var assistantBubble: some View {
         VStack(alignment: .leading, spacing: 6) {
-            // Tool calls (expandable, persisted)
-            let toolCalls = ChatService.decodeCompletedToolCalls(from: message.toolCallsJSON)
-            if !toolCalls.isEmpty {
-                ForEach(toolCalls.map(ToolCallDisplayData.init(from:))) { tc in
-                    ToolCallView(toolCall: tc)
-                }
-            }
-
             // Reasoning (collapsible)
             if let reasoning = message.reasoning, !reasoning.isEmpty {
                 ReasoningView(reasoning: reasoning, isStreaming: false)
             }
 
-            // Content
-            if !message.content.isEmpty {
-                Text(MarkdownRenderer.renderFull(message.content))
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(
-                        Color(.controlBackgroundColor),
-                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    )
+            // Interleaved content: use segment ordering if available, otherwise
+            // fall back to legacy layout (tool calls first, then text).
+            let toolCalls = ChatService.decodeCompletedToolCalls(from: message.toolCallsJSON)
+            let segments = ChatService.decodeContentSegments(from: message.contentSegmentsJSON)
+
+            if !segments.isEmpty {
+                // Render in interleaved order
+                let toolCallMap = Dictionary(uniqueKeysWithValues: toolCalls.map { ($0.id, $0) })
+                ForEach(Array(segments.enumerated()), id: \.offset) { _, segment in
+                    switch segment.type {
+                    case "text":
+                        if !segment.value.isEmpty {
+                            Text(MarkdownRenderer.renderFull(segment.value))
+                                .textSelection(.enabled)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(
+                                    Color(.controlBackgroundColor),
+                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                )
+                        }
+                    case "toolCall":
+                        if let tc = toolCallMap[segment.value] {
+                            ToolCallView(toolCall: ToolCallDisplayData(from: tc))
+                        }
+                    default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                // Legacy layout: tool calls first, then content
+                if !toolCalls.isEmpty {
+                    ForEach(toolCalls.map(ToolCallDisplayData.init(from:))) { tc in
+                        ToolCallView(toolCall: tc)
+                    }
+                }
+
+                if !message.content.isEmpty {
+                    Text(MarkdownRenderer.renderFull(message.content))
+                        .textSelection(.enabled)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(
+                            Color(.controlBackgroundColor),
+                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        )
+                }
             }
 
             // Metadata row: timestamp + token usage

@@ -119,8 +119,8 @@ struct ToolCallView: View {
             }
             .buttonStyle(.plain)
 
-            // Expandable detail — arguments + result
-            if isExpanded {
+            // Detail — arguments + result (shown by default when finished)
+            if isFinished && isExpanded {
                 Divider()
                     .padding(.horizontal, 8)
 
@@ -137,7 +137,7 @@ struct ToolCallView: View {
                             structuredDetailSection(title: "Result", jsonString: result)
                         }
                     case .failed(let error):
-                        detailSection(title: "Error", content: error, style: .red)
+                        structuredDetailSection(title: "Error", jsonString: error, fallbackStyle: .red)
                     case .running:
                         EmptyView()
                     }
@@ -149,26 +149,13 @@ struct ToolCallView: View {
         .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 8))
     }
 
-    private func detailSection(title: String, content: String, style: some ShapeStyle) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-
-            Text(content)
-                .font(.caption.monospaced())
-                .foregroundStyle(style)
-                .textSelection(.enabled)
-                .lineLimit(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(6)
-                .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
-        }
-    }
-
     /// Renders a JSON string as a structured key-value tree, falling back to
     /// plain text if the string isn't valid JSON.
-    private func structuredDetailSection(title: String, jsonString: String) -> some View {
+    private func structuredDetailSection(
+        title: String,
+        jsonString: String,
+        fallbackStyle: Color = .secondary
+    ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption.weight(.semibold))
@@ -180,7 +167,7 @@ struct ToolCallView: View {
                 } else {
                     Text(jsonString)
                         .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(fallbackStyle)
                         .lineLimit(12)
                 }
             }
