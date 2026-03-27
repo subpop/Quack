@@ -24,6 +24,9 @@ final class ChatSession {
     @Relationship(deleteRule: .cascade, inverse: \ChatMessageRecord.session)
     var messages: [ChatMessageRecord] = []
 
+    // The assistant that created this session (stored as UUID string)
+    var assistantIDString: String?
+
     // MCP server IDs enabled for this session (stored as comma-separated UUIDs)
     var enabledMCPServerIDsRaw: String?
 
@@ -39,6 +42,15 @@ final class ChatSession {
             return UUID(uuidString: str)
         }
         set { providerIDString = newValue?.uuidString }
+    }
+
+    /// The assistant that created this session, if any.
+    var assistantID: UUID? {
+        get {
+            guard let str = assistantIDString else { return nil }
+            return UUID(uuidString: str)
+        }
+        set { assistantIDString = newValue?.uuidString }
     }
 
     var enabledMCPServerIDs: [UUID]? {
@@ -124,5 +136,34 @@ final class ChatSession {
             self.maxTokens = profile.maxTokens
             self.reasoningEffort = profile.reasoningEffort
         }
+    }
+
+    /// Create a new chat session from an Assistant, copying all its defaults.
+    ///
+    /// The assistant's provider, model, system prompt, parameters, and MCP
+    /// configuration are all copied into the session at creation time. From that
+    /// point on, the session's values are independent and can be changed in the
+    /// inspector without affecting the originating assistant.
+    init(
+        title: String = "New Chat",
+        assistant: Assistant
+    ) {
+        self.id = UUID()
+        self.title = title
+        self.createdAt = Date()
+        self.updatedAt = Date()
+        self.isArchived = false
+        self.isPinned = false
+
+        self.assistantIDString = assistant.id.uuidString
+        self.providerIDString = assistant.providerIDString
+        self.modelIdentifier = assistant.modelIdentifier
+        self.systemPrompt = assistant.systemPrompt
+        self.temperature = assistant.temperature
+        self.maxTokens = assistant.maxTokens
+        self.reasoningEffort = assistant.reasoningEffort
+        self.compactionThreshold = assistant.compactionThreshold
+        self.maxMessages = assistant.maxMessages
+        self.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
     }
 }

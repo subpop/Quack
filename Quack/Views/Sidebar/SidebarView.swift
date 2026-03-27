@@ -6,7 +6,8 @@ struct SidebarView: View {
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
 
     @Binding var selectedSessionID: UUID?
-    var onNewChat: () -> Void
+    var assistants: [Assistant]
+    var onNewChat: (Assistant?) -> Void
 
     @State private var searchText = ""
     @State private var renamingSessionID: UUID?
@@ -111,12 +112,41 @@ struct SidebarView: View {
         .searchable(text: $searchText, placement: .sidebar, prompt: "Search")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button(action: onNewChat) {
-                    Label("New Chat", systemImage: "square.and.pencil")
-                }
-                .help("New Conversation")
-                .keyboardShortcut("n", modifiers: .command)
+                newChatButton
             }
+        }
+    }
+
+    // MARK: - New Chat Button
+
+    @ViewBuilder
+    private var newChatButton: some View {
+        if assistants.count > 1 {
+            Menu {
+                ForEach(assistants) { assistant in
+                    Button {
+                        onNewChat(assistant)
+                    } label: {
+                        Label(
+                            assistant.name,
+                            systemImage: assistant.iconName ?? "person.crop.circle"
+                        )
+                        if assistant.isDefault {
+                            Text("(Default)")
+                        }
+                    }
+                }
+            } label: {
+                Label("New Chat", systemImage: "square.and.pencil")
+            } primaryAction: {
+                onNewChat(nil)
+            }
+            .help("New Conversation")
+        } else {
+            Button(action: { onNewChat(nil) }) {
+                Label("New Chat", systemImage: "square.and.pencil")
+            }
+            .help("New Conversation")
         }
     }
 
@@ -220,7 +250,7 @@ struct SidebarView: View {
     let container = PreviewSupport.container
     let _ = PreviewSupport.seed(container)
 
-    SidebarView(selectedSessionID: $selectedID, onNewChat: {})
+    SidebarView(selectedSessionID: $selectedID, assistants: [], onNewChat: { _ in })
         .frame(width: 280, height: 500)
         .modelContainer(container)
 }

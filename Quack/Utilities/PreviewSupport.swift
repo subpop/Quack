@@ -12,6 +12,7 @@ enum PreviewSupport {
             ChatMessageRecord.self,
             ProviderProfile.self,
             MCPServerConfig.self,
+            Assistant.self,
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [config])
@@ -28,6 +29,18 @@ enum PreviewSupport {
 
         let openAI = profiles[0]
         openAI.isEnabled = true
+
+        // Assistants
+        let defaultAssistant = Assistant.defaultAssistant()
+        defaultAssistant.providerIDString = openAI.id.uuidString
+        context.insert(defaultAssistant)
+
+        let codeAssistant = Assistant(
+            name: "Code Review",
+            systemPrompt: "You are a code review assistant. Focus on correctness, performance, and maintainability.",
+            sortOrder: 1
+        )
+        context.insert(codeAssistant)
 
         // MCP Server
         let mcpServer = MCPServerConfig(
@@ -75,6 +88,7 @@ enum PreviewSupport {
 
         return SeedData(
             profiles: profiles,
+            assistants: [defaultAssistant, codeAssistant],
             mcpServer: mcpServer,
             session: session1,
             emptySession: emptySession,
@@ -85,6 +99,7 @@ enum PreviewSupport {
 
     struct SeedData {
         let profiles: [ProviderProfile]
+        let assistants: [Assistant]
         let mcpServer: MCPServerConfig
         let session: ChatSession
         let emptySession: ChatSession

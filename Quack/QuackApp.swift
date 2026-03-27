@@ -16,6 +16,7 @@ struct QuackApp: App {
             return try ModelContainer(
                 for: ChatSession.self, ChatMessageRecord.self,
                      ProviderProfile.self, MCPServerConfig.self,
+                     Assistant.self,
                 migrationPlan: QuackMigrationPlan.self
             )
         } catch {
@@ -27,6 +28,7 @@ struct QuackApp: App {
                 return try ModelContainer(
                     for: ChatSession.self, ChatMessageRecord.self,
                          ProviderProfile.self, MCPServerConfig.self,
+                         Assistant.self,
                     configurations: fallbackConfig
                 )
             } catch {

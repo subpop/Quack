@@ -3,8 +3,8 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
-            Tab("General", systemImage: "gearshape") {
-                GeneralSettingsView()
+            Tab("Assistants", systemImage: "person.2") {
+                AssistantsSettingsView()
             }
 
             Tab("Providers", systemImage: "cloud") {

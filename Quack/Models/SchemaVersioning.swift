@@ -17,6 +17,7 @@ enum QuackSchemaV1: VersionedSchema {
             ChatMessageRecord.self,
             ProviderProfile.self,
             MCPServerConfig.self,
+            Assistant.self,
         ]
     }
 
@@ -43,6 +44,8 @@ enum QuackSchemaV1: VersionedSchema {
 
         var enabledMCPServerIDsRaw: String?
         var toolPermissionOverridesJSON: String?
+
+        var assistantIDString: String?
 
         init(id: UUID = UUID(), title: String = "", createdAt: Date = .init(), updatedAt: Date = .init(), isArchived: Bool = false, isPinned: Bool = false) {
             self.id = id
@@ -146,6 +149,33 @@ enum QuackSchemaV1: VersionedSchema {
             self.isEnabled = isEnabled
             self.initializationTimeout = initializationTimeout
             self.toolCallTimeout = toolCallTimeout
+        }
+    }
+
+    @Model
+    final class Assistant {
+        var id: UUID
+        var name: String
+        var systemPrompt: String?
+        var providerIDString: String?
+        var modelIdentifier: String?
+        var isDefault: Bool
+        var sortOrder: Int
+        var iconName: String?
+
+        var temperature: Double?
+        var maxTokens: Int?
+        var reasoningEffort: String?
+        var compactionThreshold: Double?
+        var maxMessages: Int?
+
+        var enabledMCPServerIDsRaw: String?
+
+        init(id: UUID = UUID(), name: String = "", isDefault: Bool = false, sortOrder: Int = 0) {
+            self.id = id
+            self.name = name
+            self.isDefault = isDefault
+            self.sortOrder = sortOrder
         }
     }
 }

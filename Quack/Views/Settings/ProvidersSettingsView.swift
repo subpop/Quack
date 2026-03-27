@@ -14,10 +14,7 @@ struct ProvidersSettingsView: View {
         Form {
             Section("Providers") {
                 ForEach(profiles) { profile in
-                    ProfileRow(
-                        profile: profile,
-                        isDefault: providerService.defaultProviderID == profile.id
-                    )
+                    ProfileRow(profile: profile)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         editingProfile = profile
@@ -28,12 +25,6 @@ struct ProvidersSettingsView: View {
                         }
 
                         Divider()
-
-                        if providerService.defaultProviderID != profile.id {
-                            Button("Set as Default") {
-                                providerService.defaultProviderID = profile.id
-                            }
-                        }
 
                         Toggle("Enabled", isOn: Binding(
                             get: { profile.isEnabled },
@@ -100,9 +91,6 @@ struct ProvidersSettingsView: View {
 
     private func removeProfile(_ profile: ProviderProfile) {
         KeychainService.delete(key: KeychainService.apiKeyKey(for: profile.id))
-        if providerService.defaultProviderID == profile.id {
-            providerService.defaultProviderID = nil
-        }
         modelContext.delete(profile)
         try? modelContext.save()
     }
@@ -112,7 +100,6 @@ struct ProvidersSettingsView: View {
 
 private struct ProfileRow: View {
     let profile: ProviderProfile
-    let isDefault: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -134,12 +121,6 @@ private struct ProfileRow: View {
             }
 
             Spacer()
-
-            if isDefault {
-                Text("Default")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
 
             if !profile.isEnabled {
                 Text("Disabled")

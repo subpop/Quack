@@ -282,14 +282,6 @@ struct ProviderDetailSheet: View {
                 })
             }
 
-            // Default Provider
-            Section {
-                let isDefault = providerService.defaultProviderID == profile.id
-                Button(isDefault ? "This is the default provider" : "Set as Default Provider") {
-                    providerService.defaultProviderID = profile.id
-                }
-                .disabled(isDefault)
-            }
         }
         .formStyle(.grouped)
     }
@@ -357,9 +349,6 @@ struct ProviderDetailSheet: View {
 
     private func deleteProfile() {
         KeychainService.delete(key: KeychainService.apiKeyKey(for: profile.id))
-        if providerService.defaultProviderID == profile.id {
-            providerService.defaultProviderID = nil
-        }
         modelContext.delete(profile)
         try? modelContext.save()
         dismiss()

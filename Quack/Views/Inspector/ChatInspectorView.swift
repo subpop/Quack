@@ -26,10 +26,10 @@ struct ChatInspectorView: View {
 
     private var modelSection: some View {
         Section("Model") {
-            let defaultProfile = providerService.defaultProfile(from: profiles)
+            let fallback = providerService.fallbackProfile(from: profiles)
 
             Picker("Provider", selection: providerBinding) {
-                Text("Default (\(defaultProfile?.name ?? "None"))")
+                Text("Default (\(fallback?.name ?? "None"))")
                     .tag(nil as UUID?)
                 Divider()
                 ForEach(profiles.filter(\.isEnabled)) { profile in

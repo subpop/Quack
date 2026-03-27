@@ -7,24 +7,13 @@ import AgentRunKit
 final class ProviderService {
     private var clientCache: [String: any LLMClient] = [:]
 
-    /// The UUID of the default provider profile, persisted in UserDefaults.
-    var defaultProviderID: UUID? {
-        get {
-            guard let str = UserDefaults.standard.string(forKey: "defaultProviderID") else { return nil }
-            return UUID(uuidString: str)
-        }
-        set {
-            UserDefaults.standard.set(newValue?.uuidString, forKey: "defaultProviderID")
-        }
-    }
-
-    /// Resolve the effective ProviderProfile for a chat session, falling back to the global default.
+    /// Resolve the effective ProviderProfile for a chat session, falling back to the first enabled profile.
     func resolvedProfile(for session: ChatSession, profiles: [ProviderProfile]) -> ProviderProfile? {
         if let sessionProviderID = session.providerID,
            let profile = profiles.first(where: { $0.id == sessionProviderID }) {
             return profile
         }
-        return defaultProfile(from: profiles)
+        return fallbackProfile(from: profiles)
     }
 
     /// Resolve the effective model identifier for a chat session.
@@ -33,14 +22,9 @@ final class ProviderService {
         return resolvedProfile(for: session, profiles: profiles)?.defaultModel ?? "unknown"
     }
 
-    /// Get the default profile from the list.
-    func defaultProfile(from profiles: [ProviderProfile]) -> ProviderProfile? {
-        if let id = defaultProviderID,
-           let profile = profiles.first(where: { $0.id == id }) {
-            return profile
-        }
-        // Fallback: first enabled profile
-        return profiles.first(where: \.isEnabled) ?? profiles.first
+    /// Fallback profile when the session has no provider set.
+    func fallbackProfile(from profiles: [ProviderProfile]) -> ProviderProfile? {
+        profiles.first(where: \.isEnabled) ?? profiles.first
     }
 
     /// Build an `LLMClient` for the given session.

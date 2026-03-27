@@ -9,6 +9,7 @@ struct MainView: View {
 
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
+    @Query(sort: \Assistant.sortOrder) private var assistants: [Assistant]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     @State private var selectedSessionID: UUID?
@@ -23,7 +24,8 @@ struct MainView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView(
                 selectedSessionID: $selectedSessionID,
-                onNewChat: createNewChat
+                assistants: assistants,
+                onNewChat: { createNewChat(with: $0) }
             )
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
@@ -40,7 +42,7 @@ struct MainView: View {
                 } description: {
                     Text("Select a conversation from the sidebar or start a new one.")
                 } actions: {
-                    Button(action: createNewChat) {
+                    Button(action: { createNewChat() }) {
                         Text("New Conversation")
                     }
                     .buttonStyle(.borderedProminent)
@@ -60,7 +62,7 @@ struct MainView: View {
             }
         }
         .onAppear {
-            seedProfilesIfNeeded()
+            seedIfNeeded()
             syncMCPServers()
         }
         .onChange(of: mcpServerConfigs.map(\.configSnapshot)) {
@@ -77,9 +79,15 @@ struct MainView: View {
         }
     }
 
-    private func createNewChat() {
-        let defaultProfile = providerService.defaultProfile(from: profiles)
-        let session = ChatSession(profile: defaultProfile)
+    private func createNewChat(with assistant: Assistant? = nil) {
+        let resolved = assistant ?? assistants.first(where: \.isDefault) ?? assistants.first
+        let session: ChatSession
+        if let resolved {
+            session = ChatSession(assistant: resolved)
+        } else {
+            // Fallback if no assistants exist yet (shouldn't happen after seeding)
+            session = ChatSession(profile: providerService.fallbackProfile(from: profiles))
+        }
         modelContext.insert(session)
         try? modelContext.save()
         selectedSessionID = session.id
@@ -104,17 +112,23 @@ struct MainView: View {
         mcpService.syncServers(desired: desired, allConfigs: mcpServerConfigs)
     }
 
-    /// On first launch, seed the built-in provider profile definitions.
-    private func seedProfilesIfNeeded() {
-        guard profiles.isEmpty else { return }
-        for profile in ProviderProfile.builtInProfiles() {
-            modelContext.insert(profile)
+    /// On first launch, seed the built-in provider profiles and default assistant.
+    private func seedIfNeeded() {
+        if profiles.isEmpty {
+            for profile in ProviderProfile.builtInProfiles() {
+                modelContext.insert(profile)
+            }
+            try? modelContext.save()
         }
-        try? modelContext.save()
 
-        // Set the first enabled profile as default
-        if let first = profiles.first(where: \.isEnabled) {
-            providerService.defaultProviderID = first.id
+        if assistants.isEmpty {
+            let assistant = Assistant.defaultAssistant()
+            // Link the default assistant to the first enabled provider
+            if let first = profiles.first(where: \.isEnabled) {
+                assistant.providerIDString = first.id.uuidString
+            }
+            modelContext.insert(assistant)
+            try? modelContext.save()
         }
     }
 }
