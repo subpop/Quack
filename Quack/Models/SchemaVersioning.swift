@@ -162,6 +162,7 @@ enum QuackSchemaV1: VersionedSchema {
         var isDefault: Bool
         var sortOrder: Int
         var iconName: String?
+        var colorRaw: String?
 
         var temperature: Double?
         var maxTokens: Int?

@@ -129,7 +129,7 @@ struct SidebarView: View {
                     } label: {
                         Label(
                             assistant.name,
-                            systemImage: assistant.iconName ?? "person.crop.circle"
+                            systemImage: assistant.resolvedIcon
                         )
                         if assistant.isDefault {
                             Text("(Default)")

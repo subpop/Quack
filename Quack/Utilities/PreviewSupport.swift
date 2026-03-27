@@ -40,6 +40,8 @@ enum PreviewSupport {
             systemPrompt: "You are a code review assistant. Focus on correctness, performance, and maintainability.",
             sortOrder: 1
         )
+        codeAssistant.iconName = "chevron.left.forwardslash.chevron.right"
+        codeAssistant.colorRaw = "orange"
         context.insert(codeAssistant)
 
         // MCP Server

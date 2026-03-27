@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 @Model
 final class Assistant {
@@ -11,6 +12,10 @@ final class Assistant {
     var isDefault: Bool
     var sortOrder: Int
     var iconName: String?
+
+    /// Background color stored as a raw string key (e.g. "blue", "orange").
+    /// nil defaults to the accent color.
+    var colorRaw: String?
 
     // Parameters
     var temperature: Double?
@@ -41,6 +46,17 @@ final class Assistant {
         }
     }
 
+    /// The resolved icon SF Symbol name, falling back to a default.
+    var resolvedIcon: String {
+        iconName ?? "person.crop.circle.fill"
+    }
+
+    /// The resolved background color for the assistant badge.
+    var resolvedColor: Color {
+        guard let key = colorRaw else { return .accentColor }
+        return Self.colorPalette[key] ?? .accentColor
+    }
+
     init(
         name: String = "",
         systemPrompt: String? = nil,
@@ -56,11 +72,66 @@ final class Assistant {
 
     /// Create the built-in default assistant seeded on first launch.
     static func defaultAssistant() -> Assistant {
-        Assistant(
+        let a = Assistant(
             name: "General",
             systemPrompt: "You are a helpful assistant.",
             isDefault: true,
             sortOrder: 0
         )
+        a.iconName = "bubble.left.and.bubble.right.fill"
+        a.colorRaw = "blue"
+        return a
     }
+
+    // MARK: - Color Palette
+
+    /// The available background colors for assistant badges.
+    static let colorPalette: [String: Color] = [
+        "gray": .gray,
+        "blue": .blue,
+        "purple": .purple,
+        "pink": .pink,
+        "red": .red,
+        "orange": .orange,
+        "yellow": .yellow,
+        "green": .green,
+        "mint": .mint,
+        "teal": .teal,
+        "cyan": .cyan,
+        "indigo": .indigo,
+        "brown": .brown,
+    ]
+
+    /// Ordered keys for display in the color picker.
+    static let colorKeys: [String] = [
+        "gray", "brown", "red", "orange", "yellow",
+        "green", "mint", "teal", "cyan", "blue",
+        "indigo", "purple", "pink",
+    ]
+
+    // MARK: - Icon Choices
+
+    /// A curated set of SF Symbol names suitable for assistant icons.
+    static let iconChoices: [String] = [
+        "person.crop.circle.fill",
+        "bubble.left.and.bubble.right.fill",
+        "brain.head.profile.fill",
+        "sparkles",
+        "lightbulb.fill",
+        "book.fill",
+        "hammer.fill",
+        "wrench.and.screwdriver.fill",
+        "terminal.fill",
+        "chevron.left.forwardslash.chevron.right",
+        "doc.text.fill",
+        "pencil.and.outline",
+        "magnifyingglass",
+        "globe",
+        "graduationcap.fill",
+        "text.bubble.fill",
+        "star.fill",
+        "bolt.fill",
+        "cpu.fill",
+        "shield.fill",
+    ]
 }

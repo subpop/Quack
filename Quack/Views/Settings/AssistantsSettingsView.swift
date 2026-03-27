@@ -91,7 +91,6 @@ struct AssistantsSettingsView: View {
         )
         modelContext.insert(assistant)
         try? modelContext.save()
-        // Open the detail sheet after a short delay so SwiftData settles
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             editingAssistant = assistant
         }
@@ -119,6 +118,7 @@ struct AssistantsSettingsView: View {
         copy.maxMessages = assistant.maxMessages
         copy.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
         copy.iconName = assistant.iconName
+        copy.colorRaw = assistant.colorRaw
         modelContext.insert(copy)
         try? modelContext.save()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -144,13 +144,13 @@ private struct AssistantRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: assistant.iconName ?? "person.crop.circle.fill")
+            Image(systemName: assistant.resolvedIcon)
                 .font(.title2)
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(assistant.isDefault ? Color.accentColor.gradient : Color.secondary.gradient)
+                        .fill(assistant.resolvedColor.gradient)
                 )
 
             VStack(alignment: .leading, spacing: 2) {
@@ -205,7 +205,7 @@ struct AssistantDetailSheet: View {
             Divider()
             sheetFooter
         }
-        .frame(width: 500, height: 580)
+        .frame(width: 500, height: 620)
         .alert(
             "Delete Assistant",
             isPresented: $showingDeleteConfirmation
@@ -225,13 +225,13 @@ struct AssistantDetailSheet: View {
 
     private var sheetHeader: some View {
         VStack(spacing: 6) {
-            Image(systemName: assistant.iconName ?? "person.crop.circle.fill")
+            Image(systemName: assistant.resolvedIcon)
                 .font(.system(size: 28))
                 .foregroundStyle(.white)
                 .frame(width: 52, height: 52)
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(assistant.isDefault ? Color.accentColor.gradient : Color.secondary.gradient)
+                        .fill(assistant.resolvedColor.gradient)
                 )
 
             Text(assistant.name.isEmpty ? "Untitled" : assistant.name)
@@ -255,6 +255,9 @@ struct AssistantDetailSheet: View {
             Section {
                 TextField("Name", text: $assistant.name)
                     .onChange(of: assistant.name) { save() }
+
+                iconPicker
+                colorPicker
             }
 
             // Provider
@@ -430,6 +433,63 @@ struct AssistantDetailSheet: View {
         .formStyle(.grouped)
     }
 
+    // MARK: - Icon Picker
+
+    private var iconPicker: some View {
+        LabeledContent("Icon") {
+            HStack(spacing: 0) {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(28), spacing: 4), count: 10), spacing: 4) {
+                    ForEach(Assistant.iconChoices, id: \.self) { name in
+                        let isSelected = assistant.resolvedIcon == name
+                        Button {
+                            assistant.iconName = name
+                            save()
+                        } label: {
+                            Image(systemName: name)
+                                .font(.system(size: 12))
+                                .frame(width: 24, height: 24)
+                                .foregroundStyle(isSelected ? .white : .primary)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                        .fill(isSelected ? assistant.resolvedColor : .clear)
+                                )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Color Picker
+
+    private var colorPicker: some View {
+        LabeledContent("Color") {
+            HStack(spacing: 4) {
+                ForEach(Assistant.colorKeys, id: \.self) { key in
+                    let color = Assistant.colorPalette[key]!
+                    let isSelected = (assistant.colorRaw ?? "") == key
+                    Button {
+                        assistant.colorRaw = key
+                        save()
+                    } label: {
+                        Circle()
+                            .fill(color.gradient)
+                            .frame(width: 18, height: 18)
+                            .overlay {
+                                if isSelected {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(.white)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
     // MARK: - Footer
 
     private var sheetFooter: some View {
@@ -459,7 +519,6 @@ struct AssistantDetailSheet: View {
             get: { assistant.isDefault },
             set: { newValue in
                 guard newValue else { return }
-                // Set all assistants to non-default, then this one to default
                 let descriptor = FetchDescriptor<Assistant>()
                 if let all = try? modelContext.fetch(descriptor) {
                     for a in all { a.isDefault = false }
