@@ -8,7 +8,7 @@ struct MainView: View {
     @Environment(MCPService.self) private var mcpService
 
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     @State private var selectedSessionID: UUID?
@@ -60,7 +60,7 @@ struct MainView: View {
             }
         }
         .onAppear {
-            seedProvidersIfNeeded()
+            seedProfilesIfNeeded()
             syncMCPServers()
         }
         .onChange(of: mcpServerConfigs.map(\.configSnapshot)) {
@@ -78,11 +78,8 @@ struct MainView: View {
     }
 
     private func createNewChat() {
-        let defaultProvider = providerService.defaultProvider(from: providers)
-        let session = ChatSession(
-            providerID: defaultProvider?.id,
-            modelIdentifier: nil
-        )
+        let defaultProfile = providerService.defaultProfile(from: profiles)
+        let session = ChatSession(profile: defaultProfile)
         modelContext.insert(session)
         try? modelContext.save()
         selectedSessionID = session.id
@@ -107,16 +104,16 @@ struct MainView: View {
         mcpService.syncServers(desired: desired, allConfigs: mcpServerConfigs)
     }
 
-    /// On first launch, seed the built-in provider definitions.
-    private func seedProvidersIfNeeded() {
-        guard providers.isEmpty else { return }
-        for provider in Provider.builtInProviders() {
-            modelContext.insert(provider)
+    /// On first launch, seed the built-in provider profile definitions.
+    private func seedProfilesIfNeeded() {
+        guard profiles.isEmpty else { return }
+        for profile in ProviderProfile.builtInProfiles() {
+            modelContext.insert(profile)
         }
         try? modelContext.save()
 
-        // Set the first enabled provider as default
-        if let first = providers.first(where: \.isEnabled) {
+        // Set the first enabled profile as default
+        if let first = profiles.first(where: \.isEnabled) {
             providerService.defaultProviderID = first.id
         }
     }

@@ -177,6 +177,7 @@ struct ToolCallTests {
     }
 
     @Test("ToolPermission labels are human readable")
+    @MainActor
     func labels() {
         #expect(ToolPermission.always.label == "Always Allow")
         #expect(ToolPermission.ask.label == "Ask")

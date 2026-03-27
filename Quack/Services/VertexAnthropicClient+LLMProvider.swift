@@ -2,20 +2,22 @@ import Foundation
 import AgentRunKit
 
 extension VertexAnthropicClient: LLMProvider {
-    static let kind: ProviderKind = .vertexAnthropic
-
-    static let requiresAPIKey: Bool = false
-    static let requiresBaseURL: Bool = false
-    static let supportsCaching: Bool = true
+    static let platform: ProviderPlatform = .vertexAnthropic
 
     static func makeClient(
-        from provider: Provider,
+        baseURL: URL?,
+        apiKey: String?,
         model: String,
         maxTokens: Int,
-        reasoningConfig: ReasoningConfig?
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
     ) -> (any LLMClient)? {
-        guard let projectID = provider.projectID, !projectID.isEmpty,
-              let location = provider.location, !location.isEmpty else {
+        guard let projectID, !projectID.isEmpty,
+              let location, !location.isEmpty else {
             return nil
         }
 
@@ -29,10 +31,10 @@ extension VertexAnthropicClient: LLMProvider {
             model: model,
             authService: authService,
             maxTokens: maxTokens,
-            contextWindowSize: provider.contextWindowSize,
-            retryPolicy: resolveRetryPolicy(from: provider),
+            contextWindowSize: contextWindowSize,
+            retryPolicy: retryPolicy,
             reasoningConfig: reasoningConfig,
-            cachingEnabled: provider.cachingEnabled
+            cachingEnabled: cachingEnabled
         )
     }
 }

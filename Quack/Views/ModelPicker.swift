@@ -1,16 +1,16 @@
 import SwiftUI
 
 /// A model selection picker that lists models from the provider's API
-/// (or hardcoded fallbacks) with a "Custom…" option for arbitrary model IDs.
+/// (or hardcoded fallbacks) with a "Custom..." option for arbitrary model IDs.
 ///
-/// Used in both `ProviderDetailSheet` (for `Provider.defaultModel`) and
+/// Used in both `ProviderDetailSheet` (for `ProviderProfile.defaultModel`) and
 /// `ChatInspectorView` (for `ChatSession.modelIdentifier`).
 struct ModelPicker: View {
     /// The currently selected model identifier.
     @Binding var selection: String
 
-    /// The provider whose models should be listed.
-    let provider: Provider
+    /// The provider profile whose models should be listed.
+    let profile: ProviderProfile
 
     /// Optional placeholder shown when the selection is empty (e.g. "Default (gpt-4o)").
     /// When set, an additional "Default" option is shown at the top of the picker.
@@ -18,23 +18,23 @@ struct ModelPicker: View {
 
     @Environment(ModelListService.self) private var modelListService
 
-    /// Sentinel value representing the "Custom…" picker option.
+    /// Sentinel value representing the "Custom..." picker option.
     private static let customTag = "__custom__"
 
-    /// Whether the user has selected "Custom…" and the text field is visible.
+    /// Whether the user has selected "Custom..." and the text field is visible.
     @State private var isCustom: Bool = false
 
     /// The text in the custom model text field.
     @State private var customText: String = ""
 
-    init(selection: Binding<String>, provider: Provider, placeholder: String? = nil) {
+    init(selection: Binding<String>, profile: ProviderProfile, placeholder: String? = nil) {
         self._selection = selection
-        self.provider = provider
+        self.profile = profile
         self.placeholder = placeholder
     }
 
     var body: some View {
-        let models = modelListService.models(for: provider)
+        let models = modelListService.models(for: profile)
 
         if !models.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
@@ -44,11 +44,11 @@ struct ModelPicker: View {
                 }
             }
             .task {
-                await modelListService.fetchModels(for: provider)
+                await modelListService.fetchModels(for: profile)
                 syncCustomState()
             }
-            .onChange(of: provider.id) {
-                Task { await modelListService.fetchModels(for: provider) }
+            .onChange(of: profile.id) {
+                Task { await modelListService.fetchModels(for: profile) }
                 syncCustomState()
             }
         }
@@ -57,7 +57,7 @@ struct ModelPicker: View {
     // MARK: - Picker
 
     private var pickerView: some View {
-        let models = modelListService.models(for: provider)
+        let models = modelListService.models(for: profile)
 
         return Picker("Model", selection: pickerBinding) {
             if let placeholder {
@@ -100,13 +100,13 @@ struct ModelPicker: View {
     /// A binding that maps the picker's selected tag to/from the external `selection`.
     ///
     /// - Known models map directly to their string tag.
-    /// - The "Custom…" tag activates the text field.
-    /// - Selecting a known model after "Custom…" hides the text field.
+    /// - The "Custom..." tag activates the text field.
+    /// - Selecting a known model after "Custom..." hides the text field.
     private var pickerBinding: Binding<String> {
         Binding(
             get: {
                 if isCustom { return Self.customTag }
-                let models = modelListService.models(for: provider)
+                let models = modelListService.models(for: profile)
                 // If the current selection matches a known model, return it
                 if models.contains(selection) || selection.isEmpty {
                     return selection
@@ -132,7 +132,7 @@ struct ModelPicker: View {
     /// Syncs the `isCustom` state based on whether the current selection
     /// is in the model list.
     private func syncCustomState() {
-        let models = modelListService.models(for: provider)
+        let models = modelListService.models(for: profile)
         if !selection.isEmpty && !models.contains(selection) {
             isCustom = true
             customText = selection

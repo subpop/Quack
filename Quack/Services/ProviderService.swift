@@ -7,7 +7,7 @@ import AgentRunKit
 final class ProviderService {
     private var clientCache: [String: any LLMClient] = [:]
 
-    /// The UUID of the default provider, persisted in UserDefaults.
+    /// The UUID of the default provider profile, persisted in UserDefaults.
     var defaultProviderID: UUID? {
         get {
             guard let str = UserDefaults.standard.string(forKey: "defaultProviderID") else { return nil }
@@ -18,62 +18,78 @@ final class ProviderService {
         }
     }
 
-    /// Resolve the effective Provider for a chat session, falling back to the global default.
-    func resolvedProvider(for session: ChatSession, providers: [Provider]) -> Provider? {
+    /// Resolve the effective ProviderProfile for a chat session, falling back to the global default.
+    func resolvedProfile(for session: ChatSession, profiles: [ProviderProfile]) -> ProviderProfile? {
         if let sessionProviderID = session.providerID,
-           let provider = providers.first(where: { $0.id == sessionProviderID }) {
-            return provider
+           let profile = profiles.first(where: { $0.id == sessionProviderID }) {
+            return profile
         }
-        return defaultProvider(from: providers)
+        return defaultProfile(from: profiles)
     }
 
     /// Resolve the effective model identifier for a chat session.
-    func resolvedModel(for session: ChatSession, providers: [Provider]) -> String {
+    func resolvedModel(for session: ChatSession, profiles: [ProviderProfile]) -> String {
         if let model = session.modelIdentifier { return model }
-        return resolvedProvider(for: session, providers: providers)?.defaultModel ?? "unknown"
+        return resolvedProfile(for: session, profiles: profiles)?.defaultModel ?? "unknown"
     }
 
-    /// Get the default provider from the list.
-    func defaultProvider(from providers: [Provider]) -> Provider? {
+    /// Get the default profile from the list.
+    func defaultProfile(from profiles: [ProviderProfile]) -> ProviderProfile? {
         if let id = defaultProviderID,
-           let provider = providers.first(where: { $0.id == id }) {
-            return provider
+           let profile = profiles.first(where: { $0.id == id }) {
+            return profile
         }
-        // Fallback: first enabled provider
-        return providers.first(where: \.isEnabled) ?? providers.first
+        // Fallback: first enabled profile
+        return profiles.first(where: \.isEnabled) ?? profiles.first
     }
 
     /// Build an `LLMClient` for the given session.
     ///
-    /// Delegates construction to the `LLMProvider` implementation registered
-    /// for the provider's kind. Each `LLMProvider` encapsulates its own
-    /// authentication, URL validation, and client construction logic.
+    /// Acts as a bridge: pulls configuration from the `ProviderProfile`, resolves
+    /// API keys from the Keychain, and passes individual values to the decoupled
+    /// `LLMProvider.makeClient()`.
     func makeClient(
         for session: ChatSession,
-        providers: [Provider]
+        profiles: [ProviderProfile]
     ) -> (any LLMClient)? {
-        guard let provider = resolvedProvider(for: session, providers: providers),
-              provider.isEnabled else {
+        guard let profile = resolvedProfile(for: session, profiles: profiles),
+              profile.isEnabled else {
             return nil
         }
 
-        let model = session.modelIdentifier ?? provider.defaultModel
-        let providerMaxTokens = session.maxTokens ?? provider.maxTokens
-        let baseMaxTokens = providerMaxTokens > 0 ? providerMaxTokens : Self.defaultMaxTokens(for: provider.kind)
+        let model = session.modelIdentifier ?? profile.defaultModel
+        let providerMaxTokens = session.maxTokens ?? profile.maxTokens
+        let baseMaxTokens = providerMaxTokens > 0 ? providerMaxTokens : profile.platform.defaultMaxTokens
         let reasoningConfig = Self.resolveReasoningConfig(
             sessionEffort: session.reasoningEffort,
-            providerEffort: provider.reasoningEffort
+            providerEffort: profile.reasoningEffort
         )
         let maxTokens = Self.adjustedMaxTokens(
             baseMaxTokens: baseMaxTokens,
             reasoningConfig: reasoningConfig
         )
 
-        return provider.kind.providerType.makeClient(
-            from: provider,
+        // Resolve connection details from profile
+        let baseURL = Self.resolveBaseURL(from: profile)
+        let apiKey: String?
+        if profile.requiresAPIKey {
+            apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: profile.id))
+        } else {
+            apiKey = "no-key-required"
+        }
+        let retryPolicy = Self.resolveRetryPolicy(from: profile)
+
+        return profile.platform.providerType.makeClient(
+            baseURL: baseURL,
+            apiKey: apiKey,
             model: model,
             maxTokens: maxTokens,
-            reasoningConfig: reasoningConfig
+            contextWindowSize: profile.contextWindowSize,
+            reasoningConfig: reasoningConfig,
+            retryPolicy: retryPolicy,
+            cachingEnabled: profile.cachingEnabled,
+            projectID: profile.projectID,
+            location: profile.location
         )
     }
 
@@ -83,18 +99,22 @@ final class ProviderService {
 
     // MARK: - Private
 
-    /// Default maxTokens for each provider kind, sized to accommodate output after reasoning.
-    private static func defaultMaxTokens(for kind: ProviderKind) -> Int {
-        switch kind {
-        case .anthropic, .vertexAnthropic:
-            return 40_000
-        case .gemini, .vertexGemini:
-            return 40_000
-        case .openAICompatible:
-            return 16_384
-        case .foundationModels:
-            return 4_096
+    /// Build a `RetryPolicy` from the profile's stored retry settings.
+    private static func resolveRetryPolicy(from profile: ProviderProfile) -> RetryPolicy {
+        RetryPolicy(
+            maxAttempts: profile.retryMaxAttempts,
+            baseDelay: .seconds(Int64(profile.retryBaseDelay)),
+            maxDelay: .seconds(Int64(profile.retryMaxDelay))
+        )
+    }
+
+    /// Parse and validate the profile's base URL.
+    private static func resolveBaseURL(from profile: ProviderProfile) -> URL? {
+        guard let urlString = profile.baseURL,
+              let url = URL(string: urlString) else {
+            return nil
         }
+        return url
     }
 
     /// Thinking budgets for Anthropic models by effort level.

@@ -14,7 +14,7 @@ struct QuackApp: App {
         let schema = Schema([
             ChatSession.self,
             ChatMessageRecord.self,
-            Provider.self,
+            ProviderProfile.self,
             MCPServerConfig.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

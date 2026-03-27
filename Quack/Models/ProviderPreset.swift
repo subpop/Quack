@@ -3,10 +3,10 @@ import SwiftUI
 
 /// Pre-configured templates for common LLM providers.
 ///
-/// Each preset bundles the `ProviderKind`, base URL, API-key requirement,
-/// and a sensible default model so users can add popular providers in one
-/// click instead of filling in fields manually. The `.custom` case
-/// bypasses the preset flow and opens a blank provider for manual editing.
+/// Each preset bundles a `ProviderPlatform`, connection details, and sensible
+/// defaults for all profile fields so users can add popular providers in one
+/// click. When a preset is selected, its values are *copied* into a new
+/// `ProviderProfile`, which the user can then edit independently.
 enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
     case ollama
     case openAI
@@ -59,9 +59,9 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    // MARK: - Configuration
+    // MARK: - Connection
 
-    var kind: ProviderKind {
+    var platform: ProviderPlatform {
         switch self {
         case .ollama:     .openAICompatible
         case .openAI:     .openAICompatible
@@ -96,6 +96,8 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    // MARK: - Model Defaults
+
     var defaultModel: String {
         switch self {
         case .ollama:     "llama3.2"
@@ -108,5 +110,68 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
         case .mistral:    "mistral-large-latest"
         case .custom:     ""
         }
+    }
+
+    var maxTokens: Int {
+        switch self {
+        case .anthropic:  40_000
+        case .openAI:     16_384
+        case .gemini:     40_000
+        case .groq:       8_192
+        case .together:   8_192
+        case .mistral:    8_192
+        case .openRouter: 16_384
+        case .ollama:     4_096
+        case .custom:     4_096
+        }
+    }
+
+    var contextWindowSize: Int? {
+        switch self {
+        case .openAI:     128_000
+        case .anthropic:  200_000
+        case .gemini:     1_048_576
+        case .groq:       128_000
+        case .openRouter: nil
+        case .together:   128_000
+        case .mistral:    128_000
+        default:          nil
+        }
+    }
+
+    var reasoningEffort: String? { nil }
+
+    // MARK: - Provider-Specific
+
+    var cachingEnabled: Bool {
+        switch self {
+        case .anthropic: true
+        default: false
+        }
+    }
+
+    var retryMaxAttempts: Int { 3 }
+    var retryBaseDelay: Double { 1.0 }
+    var retryMaxDelay: Double { 30.0 }
+
+    // MARK: - Factory
+
+    /// Create a new `ProviderProfile` by copying all preset values.
+    func makeProfile(sortOrder: Int) -> ProviderProfile {
+        ProviderProfile(
+            name: self == .custom ? "New Provider" : displayName,
+            platform: platform,
+            sortOrder: sortOrder,
+            baseURL: baseURL,
+            requiresAPIKey: requiresAPIKey,
+            defaultModel: defaultModel,
+            maxTokens: maxTokens,
+            contextWindowSize: contextWindowSize,
+            reasoningEffort: reasoningEffort,
+            cachingEnabled: cachingEnabled,
+            retryMaxAttempts: retryMaxAttempts,
+            retryBaseDelay: retryBaseDelay,
+            retryMaxDelay: retryMaxDelay
+        )
     }
 }

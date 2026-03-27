@@ -3,16 +3,19 @@ import AgentRunKit
 import AgentRunKitFoundationModels
 
 extension FoundationModelsClient: LLMProvider where C == EmptyContext {
-    static var kind: ProviderKind { .foundationModels }
-
-    static var requiresAPIKey: Bool { false }
-    static var requiresBaseURL: Bool { false }
+    static var platform: ProviderPlatform { .foundationModels }
 
     static func makeClient(
-        from provider: Provider,
+        baseURL: URL?,
+        apiKey: String?,
         model: String,
         maxTokens: Int,
-        reasoningConfig: ReasoningConfig?
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
     ) -> (any LLMClient)? {
         // FoundationModelsClient manages tools internally via Apple's
         // LanguageModelSession. We pass an empty tool list here since tools

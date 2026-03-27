@@ -11,7 +11,7 @@ final class ChatSession {
     var isPinned: Bool
 
     // Per-session overrides (nil = use global default)
-    /// The UUID of the Provider to use for this session, stored as a string.
+    /// The UUID of the ProviderProfile to use for this session, stored as a string.
     var providerIDString: String?
     var modelIdentifier: String?
     var systemPrompt: String?
@@ -32,7 +32,7 @@ final class ChatSession {
     /// nil means "use the server-level default for all tools."
     var toolPermissionOverridesJSON: String?
 
-    /// The provider UUID for this session, if overridden.
+    /// The provider profile UUID for this session, if overridden.
     var providerID: UUID? {
         get {
             guard let str = providerIDString else { return nil }
@@ -100,10 +100,15 @@ final class ChatSession {
         messages.sorted { $0.timestamp < $1.timestamp }
     }
 
+    /// Create a new chat session, optionally copying parameters from a provider profile.
+    ///
+    /// When a profile is provided, its user-configurable parameters (provider ID,
+    /// model, maxTokens, reasoning effort) are *copied* into the session. From that
+    /// point on, the session's values are independent and can be changed without
+    /// affecting the originating profile.
     init(
         title: String = "New Chat",
-        providerID: UUID? = nil,
-        modelIdentifier: String? = nil
+        profile: ProviderProfile? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -111,7 +116,13 @@ final class ChatSession {
         self.updatedAt = Date()
         self.isArchived = false
         self.isPinned = false
-        self.providerIDString = providerID?.uuidString
-        self.modelIdentifier = modelIdentifier
+
+        // Copy from profile at creation time
+        if let profile {
+            self.providerIDString = profile.id.uuidString
+            self.modelIdentifier = profile.defaultModel
+            self.maxTokens = profile.maxTokens
+            self.reasoningEffort = profile.reasoningEffort
+        }
     }
 }

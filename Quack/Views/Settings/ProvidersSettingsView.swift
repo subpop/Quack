@@ -4,41 +4,41 @@ import SwiftData
 struct ProvidersSettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ProviderService.self) private var providerService
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
-    @State private var editingProvider: Provider?
-    @State private var providerToDelete: Provider?
+    @State private var editingProfile: ProviderProfile?
+    @State private var profileToDelete: ProviderProfile?
     @State private var showingAddSheet = false
 
     var body: some View {
         Form {
             Section("Providers") {
-                ForEach(providers) { provider in
-                    ProviderRow(
-                        provider: provider,
-                        isDefault: providerService.defaultProviderID == provider.id
+                ForEach(profiles) { profile in
+                    ProfileRow(
+                        profile: profile,
+                        isDefault: providerService.defaultProviderID == profile.id
                     )
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        editingProvider = provider
+                        editingProfile = profile
                     }
                     .contextMenu {
                         Button("Edit\u{2026}") {
-                            editingProvider = provider
+                            editingProfile = profile
                         }
 
                         Divider()
 
-                        if providerService.defaultProviderID != provider.id {
+                        if providerService.defaultProviderID != profile.id {
                             Button("Set as Default") {
-                                providerService.defaultProviderID = provider.id
+                                providerService.defaultProviderID = profile.id
                             }
                         }
 
                         Toggle("Enabled", isOn: Binding(
-                            get: { provider.isEnabled },
+                            get: { profile.isEnabled },
                             set: { newValue in
-                                provider.isEnabled = newValue
+                                profile.isEnabled = newValue
                                 try? modelContext.save()
                                 providerService.invalidateCache()
                             }
@@ -47,7 +47,7 @@ struct ProvidersSettingsView: View {
                         Divider()
 
                         Button("Delete\u{2026}", role: .destructive) {
-                            providerToDelete = provider
+                            profileToDelete = profile
                         }
                     }
                 }
@@ -65,53 +65,53 @@ struct ProvidersSettingsView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 12)
         }
-        .sheet(item: $editingProvider) { provider in
-            ProviderDetailSheet(provider: provider)
+        .sheet(item: $editingProfile) { profile in
+            ProviderDetailSheet(profile: profile)
         }
         .sheet(isPresented: $showingAddSheet) {
-            AddProviderSheet { provider in
-                editingProvider = provider
+            AddProviderSheet { profile in
+                editingProfile = profile
             }
         }
         .alert(
             "Delete Provider",
             isPresented: Binding(
-                get: { providerToDelete != nil },
-                set: { if !$0 { providerToDelete = nil } }
+                get: { profileToDelete != nil },
+                set: { if !$0 { profileToDelete = nil } }
             )
         ) {
             Button("Cancel", role: .cancel) {
-                providerToDelete = nil
+                profileToDelete = nil
             }
             Button("Delete", role: .destructive) {
-                if let provider = providerToDelete {
-                    removeProvider(provider)
+                if let profile = profileToDelete {
+                    removeProfile(profile)
                 }
-                providerToDelete = nil
+                profileToDelete = nil
             }
         } message: {
-            if let provider = providerToDelete {
-                Text("Are you sure you want to delete \"\(provider.name)\"? This action cannot be undone.")
+            if let profile = profileToDelete {
+                Text("Are you sure you want to delete \"\(profile.name)\"? This action cannot be undone.")
             }
         }
     }
 
     // MARK: - Actions
 
-    private func removeProvider(_ provider: Provider) {
-        KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
-        if providerService.defaultProviderID == provider.id {
+    private func removeProfile(_ profile: ProviderProfile) {
+        KeychainService.delete(key: KeychainService.apiKeyKey(for: profile.id))
+        if providerService.defaultProviderID == profile.id {
             providerService.defaultProviderID = nil
         }
-        modelContext.delete(provider)
+        modelContext.delete(profile)
         try? modelContext.save()
     }
 }
 
-// MARK: - Provider Row
+// MARK: - Profile Row
 
-private struct ProviderRow: View {
-    let provider: Provider
+private struct ProfileRow: View {
+    let profile: ProviderProfile
     let isDefault: Bool
 
     var body: some View {
@@ -126,9 +126,9 @@ private struct ProviderRow: View {
                 )
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(provider.name)
+                Text(profile.name)
                     .fontWeight(.medium)
-                Text(provider.kind.displayName)
+                Text(profile.platform.displayName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -141,7 +141,7 @@ private struct ProviderRow: View {
                     .foregroundStyle(.secondary)
             }
 
-            if !provider.isEnabled {
+            if !profile.isEnabled {
                 Text("Disabled")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
@@ -157,19 +157,19 @@ private struct ProviderRow: View {
 
     @ViewBuilder
     private var providerIcon: some View {
-        if provider.kind.isCustomIcon {
-            provider.kind.icon
+        if profile.platform.isCustomIcon {
+            profile.platform.icon
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 20, height: 20)
         } else {
-            provider.kind.icon
+            profile.platform.icon
                 .font(.title2)
         }
     }
 
     private var iconColor: Color {
-        switch provider.kind {
+        switch profile.platform {
         case .openAICompatible: .green
         case .anthropic: .orange
         case .foundationModels: .blue
@@ -185,9 +185,9 @@ private struct ProviderRow: View {
 private struct AddProviderSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
-    var onAdd: (Provider) -> Void
+    var onAdd: (ProviderProfile) -> Void
 
     @State private var selectedPreset: ProviderPreset = .ollama
 
@@ -241,11 +241,7 @@ private struct AddProviderSheet: View {
                 Spacer()
 
                 Button("Add") {
-                    if selectedPreset == .custom {
-                        addCustomProvider()
-                    } else {
-                        addProvider()
-                    }
+                    addProfile()
                 }
                 .keyboardShortcut(.defaultAction)
             }
@@ -285,34 +281,13 @@ private struct AddProviderSheet: View {
         }
     }
 
-    private func addProvider() {
-        let provider = Provider(
-            name: selectedPreset.displayName,
-            kind: selectedPreset.kind,
-            sortOrder: providers.count,
-            baseURL: selectedPreset.baseURL,
-            requiresAPIKey: selectedPreset.requiresAPIKey,
-            defaultModel: selectedPreset.defaultModel
-        )
-        modelContext.insert(provider)
+    private func addProfile() {
+        let profile = selectedPreset.makeProfile(sortOrder: profiles.count)
+        modelContext.insert(profile)
         try? modelContext.save()
         dismiss()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            onAdd(provider)
-        }
-    }
-
-    private func addCustomProvider() {
-        let provider = Provider(
-            name: "New Provider",
-            kind: .openAICompatible,
-            sortOrder: providers.count
-        )
-        modelContext.insert(provider)
-        try? modelContext.save()
-        dismiss()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            onAdd(provider)
+            onAdd(profile)
         }
     }
 }

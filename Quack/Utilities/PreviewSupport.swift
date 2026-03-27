@@ -10,7 +10,7 @@ enum PreviewSupport {
         let schema = Schema([
             ChatSession.self,
             ChatMessageRecord.self,
-            Provider.self,
+            ProviderProfile.self,
             MCPServerConfig.self,
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
@@ -22,11 +22,11 @@ enum PreviewSupport {
     static func seed(_ container: ModelContainer) -> SeedData {
         let context = container.mainContext
 
-        // Providers
-        let providers = Provider.previewProviders()
-        for p in providers { context.insert(p) }
+        // Provider Profiles
+        let profiles = ProviderProfile.previewProfiles()
+        for p in profiles { context.insert(p) }
 
-        let openAI = providers[0]
+        let openAI = profiles[0]
         openAI.isEnabled = true
 
         // MCP Server
@@ -41,7 +41,7 @@ enum PreviewSupport {
         // Chat sessions
         let session1 = ChatSession(
             title: "Hello World",
-            providerID: openAI.id
+            profile: openAI
         )
         context.insert(session1)
 
@@ -74,7 +74,7 @@ enum PreviewSupport {
         try? context.save()
 
         return SeedData(
-            providers: providers,
+            profiles: profiles,
             mcpServer: mcpServer,
             session: session1,
             emptySession: emptySession,
@@ -84,7 +84,7 @@ enum PreviewSupport {
     }
 
     struct SeedData {
-        let providers: [Provider]
+        let profiles: [ProviderProfile]
         let mcpServer: MCPServerConfig
         let session: ChatSession
         let emptySession: ChatSession

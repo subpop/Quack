@@ -56,7 +56,7 @@ final class ChatService {
         in session: ChatSession,
         modelContext: ModelContext,
         providerService: ProviderService,
-        providers: [Provider],
+        profiles: [ProviderProfile],
         mcpTools: [any AnyTool<EmptyContext>]
     ) {
         // Cancel any existing stream
@@ -78,7 +78,7 @@ final class ChatService {
         // Build the client
         guard let client = providerService.makeClient(
             for: session,
-            providers: providers
+            profiles: profiles
         ) else {
             streamingError = "No provider configured. Set up a provider in Settings."
             errorSessionID = session.id
@@ -190,7 +190,7 @@ final class ChatService {
         in session: ChatSession,
         modelContext: ModelContext,
         providerService: ProviderService,
-        providers: [Provider],
+        profiles: [ProviderProfile],
         mcpTools: [any AnyTool<EmptyContext>]
     ) {
         // Remove the last assistant message
@@ -207,7 +207,7 @@ final class ChatService {
                 in: session,
                 modelContext: modelContext,
                 providerService: providerService,
-                providers: providers,
+                profiles: profiles,
                 mcpTools: mcpTools
             )
         }
@@ -221,7 +221,7 @@ final class ChatService {
         in session: ChatSession,
         modelContext: ModelContext,
         providerService: ProviderService,
-        providers: [Provider],
+        profiles: [ProviderProfile],
         mcpTools: [any AnyTool<EmptyContext>]
     ) {
         guard message.role == .user else { return }
@@ -252,7 +252,7 @@ final class ChatService {
 
         guard let client = providerService.makeClient(
             for: session,
-            providers: providers
+            profiles: profiles
         ) else {
             streamingError = "No provider configured. Set up a provider in Settings."
             errorSessionID = session.id

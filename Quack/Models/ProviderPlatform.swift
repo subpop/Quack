@@ -4,10 +4,12 @@ import AgentRunKit
 import AgentRunKitFoundationModels
 
 /// The API wire protocol used to communicate with a provider's backend.
-/// This enum is intentionally small -- it represents the shape of the HTTP API,
-/// not the identity of the provider. Multiple providers can share the same kind
-/// (e.g., OpenAI, OpenRouter, Groq, Together, and Ollama are all `.openAICompatible`).
-enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
+///
+/// This enum represents the shape of the HTTP API and the connection details
+/// necessary to talk to a particular class of provider. Multiple providers
+/// can share the same platform (e.g., OpenAI, OpenRouter, Groq, Together,
+/// and Ollama are all `.openAICompatible`).
+enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     /// OpenAI Chat Completions API (also used by OpenRouter, Groq, Together, Ollama, etc.)
     case openAICompatible = "openai_compatible"
 
@@ -27,6 +29,8 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
     case vertexAnthropic = "vertex_anthropic"
 
     var id: String { rawValue }
+
+    // MARK: - Display
 
     var displayName: String {
         switch self {
@@ -58,7 +62,53 @@ enum ProviderKind: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The `LLMProvider` conforming type that handles this provider kind.
+    // MARK: - Connection Capabilities
+
+    /// Whether this platform requires an API key by default.
+    var requiresAPIKey: Bool {
+        switch self {
+        case .openAICompatible, .anthropic, .gemini: true
+        case .foundationModels, .vertexGemini, .vertexAnthropic: false
+        }
+    }
+
+    /// Whether this platform requires a base URL to be configured.
+    var requiresBaseURL: Bool {
+        switch self {
+        case .openAICompatible, .anthropic: true
+        case .foundationModels, .gemini, .vertexGemini, .vertexAnthropic: false
+        }
+    }
+
+    /// The default base URL for newly created providers of this platform, if any.
+    var defaultBaseURL: String? {
+        switch self {
+        case .anthropic: "https://api.anthropic.com/v1"
+        default: nil
+        }
+    }
+
+    /// Whether this platform supports Anthropic-style prompt caching.
+    var supportsCaching: Bool {
+        switch self {
+        case .anthropic, .vertexAnthropic: true
+        default: false
+        }
+    }
+
+    /// Default maxTokens for this platform, sized to accommodate output after reasoning.
+    var defaultMaxTokens: Int {
+        switch self {
+        case .anthropic, .vertexAnthropic: 40_000
+        case .gemini, .vertexGemini: 40_000
+        case .openAICompatible: 16_384
+        case .foundationModels: 4_096
+        }
+    }
+
+    // MARK: - Client Dispatch
+
+    /// The `LLMProvider` conforming type that handles this platform.
     var providerType: any LLMProvider.Type {
         switch self {
         case .openAICompatible: OpenAIClient.self

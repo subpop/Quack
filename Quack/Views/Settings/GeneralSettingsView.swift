@@ -3,13 +3,13 @@ import SwiftData
 
 struct GeneralSettingsView: View {
     @Environment(ProviderService.self) private var providerService
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
     @AppStorage("defaultSystemPrompt") private var defaultSystemPrompt = ""
 
-    private var defaultProvider: Provider? {
+    private var defaultProfile: ProviderProfile? {
         guard let id = providerService.defaultProviderID else { return nil }
-        return providers.first { $0.id == id }
+        return profiles.first { $0.id == id }
     }
 
     var body: some View {
@@ -21,25 +21,25 @@ struct GeneralSettingsView: View {
                 )) {
                     Text("None").tag(nil as UUID?)
                     Divider()
-                    ForEach(providers.filter(\.isEnabled)) { provider in
+                    ForEach(profiles.filter(\.isEnabled)) { profile in
                         Label {
-                            Text(provider.name)
+                            Text(profile.name)
                         } icon: {
-                            if provider.kind.isCustomIcon {
-                                provider.kind.icon
+                            if profile.platform.isCustomIcon {
+                                profile.platform.icon
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                             } else {
-                                provider.kind.icon
+                                profile.platform.icon
                             }
                         }
-                        .tag(provider.id as UUID?)
+                        .tag(profile.id as UUID?)
                     }
                 }
 
-                if let provider = defaultProvider {
+                if let profile = defaultProfile {
                     LabeledContent("Model") {
-                        Text(provider.defaultModel)
+                        Text(profile.defaultModel)
                             .foregroundStyle(.secondary)
                     }
                 }

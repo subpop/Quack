@@ -2,32 +2,33 @@ import Foundation
 import AgentRunKit
 
 extension AnthropicClient: LLMProvider {
-    static let kind: ProviderKind = .anthropic
-
-    static let requiresAPIKey: Bool = true
-    static let requiresBaseURL: Bool = true
-    static let defaultBaseURL: String? = "https://api.anthropic.com/v1"
-    static let supportsCaching: Bool = true
+    static let platform: ProviderPlatform = .anthropic
 
     static func makeClient(
-        from provider: Provider,
+        baseURL: URL?,
+        apiKey: String?,
         model: String,
         maxTokens: Int,
-        reasoningConfig: ReasoningConfig?
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
     ) -> (any LLMClient)? {
-        guard let apiKey = resolveAPIKey(for: provider) else { return nil }
+        guard let apiKey else { return nil }
 
-        let baseURL = resolveBaseURL(from: provider) ?? AnthropicClient.anthropicBaseURL
+        let resolvedBaseURL = baseURL ?? AnthropicClient.anthropicBaseURL
 
         return AnthropicClient(
             apiKey: apiKey,
             model: model,
             maxTokens: maxTokens,
-            contextWindowSize: provider.contextWindowSize,
-            baseURL: baseURL,
-            retryPolicy: resolveRetryPolicy(from: provider),
+            contextWindowSize: contextWindowSize,
+            baseURL: resolvedBaseURL,
+            retryPolicy: retryPolicy,
             reasoningConfig: reasoningConfig,
-            cachingEnabled: provider.cachingEnabled
+            cachingEnabled: cachingEnabled
         )
     }
 }

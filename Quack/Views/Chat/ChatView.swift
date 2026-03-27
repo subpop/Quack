@@ -8,7 +8,7 @@ struct ChatView: View {
     @Environment(ChatService.self) private var chatService
     @Environment(MCPService.self) private var mcpService
 
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     let session: ChatSession
@@ -324,7 +324,7 @@ struct ChatView: View {
             in: session,
             modelContext: modelContext,
             providerService: providerService,
-            providers: providers,
+            profiles: profiles,
             mcpTools: tools
         )
     }
@@ -343,15 +343,15 @@ struct ChatView: View {
             in: session,
             modelContext: modelContext,
             providerService: providerService,
-            providers: providers,
+            profiles: profiles,
             mcpTools: tools
         )
     }
 
     private var modelSubtitle: String {
-        let provider = providerService.resolvedProvider(for: session, providers: providers)
-        let model = providerService.resolvedModel(for: session, providers: providers)
-        return "\(provider?.name ?? "No Provider") · \(model)"
+        let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let model = providerService.resolvedModel(for: session, profiles: profiles)
+        return "\(profile?.name ?? "No Provider") \u{00B7} \(model)"
     }
 }
 

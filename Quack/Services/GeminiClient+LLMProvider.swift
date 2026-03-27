@@ -2,26 +2,28 @@ import Foundation
 import AgentRunKit
 
 extension GeminiClient: LLMProvider {
-    static let kind: ProviderKind = .gemini
-
-    static let requiresAPIKey: Bool = true
-    static let requiresBaseURL: Bool = false
-    static let defaultBaseURL: String? = nil
+    static let platform: ProviderPlatform = .gemini
 
     static func makeClient(
-        from provider: Provider,
+        baseURL: URL?,
+        apiKey: String?,
         model: String,
         maxTokens: Int,
-        reasoningConfig: ReasoningConfig?
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
     ) -> (any LLMClient)? {
-        guard let apiKey = resolveAPIKey(for: provider) else { return nil }
+        guard let apiKey else { return nil }
 
         return GeminiClient(
             apiKey: apiKey,
             model: model,
             maxOutputTokens: maxTokens,
-            contextWindowSize: provider.contextWindowSize,
-            retryPolicy: resolveRetryPolicy(from: provider),
+            contextWindowSize: contextWindowSize,
+            retryPolicy: retryPolicy,
             reasoningConfig: reasoningConfig
         )
     }
@@ -29,11 +31,16 @@ extension GeminiClient: LLMProvider {
     // MARK: - Model Listing
 
     /// Queries the Gemini `GET /v1beta/models` endpoint for available models.
-    static func listModels(for provider: Provider) async throws -> [String] {
-        guard let apiKey = resolveAPIKey(for: provider) else { return [] }
+    static func listModels(
+        baseURL: URL?,
+        apiKey: String?,
+        projectID: String?,
+        location: String?
+    ) async throws -> [String] {
+        guard let apiKey else { return [] }
 
-        let baseURL = GeminiClient.geminiBaseURL
-        let modelsURL = baseURL.appendingPathComponent("v1beta/models")
+        let geminiBaseURL = GeminiClient.geminiBaseURL
+        let modelsURL = geminiBaseURL.appendingPathComponent("v1beta/models")
 
         guard var components = URLComponents(url: modelsURL, resolvingAgainstBaseURL: false) else {
             return []

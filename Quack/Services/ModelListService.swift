@@ -1,14 +1,14 @@
 import Foundation
 
-/// Fetches, caches, and provides model lists for each provider.
+/// Fetches, caches, and provides model lists for each provider profile.
 ///
-/// On first access for a given provider, the service attempts to query the
-/// provider's API via `LLMProvider.listModels(for:)`. If the API call succeeds
+/// On first access for a given profile, the service attempts to query the
+/// provider's API via `LLMProvider.listModels(...)`. If the API call succeeds
 /// and returns a non-empty list, the result is cached. Otherwise, the service
-/// falls back to the static `ProviderKind.knownModels` list.
+/// falls back to the static `ProviderPlatform.knownModels` list.
 ///
-/// The cache is keyed by `Provider.id` and is invalidated when the provider's
-/// configuration changes (e.g., URL or API key).
+/// The cache is keyed by `ProviderProfile.id` and is invalidated when the
+/// profile's configuration changes (e.g., URL or API key).
 @Observable
 @MainActor
 final class ModelListService {
@@ -24,60 +24,74 @@ final class ModelListService {
     private var cache: [UUID: CacheEntry] = [:]
     private var inFlight: Set<UUID> = []
 
-    /// Whether models are currently being fetched for a provider.
-    func isLoading(for provider: Provider) -> Bool {
-        inFlight.contains(provider.id)
+    /// Whether models are currently being fetched for a profile.
+    func isLoading(for profile: ProviderProfile) -> Bool {
+        inFlight.contains(profile.id)
     }
 
-    /// Returns the cached or fallback model list for the given provider.
+    /// Returns the cached or fallback model list for the given profile.
     ///
-    /// If models haven't been fetched yet, returns `ProviderKind.knownModels`
+    /// If models haven't been fetched yet, returns `ProviderPlatform.knownModels`
     /// as a synchronous fallback. Call `fetchModels(for:)` to trigger an
     /// asynchronous API query.
-    func models(for provider: Provider) -> [String] {
-        if let entry = cache[provider.id] {
+    func models(for profile: ProviderProfile) -> [String] {
+        if let entry = cache[profile.id] {
             return entry.models
         }
-        return provider.kind.knownModels
+        return profile.platform.knownModels
     }
 
     /// Fetches models from the provider's API, caching the result.
     ///
     /// If the API returns an empty list or throws, falls back to
-    /// `ProviderKind.knownModels`. Safe to call multiple times --
-    /// concurrent requests for the same provider are coalesced.
-    func fetchModels(for provider: Provider) async {
-        guard !inFlight.contains(provider.id) else { return }
+    /// `ProviderPlatform.knownModels`. Safe to call multiple times --
+    /// concurrent requests for the same profile are coalesced.
+    func fetchModels(for profile: ProviderProfile) async {
+        guard !inFlight.contains(profile.id) else { return }
 
-        inFlight.insert(provider.id)
-        defer { inFlight.remove(provider.id) }
+        inFlight.insert(profile.id)
+        defer { inFlight.remove(profile.id) }
+
+        // Resolve connection details for the listModels call
+        let baseURL: URL? = {
+            guard let urlString = profile.baseURL else { return nil }
+            return URL(string: urlString)
+        }()
+        let apiKey: String? = profile.requiresAPIKey
+            ? KeychainService.load(key: KeychainService.apiKeyKey(for: profile.id))
+            : nil
 
         do {
-            let fetched = try await provider.kind.providerType.listModels(for: provider)
+            let fetched = try await profile.platform.providerType.listModels(
+                baseURL: baseURL,
+                apiKey: apiKey,
+                projectID: profile.projectID,
+                location: profile.location
+            )
             if fetched.isEmpty {
-                cache[provider.id] = CacheEntry(
-                    models: provider.kind.knownModels,
+                cache[profile.id] = CacheEntry(
+                    models: profile.platform.knownModels,
                     fetchedAt: Date()
                 )
             } else {
-                cache[provider.id] = CacheEntry(
+                cache[profile.id] = CacheEntry(
                     models: fetched,
                     fetchedAt: Date()
                 )
             }
         } catch {
             // Network failure — fall back to known models
-            cache[provider.id] = CacheEntry(
-                models: provider.kind.knownModels,
+            cache[profile.id] = CacheEntry(
+                models: profile.platform.knownModels,
                 fetchedAt: Date()
             )
         }
     }
 
-    /// Removes the cached model list for a provider, forcing a re-fetch
+    /// Removes the cached model list for a profile, forcing a re-fetch
     /// on the next call to `fetchModels(for:)`.
-    func invalidate(for provider: Provider) {
-        cache.removeValue(forKey: provider.id)
+    func invalidate(for profile: ProviderProfile) {
+        cache.removeValue(forKey: profile.id)
     }
 
     /// Removes all cached model lists.

@@ -4,7 +4,7 @@ import SwiftData
 // MARK: - Provider Detail Sheet
 
 struct ProviderDetailSheet: View {
-    @Bindable var provider: Provider
+    @Bindable var profile: ProviderProfile
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -32,10 +32,10 @@ struct ProviderDetailSheet: View {
         ) {
             Button("Cancel", role: .cancel) { }
             Button("Delete", role: .destructive) {
-                deleteProvider()
+                deleteProfile()
             }
         } message: {
-            Text("Are you sure you want to delete \"\(provider.name)\"? This action cannot be undone.")
+            Text("Are you sure you want to delete \"\(profile.name)\"? This action cannot be undone.")
         }
     }
 
@@ -51,9 +51,9 @@ struct ProviderDetailSheet: View {
                         .fill(iconColor.gradient)
                 )
 
-            Text(provider.name)
+            Text(profile.name)
                 .font(.headline)
-            Text(provider.kind.displayName)
+            Text(profile.platform.displayName)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -67,45 +67,45 @@ struct ProviderDetailSheet: View {
         Form {
             // MARK: - Identity
             Section {
-                TextField("Name", text: $provider.name, prompt: Text("Provider name"))
-                    .onChange(of: provider.name) { save() }
+                TextField("Name", text: $profile.name, prompt: Text("Provider name"))
+                    .onChange(of: profile.name) { save() }
 
-                Picker("Kind", selection: Binding(
-                    get: { provider.kind },
+                Picker("Platform", selection: Binding(
+                    get: { profile.platform },
                     set: { newValue in
-                        provider.kind = newValue
-                        provider.baseURL = newValue.providerType.defaultBaseURL
+                        profile.platform = newValue
+                        profile.baseURL = newValue.defaultBaseURL
                         save()
                         providerService.invalidateCache()
                     }
                 )) {
-                    ForEach(ProviderKind.allCases) { kind in
-                        Text(kind.displayName).tag(kind)
+                    ForEach(ProviderPlatform.allCases) { platform in
+                        Text(platform.displayName).tag(platform)
                     }
                 }
 
-                Toggle("Enabled", isOn: $provider.isEnabled)
-                    .onChange(of: provider.isEnabled) {
+                Toggle("Enabled", isOn: $profile.isEnabled)
+                    .onChange(of: profile.isEnabled) {
                         save()
                         providerService.invalidateCache()
                     }
             }
 
             // MARK: - Connection
-            if provider.requiresAPIKey || provider.kind.providerType.requiresBaseURL || isVertexProvider {
+            if profile.requiresAPIKey || profile.platform.requiresBaseURL || isVertexProvider {
                 Section {
-                    if provider.kind.providerType.requiresBaseURL {
+                    if profile.platform.requiresBaseURL {
                         TextField(
                             text: Binding(
-                                get: { provider.baseURL ?? "" },
-                                set: { provider.baseURL = $0.isEmpty ? nil : $0 }
+                                get: { profile.baseURL ?? "" },
+                                set: { profile.baseURL = $0.isEmpty ? nil : $0 }
                             ),
                             prompt: Text("https://api.example.com/v1")
                         ) {
                             Text("URL").font(.body)
                         }
                         .font(.system(.body, design: .monospaced))
-                        .onChange(of: provider.baseURL) {
+                        .onChange(of: profile.baseURL) {
                             save()
                             providerService.invalidateCache()
                         }
@@ -114,40 +114,40 @@ struct ProviderDetailSheet: View {
                     if isVertexProvider {
                         TextField(
                             text: Binding(
-                                get: { provider.projectID ?? "" },
-                                set: { provider.projectID = $0.isEmpty ? nil : $0 }
+                                get: { profile.projectID ?? "" },
+                                set: { profile.projectID = $0.isEmpty ? nil : $0 }
                             ),
                             prompt: Text("my-gcp-project")
                         ) {
                             Text("Project ID").font(.body)
                         }
                         .font(.system(.body, design: .monospaced))
-                        .onChange(of: provider.projectID) {
+                        .onChange(of: profile.projectID) {
                             save()
                             providerService.invalidateCache()
                         }
 
                         TextField(
                             text: Binding(
-                                get: { provider.location ?? "" },
-                                set: { provider.location = $0.isEmpty ? nil : $0 }
+                                get: { profile.location ?? "" },
+                                set: { profile.location = $0.isEmpty ? nil : $0 }
                             ),
                             prompt: Text("us-central1")
                         ) {
                             Text("Location").font(.body)
                         }
                         .font(.system(.body, design: .monospaced))
-                        .onChange(of: provider.location) {
+                        .onChange(of: profile.location) {
                             save()
                             providerService.invalidateCache()
                         }
                     }
 
-                    if provider.requiresAPIKey {
+                    if profile.requiresAPIKey {
                         LabeledContent("API Key") {
                             HStack {
                                 if showAPIKey {
-                                    TextField("", text: $apiKey, prompt: Text("•••••••••••••••"))
+                                    TextField("", text: $apiKey, prompt: Text("\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}\u{2022}"))
                                         .font(.system(.body, design: .monospaced))
                                 } else {
                                     SecureField("", text: $apiKey, prompt: Text("sk-01234deadbeef"))
@@ -162,7 +162,7 @@ struct ProviderDetailSheet: View {
                             }
                             .onChange(of: apiKey) {
                                 if apiKey.isEmpty {
-                                    KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
+                                    KeychainService.delete(key: KeychainService.apiKeyKey(for: profile.id))
                                     apiKey = ""
                                     providerService.invalidateCache()
                                 } else {
@@ -178,20 +178,20 @@ struct ProviderDetailSheet: View {
             Section {
                 ModelPicker(
                     selection: Binding(
-                        get: { provider.defaultModel },
+                        get: { profile.defaultModel },
                         set: { newValue in
-                            provider.defaultModel = newValue
+                            profile.defaultModel = newValue
                             save()
                             providerService.invalidateCache()
                         }
                     ),
-                    provider: provider
+                    profile: profile
                 )
 
                 Picker("Reasoning Effort", selection: Binding(
-                    get: { provider.reasoningEffort },
+                    get: { profile.reasoningEffort },
                     set: { newValue in
-                        provider.reasoningEffort = newValue
+                        profile.reasoningEffort = newValue
                         save()
                         providerService.invalidateCache()
                     }
@@ -208,12 +208,12 @@ struct ProviderDetailSheet: View {
             Section("Advanced") {
                 LabeledContent(content: {
                     TextField("",
-                              value: $provider.maxTokens,
+                              value: $profile.maxTokens,
                               format: .number,
                               prompt: Text("4096"))
                     .frame(width: 100)
                     .multilineTextAlignment(.trailing)
-                    .onChange(of: provider.maxTokens) {
+                    .onChange(of: profile.maxTokens) {
                         save()
                         providerService.invalidateCache()
                     }
@@ -224,12 +224,12 @@ struct ProviderDetailSheet: View {
 
                 LabeledContent(content: {
                     TextField("",
-                              value: $provider.contextWindowSize,
+                              value: $profile.contextWindowSize,
                               format: .number,
                               prompt: Text("auto"))
                         .frame(width: 100)
                         .multilineTextAlignment(.trailing)
-                        .onChange(of: provider.contextWindowSize) {
+                        .onChange(of: profile.contextWindowSize) {
                             save()
                             providerService.invalidateCache()
                         }
@@ -238,10 +238,10 @@ struct ProviderDetailSheet: View {
                     Text("The total number of tokens the conversation can consume before the app compresses (summarizes) the context to free up space.")
                 })
 
-                if provider.kind.providerType.supportsCaching {
+                if profile.platform.supportsCaching {
                     LabeledContent(content: {
-                        Toggle("", isOn: $provider.cachingEnabled)
-                            .onChange(of: provider.cachingEnabled) {
+                        Toggle("", isOn: $profile.cachingEnabled)
+                            .onChange(of: profile.cachingEnabled) {
                                 save()
                                 providerService.invalidateCache()
                             }
@@ -252,30 +252,30 @@ struct ProviderDetailSheet: View {
                 }
 
                 LabeledContent(content:  {
-                    TextField("", value: $provider.retryMaxAttempts, format: .number)
+                    TextField("", value: $profile.retryMaxAttempts, format: .number)
                         .frame(width: 80)
                         .multilineTextAlignment(.trailing)
-                        .onChange(of: provider.retryMaxAttempts) { save() }
+                        .onChange(of: profile.retryMaxAttempts) { save() }
                 }, label: {
                     Text("Maximum Retry Attempts")
                     Text("The number of times a failed API request will be retried before the app gives up and surfaces an error.")
                 })
 
                 LabeledContent(content: {
-                    TextField("", value: $provider.retryBaseDelay, format: .number, prompt: Text("30"))
+                    TextField("", value: $profile.retryBaseDelay, format: .number, prompt: Text("30"))
                         .frame(width: 80)
                         .multilineTextAlignment(.trailing)
-                        .onChange(of: provider.retryBaseDelay) { save() }
+                        .onChange(of: profile.retryBaseDelay) { save() }
                 }, label: {
                     Text("Base Delay")
                     Text("The initial number of seconds to wait before retrying a failed request, typically used as the base for exponential backoff.")
                 })
 
                 LabeledContent(content: {
-                    TextField("", value: $provider.retryMaxDelay, format: .number, prompt: Text("30"))
+                    TextField("", value: $profile.retryMaxDelay, format: .number, prompt: Text("30"))
                         .frame(width: 80)
                         .multilineTextAlignment(.trailing)
-                        .onChange(of: provider.retryMaxDelay) { save() }
+                        .onChange(of: profile.retryMaxDelay) { save() }
                 }, label: {
                     Text("Maximum Delay")
                     Text("The maximum number of seconds the app will wait between retries, capping the exponential backoff so delays don't grow indefinitely.")
@@ -284,9 +284,9 @@ struct ProviderDetailSheet: View {
 
             // Default Provider
             Section {
-                let isDefault = providerService.defaultProviderID == provider.id
+                let isDefault = providerService.defaultProviderID == profile.id
                 Button(isDefault ? "This is the default provider" : "Set as Default Provider") {
-                    providerService.defaultProviderID = provider.id
+                    providerService.defaultProviderID = profile.id
                 }
                 .disabled(isDefault)
             }
@@ -314,24 +314,24 @@ struct ProviderDetailSheet: View {
     // MARK: - Helpers
 
     private var isVertexProvider: Bool {
-        provider.kind == .vertexGemini || provider.kind == .vertexAnthropic
+        profile.platform == .vertexGemini || profile.platform == .vertexAnthropic
     }
 
     @ViewBuilder
     private var providerIcon: some View {
-        if provider.kind.isCustomIcon {
-            provider.kind.icon
+        if profile.platform.isCustomIcon {
+            profile.platform.icon
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 32, height: 32)
         } else {
-            provider.kind.icon
+            profile.platform.icon
                 .font(.system(size: 28))
         }
     }
 
     private var iconColor: Color {
-        switch provider.kind {
+        switch profile.platform {
         case .openAICompatible: .green
         case .anthropic: .orange
         case .foundationModels: .blue
@@ -342,12 +342,12 @@ struct ProviderDetailSheet: View {
     }
 
     private func loadAPIKey() {
-        apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: provider.id)) ?? ""
+        apiKey = KeychainService.load(key: KeychainService.apiKeyKey(for: profile.id)) ?? ""
     }
 
     private func saveAPIKey() {
         guard !apiKey.isEmpty else { return }
-        try? KeychainService.save(key: KeychainService.apiKeyKey(for: provider.id), value: apiKey)
+        try? KeychainService.save(key: KeychainService.apiKeyKey(for: profile.id), value: apiKey)
         providerService.invalidateCache()
     }
 
@@ -355,12 +355,12 @@ struct ProviderDetailSheet: View {
         try? modelContext.save()
     }
 
-    private func deleteProvider() {
-        KeychainService.delete(key: KeychainService.apiKeyKey(for: provider.id))
-        if providerService.defaultProviderID == provider.id {
+    private func deleteProfile() {
+        KeychainService.delete(key: KeychainService.apiKeyKey(for: profile.id))
+        if providerService.defaultProviderID == profile.id {
             providerService.defaultProviderID = nil
         }
-        modelContext.delete(provider)
+        modelContext.delete(profile)
         try? modelContext.save()
         dismiss()
     }
@@ -372,7 +372,7 @@ struct ProviderDetailSheet: View {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ProviderDetailSheet(provider: data.providers[0])
+    ProviderDetailSheet(profile: data.profiles[0])
         .previewEnvironment(container: container)
 }
 
@@ -380,16 +380,15 @@ struct ProviderDetailSheet: View {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ProviderDetailSheet(provider: data.providers[1])
+    ProviderDetailSheet(profile: data.profiles[1])
         .previewEnvironment(container: container)
 }
 #Preview("Provider Sheet - Google AI") {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ProviderDetailSheet(provider: data.providers[4])
+    ProviderDetailSheet(profile: data.profiles[4])
         .previewEnvironment(container: container)
 }
-
 
 

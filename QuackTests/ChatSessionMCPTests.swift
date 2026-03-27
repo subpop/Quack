@@ -117,7 +117,11 @@ struct ChatSessionMCPTests {
         let session = ChatSession(title: "Test Chat")
         // session.enabledMCPServerIDs is nil — means no servers enabled
 
-        let tools = service.tools(for: session)
+        let tools = service.tools(
+            for: session,
+            allConfigs: [],
+            onApprovalNeeded: { _, _, _ in true }
+        )
         #expect(tools.isEmpty)
     }
 
@@ -129,7 +133,11 @@ struct ChatSessionMCPTests {
         session.enabledMCPServerIDs = [UUID()]
 
         // No servers connected, so toolsByServer is empty
-        let tools = service.tools(for: session)
+        let tools = service.tools(
+            for: session,
+            allConfigs: [],
+            onApprovalNeeded: { _, _, _ in true }
+        )
         #expect(tools.isEmpty)
     }
 

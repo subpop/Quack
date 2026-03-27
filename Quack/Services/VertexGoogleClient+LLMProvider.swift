@@ -2,19 +2,22 @@ import Foundation
 import AgentRunKit
 
 extension VertexGoogleClient: LLMProvider {
-    static let kind: ProviderKind = .vertexGemini
-
-    static let requiresAPIKey: Bool = false
-    static let requiresBaseURL: Bool = false
+    static let platform: ProviderPlatform = .vertexGemini
 
     static func makeClient(
-        from provider: Provider,
+        baseURL: URL?,
+        apiKey: String?,
         model: String,
         maxTokens: Int,
-        reasoningConfig: ReasoningConfig?
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
     ) -> (any LLMClient)? {
-        guard let projectID = provider.projectID, !projectID.isEmpty,
-              let location = provider.location, !location.isEmpty else {
+        guard let projectID, !projectID.isEmpty,
+              let location, !location.isEmpty else {
             return nil
         }
 
@@ -28,8 +31,8 @@ extension VertexGoogleClient: LLMProvider {
             model: model,
             authService: authService,
             maxOutputTokens: maxTokens,
-            contextWindowSize: provider.contextWindowSize,
-            retryPolicy: resolveRetryPolicy(from: provider),
+            contextWindowSize: contextWindowSize,
+            retryPolicy: retryPolicy,
             reasoningConfig: reasoningConfig
         )
     }
@@ -37,9 +40,14 @@ extension VertexGoogleClient: LLMProvider {
     // MARK: - Model Listing
 
     /// Queries the Vertex AI model listing endpoint.
-    static func listModels(for provider: Provider) async throws -> [String] {
-        guard let projectID = provider.projectID, !projectID.isEmpty,
-              let location = provider.location, !location.isEmpty else {
+    static func listModels(
+        baseURL: URL?,
+        apiKey: String?,
+        projectID: String?,
+        location: String?
+    ) async throws -> [String] {
+        guard let projectID, !projectID.isEmpty,
+              let location, !location.isEmpty else {
             return []
         }
 

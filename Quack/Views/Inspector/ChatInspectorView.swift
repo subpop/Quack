@@ -7,7 +7,7 @@ struct ChatInspectorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ProviderService.self) private var providerService
     @Environment(MCPService.self) private var mcpService
-    @Query(sort: \Provider.sortOrder) private var providers: [Provider]
+    @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     var body: some View {
@@ -26,24 +26,24 @@ struct ChatInspectorView: View {
 
     private var modelSection: some View {
         Section("Model") {
-            let defaultProvider = providerService.defaultProvider(from: providers)
+            let defaultProfile = providerService.defaultProfile(from: profiles)
 
             Picker("Provider", selection: providerBinding) {
-                Text("Default (\(defaultProvider?.name ?? "None"))")
+                Text("Default (\(defaultProfile?.name ?? "None"))")
                     .tag(nil as UUID?)
                 Divider()
-                ForEach(providers.filter(\.isEnabled)) { provider in
-                    Text(provider.name).tag(provider.id as UUID?)
+                ForEach(profiles.filter(\.isEnabled)) { profile in
+                    Text(profile.name).tag(profile.id as UUID?)
                 }
             }
 
-            let effectiveProvider = providerService.resolvedProvider(for: session, providers: providers)
+            let effectiveProfile = providerService.resolvedProfile(for: session, profiles: profiles)
 
-            if let effectiveProvider {
+            if let effectiveProfile {
                 ModelPicker(
                     selection: modelBinding,
-                    provider: effectiveProvider,
-                    placeholder: "Default (\(providerService.resolvedModel(for: session, providers: providers)))"
+                    profile: effectiveProfile,
+                    placeholder: "Default (\(providerService.resolvedModel(for: session, profiles: profiles)))"
                 )
             }
         }
@@ -263,8 +263,8 @@ struct ChatInspectorView: View {
     // MARK: - Bindings
 
     private var effectiveMaxTokensPlaceholder: String {
-        let provider = providerService.resolvedProvider(for: session, providers: providers)
-        let tokens = provider?.maxTokens ?? 4096
+        let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let tokens = profile?.maxTokens ?? 4096
         return tokens.formatted()
     }
 

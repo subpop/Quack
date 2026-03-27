@@ -1,11 +1,14 @@
 import Foundation
 import SwiftData
 
-/// A configured LLM provider. Users can add, remove, and duplicate these freely.
-/// Multiple providers can share the same `ProviderKind` (e.g., several OpenAI-compatible
+/// A user-configured LLM provider profile. Users can add, remove, and duplicate these freely.
+///
+/// Profiles are typically created from a `ProviderPreset`, which copies all default values
+/// into the profile. From that point on, the profile is independently editable by the user.
+/// Multiple profiles can share the same `ProviderPlatform` (e.g., several OpenAI-compatible
 /// endpoints like OpenAI, OpenRouter, Groq, Together, or a custom proxy).
 @Model
-final class Provider {
+final class ProviderProfile {
     // MARK: - Identity
 
     var id: UUID
@@ -46,8 +49,8 @@ final class Provider {
 
     // MARK: - Computed Properties
 
-    var kind: ProviderKind {
-        get { ProviderKind(rawValue: kindRaw) ?? .openAICompatible }
+    var platform: ProviderPlatform {
+        get { ProviderPlatform(rawValue: kindRaw) ?? .openAICompatible }
         set { kindRaw = newValue.rawValue }
     }
 
@@ -55,7 +58,7 @@ final class Provider {
 
     init(
         name: String,
-        kind: ProviderKind,
+        platform: ProviderPlatform,
         isEnabled: Bool = false,
         sortOrder: Int = 0,
         baseURL: String? = nil,
@@ -63,13 +66,17 @@ final class Provider {
         defaultModel: String = "",
         maxTokens: Int = 4096,
         contextWindowSize: Int? = nil,
+        reasoningEffort: String? = nil,
         cachingEnabled: Bool = false,
+        retryMaxAttempts: Int = 3,
+        retryBaseDelay: Double = 1.0,
+        retryMaxDelay: Double = 30.0,
         projectID: String? = nil,
         location: String? = nil
     ) {
         self.id = UUID()
         self.name = name
-        self.kindRaw = kind.rawValue
+        self.kindRaw = platform.rawValue
         self.isEnabled = isEnabled
         self.sortOrder = sortOrder
         self.baseURL = baseURL
@@ -77,22 +84,23 @@ final class Provider {
         self.defaultModel = defaultModel
         self.maxTokens = maxTokens
         self.contextWindowSize = contextWindowSize
+        self.reasoningEffort = reasoningEffort
         self.cachingEnabled = cachingEnabled
+        self.retryMaxAttempts = retryMaxAttempts
+        self.retryBaseDelay = retryBaseDelay
+        self.retryMaxDelay = retryMaxDelay
         self.projectID = projectID
         self.location = location
-        self.retryMaxAttempts = 3
-        self.retryBaseDelay = 1.0
-        self.retryMaxDelay = 30.0
     }
 
-    // MARK: - Factory: Built-in Providers
+    // MARK: - Factory: Built-in Profiles
 
-    /// Create the set of default providers seeded on first launch.
-    static func builtInProviders() -> [Provider] {
+    /// Create the set of default profiles seeded on first launch.
+    static func builtInProfiles() -> [ProviderProfile] {
         [
-            Provider(
+            ProviderProfile(
                 name: "Apple Intelligence",
-                kind: .foundationModels,
+                platform: .foundationModels,
                 isEnabled: true,
                 sortOrder: 3,
                 requiresAPIKey: false,
@@ -103,12 +111,12 @@ final class Provider {
         ]
     }
 
-    /// Create a set of providers for use in previews.
-    static func previewProviders() -> [Provider] {
+    /// Create a set of profiles for use in previews.
+    static func previewProfiles() -> [ProviderProfile] {
         [
-            Provider(
+            ProviderProfile(
                 name: "OpenAI",
-                kind: .openAICompatible,
+                platform: .openAICompatible,
                 sortOrder: 0,
                 baseURL: "https://api.openai.com/v1",
                 requiresAPIKey: true,
@@ -116,9 +124,9 @@ final class Provider {
                 maxTokens: 16384,
                 contextWindowSize: 128_000
             ),
-            Provider(
+            ProviderProfile(
                 name: "Anthropic",
-                kind: .anthropic,
+                platform: .anthropic,
                 sortOrder: 1,
                 baseURL: "https://api.anthropic.com/v1",
                 requiresAPIKey: true,
@@ -126,18 +134,18 @@ final class Provider {
                 maxTokens: 40_000,
                 contextWindowSize: 200_000
             ),
-            Provider(
+            ProviderProfile(
                 name: "Ollama",
-                kind: .openAICompatible,
+                platform: .openAICompatible,
                 sortOrder: 2,
                 baseURL: "http://localhost:11434/v1",
                 requiresAPIKey: false,
                 defaultModel: "llama3.2",
                 maxTokens: 4096
             ),
-            Provider(
+            ProviderProfile(
                 name: "Apple Intelligence",
-                kind: .foundationModels,
+                platform: .foundationModels,
                 isEnabled: true,
                 sortOrder: 3,
                 requiresAPIKey: false,
@@ -145,18 +153,18 @@ final class Provider {
                 maxTokens: 4096,
                 contextWindowSize: 4096
             ),
-            Provider(
+            ProviderProfile(
                 name: "Google AI",
-                kind: .gemini,
+                platform: .gemini,
                 sortOrder: 4,
                 requiresAPIKey: true,
                 defaultModel: "gemini-2.5-flash",
                 maxTokens: 40_000,
                 contextWindowSize: 1_048_576
             ),
-            Provider(
+            ProviderProfile(
                 name: "Vertex AI (Gemini)",
-                kind: .vertexGemini,
+                platform: .vertexGemini,
                 sortOrder: 5,
                 requiresAPIKey: false,
                 defaultModel: "gemini-2.5-flash",
@@ -165,9 +173,9 @@ final class Provider {
                 projectID: "my-project",
                 location: "us-central1"
             ),
-            Provider(
+            ProviderProfile(
                 name: "Vertex AI (Claude)",
-                kind: .vertexAnthropic,
+                platform: .vertexAnthropic,
                 sortOrder: 6,
                 requiresAPIKey: false,
                 defaultModel: "claude-sonnet-4-6",
