@@ -1,0 +1,21 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Quack</title>
+        <item>
+            <title>0.1.0</title>
+            <pubDate>Fri, 27 Mar 2026 08:01:29 -0400</pubDate>
+            <link>https://subpop.github.io/Quack</link>
+            <sparkle:version>1</sparkle:version>
+            <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/subpop/Quack/releases/download/v0.1.0/Quack-0.1.0.dmg" length="5578244" type="application/octet-stream" sparkle:edSignature="dPzX/BrbDEpxSvA1UHZMwatCBRW/8p6vhOmLYdDDqQC4lQM+4Q2mgnvIbh8JxeOuvOt5ejZEVWAH0oJkexziDQ=="/>
+        <description><![CDATA[<div>
+    <h2>0.1.0 (1) (2026-03-27)</h2>
+<ul>
+<li>🎁 Initial app release</li>
+</ul>
+</div>]]></description>
+</item>
+    </channel>
+</rss>
