@@ -72,6 +72,7 @@ struct ChatInspectorView: View {
                 }
             }, label: {
                 Text("Temperature")
+                Text("Controls randomness of responses.")
             })
 
             // Max Tokens
@@ -87,18 +88,25 @@ struct ChatInspectorView: View {
                 .onChange(of: session.maxTokens) { save() }
             }, label: {
                 Text("Maximum Tokens")
+                Text("Max output length per response.")
             })
 
             // Reasoning Effort
-            Picker("Reasoning", selection: reasoningBinding) {
-                Text("Default").tag(nil as String?)
-                Divider()
-                Text("None").tag("none" as String?)
-                Text("Low").tag("low" as String?)
-                Text("Medium").tag("medium" as String?)
-                Text("High").tag("high" as String?)
-                Text("Extra High").tag("xhigh" as String?)
-            }
+            LabeledContent(content: {
+                Picker("", selection: reasoningBinding) {
+                    Text("Default").tag(nil as String?)
+                    Divider()
+                    Text("None").tag("none" as String?)
+                    Text("Low").tag("low" as String?)
+                    Text("Medium").tag("medium" as String?)
+                    Text("High").tag("high" as String?)
+                    Text("Extra High").tag("xhigh" as String?)
+                }
+                .labelsHidden()
+            }, label: {
+                Text("Reasoning")
+                Text("Thinking depth for capable models.")
+            })
         }
     }
 
@@ -243,6 +251,7 @@ struct ChatInspectorView: View {
                 }
             }, label: {
                 Text("Compaction Threshold")
+                Text("When to summarize context.")
             })
 
             LabeledContent(content:  {
@@ -256,6 +265,7 @@ struct ChatInspectorView: View {
                 .onChange(of: session.maxMessages) { save() }
             }, label: {
                 Text("Maximum Messages")
+                Text("Limit messages sent to the model.")
             })
         }
     }
