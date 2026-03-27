@@ -37,6 +37,7 @@ final class Assistant {
     var reasoningEffort: String?
     var compactionThreshold: Double?
     var maxMessages: Int?
+    var maxToolRounds: Int?
 
     // MCP server IDs enabled by default (stored as comma-separated UUIDs)
     var enabledMCPServerIDsRaw: String?

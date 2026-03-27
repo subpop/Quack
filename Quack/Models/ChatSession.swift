@@ -34,6 +34,7 @@ final class ChatSession {
     var reasoningEffort: String?
     var compactionThreshold: Double?
     var maxMessages: Int?
+    var maxToolRounds: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \ChatMessageRecord.session)
     var messages: [ChatMessageRecord] = []
@@ -178,6 +179,7 @@ final class ChatSession {
         self.reasoningEffort = assistant.reasoningEffort
         self.compactionThreshold = assistant.compactionThreshold
         self.maxMessages = assistant.maxMessages
+        self.maxToolRounds = assistant.maxToolRounds
         self.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
     }
 }

@@ -121,6 +121,22 @@ struct ChatInspectorView: View {
                 Text("Reasoning")
                 Text("Thinking depth for capable models.")
             })
+
+            // Max Tool Rounds
+            LabeledContent(content: {
+                TextField(
+                    "",
+                    value: $session.maxToolRounds,
+                    format: .number,
+                    prompt: Text("10")
+                )
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 100)
+                .onChange(of: session.maxToolRounds) { save() }
+            }, label: {
+                Text("Max Tool Rounds")
+                Text("Tool-calling iterations per response.")
+            })
         }
     }
 

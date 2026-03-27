@@ -202,10 +202,11 @@ enum QuackSchemaV1: VersionedSchema {
     }
 }
 
-// MARK: - Schema V2 (Content Segments)
+// MARK: - Schema V2 (Content Segments + Max Tool Rounds)
 
 /// Adds `contentSegmentsJSON` to `ChatMessageRecord` for interleaved
-/// tool call / text rendering.
+/// tool call / text rendering, and `maxToolRounds` to `ChatSession` and
+/// `Assistant` for configurable tool-calling iteration limits.
 enum QuackSchemaV2: VersionedSchema {
     nonisolated(unsafe) static var versionIdentifier: Schema.Version = .init(2, 0, 0)
 
@@ -236,6 +237,7 @@ enum QuackSchemaV2: VersionedSchema {
         var reasoningEffort: String?
         var compactionThreshold: Double?
         var maxMessages: Int?
+        var maxToolRounds: Int?
 
         @Relationship(deleteRule: .cascade, inverse: \ChatMessageRecord.session)
         var messages: [ChatMessageRecord] = []
@@ -269,7 +271,7 @@ enum QuackSchemaV2: VersionedSchema {
         var reasoning: String?
 
         var toolCallsJSON: String?
-        var contentSegmentsJSON: String?  // NEW in V2
+        var contentSegmentsJSON: String?
 
         var toolCallId: String?
         var toolName: String?
@@ -375,6 +377,7 @@ enum QuackSchemaV2: VersionedSchema {
         var reasoningEffort: String?
         var compactionThreshold: Double?
         var maxMessages: Int?
+        var maxToolRounds: Int?
 
         var enabledMCPServerIDsRaw: String?
 
@@ -403,7 +406,7 @@ enum QuackMigrationPlan: SchemaMigrationPlan {
 
     static var stages: [MigrationStage] {
         [
-            // V1 → V2: adds optional `contentSegmentsJSON` column to ChatMessageRecord.
+            // V1 → V2: adds optional columns to ChatMessageRecord, ChatSession, and Assistant.
             .lightweight(fromVersion: QuackSchemaV1.self, toVersion: QuackSchemaV2.self),
         ]
     }

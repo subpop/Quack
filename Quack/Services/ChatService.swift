@@ -138,6 +138,9 @@ final class ChatService {
         }
         let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
 
+        // Resolve max tool rounds (default 10 matches AgentRunKit)
+        let maxToolRounds = session.maxToolRounds ?? 10
+
         // Reset streaming state
         streamingContent = ""
         streamingReasoning = ""
@@ -156,7 +159,8 @@ final class ChatService {
         let chat = Chat<EmptyContext>(
             client: client,
             tools: mcpTools,
-            systemPrompt: systemPrompt
+            systemPrompt: systemPrompt,
+            maxToolRounds: maxToolRounds
         )
 
         let sessionID = session.id
@@ -318,6 +322,9 @@ final class ChatService {
         }
         let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
 
+        // Resolve max tool rounds (default 10 matches AgentRunKit)
+        let maxToolRounds = session.maxToolRounds ?? 10
+
         streamingContent = ""
         streamingReasoning = ""
         streamingError = nil
@@ -334,7 +341,8 @@ final class ChatService {
         let chat = Chat<EmptyContext>(
             client: client,
             tools: mcpTools,
-            systemPrompt: systemPrompt
+            systemPrompt: systemPrompt,
+            maxToolRounds: maxToolRounds
         )
 
         let sessionID = session.id

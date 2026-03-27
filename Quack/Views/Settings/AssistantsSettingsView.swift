@@ -130,6 +130,7 @@ struct AssistantsSettingsView: View {
         copy.reasoningEffort = assistant.reasoningEffort
         copy.compactionThreshold = assistant.compactionThreshold
         copy.maxMessages = assistant.maxMessages
+        copy.maxToolRounds = assistant.maxToolRounds
         copy.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
         copy.iconName = assistant.iconName
         copy.colorRaw = assistant.colorRaw
@@ -374,6 +375,21 @@ struct AssistantDetailSheet: View {
                 }, label: {
                     Text("Reasoning")
                     Text("Thinking depth for capable models.")
+                })
+
+                LabeledContent(content: {
+                    TextField(
+                        "",
+                        value: $assistant.maxToolRounds,
+                        format: .number,
+                        prompt: Text("10")
+                    )
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 100)
+                    .onChange(of: assistant.maxToolRounds) { save() }
+                }, label: {
+                    Text("Max Tool Rounds")
+                    Text("Tool-calling iterations per response.")
                 })
             }
 
