@@ -283,12 +283,12 @@ struct AssistantDetailSheet: View {
                         Label {
                             Text(profile.name)
                         } icon: {
-                            if profile.platform.isCustomIcon {
-                                profile.platform.icon
+                            if profile.iconIsCustom {
+                                profile.icon
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                             } else {
-                                profile.platform.icon
+                                profile.icon
                             }
                         }
                         .tag(profile.id as UUID?)

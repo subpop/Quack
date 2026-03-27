@@ -73,6 +73,36 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The asset or SF Symbol name used for the icon.
+    var iconName: String {
+        switch self {
+        case .ollama:     "ollama"
+        case .openAI:     "openai"
+        case .anthropic:  "anthropic"
+        case .gemini:     "gemini"
+        case .openRouter: "openrouter"
+        case .groq:       "groq"
+        case .together:   "together"
+        case .mistral:    "mistral"
+        case .custom:     "slider.horizontal.3"
+        }
+    }
+
+    /// The color name used for the icon badge background.
+    var iconColorName: String {
+        switch self {
+        case .ollama:     "gray"
+        case .openAI:     "green"
+        case .anthropic:  "orange"
+        case .gemini:     "blue"
+        case .openRouter: "purple"
+        case .groq:       "indigo"
+        case .together:   "cyan"
+        case .mistral:    "orange"
+        case .custom:     "secondary"
+        }
+    }
+
     // MARK: - Connection
 
     var platform: ProviderPlatform {
@@ -185,7 +215,10 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
             cachingEnabled: cachingEnabled,
             retryMaxAttempts: retryMaxAttempts,
             retryBaseDelay: retryBaseDelay,
-            retryMaxDelay: retryMaxDelay
+            retryMaxDelay: retryMaxDelay,
+            iconName: iconName,
+            iconIsCustom: isCustomIcon,
+            iconColorName: iconColorName
         )
     }
 }

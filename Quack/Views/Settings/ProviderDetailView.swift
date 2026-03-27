@@ -325,26 +325,19 @@ struct ProviderDetailSheet: View {
 
     @ViewBuilder
     private var providerIcon: some View {
-        if profile.platform.isCustomIcon {
-            profile.platform.icon
+        if profile.iconIsCustom {
+            profile.icon
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 32, height: 32)
         } else {
-            profile.platform.icon
+            profile.icon
                 .font(.system(size: 28))
         }
     }
 
     private var iconColor: Color {
-        switch profile.platform {
-        case .openAICompatible: .green
-        case .anthropic: .orange
-        case .foundationModels: .blue
-        case .gemini: .blue
-        case .vertexGemini: .indigo
-        case .vertexAnthropic: .purple
-        }
+        profile.iconColor
     }
 
     private func loadAPIKey() {

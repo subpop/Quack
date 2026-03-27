@@ -76,6 +76,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+
     // MARK: - Connection Capabilities
 
     /// Whether this platform requires an API key by default.

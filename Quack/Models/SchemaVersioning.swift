@@ -107,6 +107,10 @@ enum QuackSchemaV1: VersionedSchema {
         var isEnabled: Bool
         var sortOrder: Int
 
+        var iconName: String
+        var iconIsCustom: Bool
+        var iconColorName: String
+
         var baseURL: String?
         var requiresAPIKey: Bool
 
@@ -125,12 +129,15 @@ enum QuackSchemaV1: VersionedSchema {
         var retryBaseDelay: Double
         var retryMaxDelay: Double
 
-        init(id: UUID = UUID(), name: String = "", kindRaw: String = "", isEnabled: Bool = false, sortOrder: Int = 0, requiresAPIKey: Bool = true, defaultModel: String = "", maxTokens: Int = 4096, cachingEnabled: Bool = false, retryMaxAttempts: Int = 3, retryBaseDelay: Double = 1.0, retryMaxDelay: Double = 30.0) {
+        init(id: UUID = UUID(), name: String = "", kindRaw: String = "", isEnabled: Bool = true, sortOrder: Int = 0, iconName: String = "", iconIsCustom: Bool = false, iconColorName: String = "", requiresAPIKey: Bool = true, defaultModel: String = "", maxTokens: Int = 4096, cachingEnabled: Bool = false, retryMaxAttempts: Int = 3, retryBaseDelay: Double = 1.0, retryMaxDelay: Double = 30.0) {
             self.id = id
             self.name = name
             self.kindRaw = kindRaw
             self.isEnabled = isEnabled
             self.sortOrder = sortOrder
+            self.iconName = iconName
+            self.iconIsCustom = iconIsCustom
+            self.iconColorName = iconColorName
             self.requiresAPIKey = requiresAPIKey
             self.defaultModel = defaultModel
             self.maxTokens = maxTokens

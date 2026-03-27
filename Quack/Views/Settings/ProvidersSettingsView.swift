@@ -152,26 +152,19 @@ private struct ProfileRow: View {
 
     @ViewBuilder
     private var providerIcon: some View {
-        if profile.platform.isCustomIcon {
-            profile.platform.icon
+        if profile.iconIsCustom {
+            profile.icon
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 20, height: 20)
         } else {
-            profile.platform.icon
+            profile.icon
                 .font(.title2)
         }
     }
 
     private var iconColor: Color {
-        switch profile.platform {
-        case .openAICompatible: .green
-        case .anthropic: .orange
-        case .foundationModels: .blue
-        case .gemini: .blue
-        case .vertexGemini: .indigo
-        case .vertexAnthropic: .purple
-        }
+        profile.iconColor
     }
 }
 
