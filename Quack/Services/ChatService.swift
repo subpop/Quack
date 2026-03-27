@@ -77,6 +77,10 @@ final class ChatService {
     var pendingApproval: PendingToolApproval?
     var approvalContinuation: CheckedContinuation<Bool, Never>?
 
+    /// Optional notification service for alerting the user when a tool approval
+    /// is pending and the app is not frontmost.
+    var notificationService: NotificationService?
+
     // MARK: - Send Message
 
     func sendMessage(
@@ -213,6 +217,7 @@ final class ChatService {
                     arguments: arguments
                 )
                 self.approvalContinuation = continuation
+                self.notificationService?.showToolApprovalNotification(toolName: toolName)
             }
         }
     }
@@ -222,6 +227,7 @@ final class ChatService {
         approvalContinuation?.resume(returning: true)
         approvalContinuation = nil
         pendingApproval = nil
+        notificationService?.clearToolApprovalNotification()
     }
 
     /// User denied the pending tool call.
@@ -229,6 +235,7 @@ final class ChatService {
         approvalContinuation?.resume(returning: false)
         approvalContinuation = nil
         pendingApproval = nil
+        notificationService?.clearToolApprovalNotification()
     }
 
     func regenerateLastResponse(
