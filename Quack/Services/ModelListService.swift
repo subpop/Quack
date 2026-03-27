@@ -3,9 +3,9 @@ import Foundation
 /// Fetches, caches, and provides model lists for each provider profile.
 ///
 /// On first access for a given profile, the service attempts to query the
-/// provider's API via `LLMProvider.listModels(...)`. If the API call succeeds
-/// and returns a non-empty list, the result is cached. Otherwise, the service
-/// falls back to the static `ProviderPlatform.knownModels` list.
+/// provider's API via `ProviderPlatform.listModels(...)`. If the API call
+/// succeeds and returns a non-empty list, the result is cached. Otherwise,
+/// the service falls back to `ProviderPlatform.knownModels`.
 ///
 /// The cache is keyed by `ProviderProfile.id` and is invalidated when the
 /// profile's configuration changes (e.g., URL or API key).
@@ -62,7 +62,7 @@ final class ModelListService {
             : nil
 
         do {
-            let fetched = try await profile.platform.providerType.listModels(
+            let fetched = try await profile.platform.listModels(
                 baseURL: baseURL,
                 apiKey: apiKey,
                 projectID: profile.projectID,

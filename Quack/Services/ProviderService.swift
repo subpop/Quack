@@ -46,8 +46,8 @@ final class ProviderService {
     /// Build an `LLMClient` for the given session.
     ///
     /// Acts as a bridge: pulls configuration from the `ProviderProfile`, resolves
-    /// API keys from the Keychain, and passes individual values to the decoupled
-    /// `LLMProvider.makeClient()`.
+    /// API keys from the Keychain, and passes individual values to the platform's
+    /// `makeClient()` method.
     func makeClient(
         for session: ChatSession,
         profiles: [ProviderProfile]
@@ -79,7 +79,7 @@ final class ProviderService {
         }
         let retryPolicy = Self.resolveRetryPolicy(from: profile)
 
-        return profile.platform.providerType.makeClient(
+        return profile.platform.makeClient(
             baseURL: baseURL,
             apiKey: apiKey,
             model: model,

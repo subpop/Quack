@@ -1,8 +1,12 @@
 import Foundation
 import AgentRunKit
 
-extension AnthropicClient: LLMProvider {
-    static let platform: ProviderPlatform = .anthropic
+/// Factory utilities for Anthropic's Messages API.
+///
+/// Used by `ProviderPlatform.anthropic` to construct clients.
+/// Anthropic does not expose a public model-listing endpoint, so
+/// `ProviderPlatform.knownModels` is used as the fallback.
+enum AnthropicClientFactory {
 
     static func makeClient(
         baseURL: URL?,
@@ -12,9 +16,7 @@ extension AnthropicClient: LLMProvider {
         contextWindowSize: Int?,
         reasoningConfig: ReasoningConfig?,
         retryPolicy: RetryPolicy,
-        cachingEnabled: Bool,
-        projectID: String?,
-        location: String?
+        cachingEnabled: Bool
     ) -> (any LLMClient)? {
         guard let apiKey else { return nil }
 

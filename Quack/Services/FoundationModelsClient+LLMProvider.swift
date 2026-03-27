@@ -2,24 +2,13 @@ import Foundation
 import AgentRunKit
 import AgentRunKitFoundationModels
 
-extension FoundationModelsClient: LLMProvider where C == EmptyContext {
-    static var platform: ProviderPlatform { .foundationModels }
+/// Factory utilities for Apple Foundation Models (on-device inference).
+///
+/// Used by `ProviderPlatform.foundationModels` to construct clients.
+/// No model listing is needed — the on-device model is the only option.
+enum FoundationModelsClientFactory {
 
-    static func makeClient(
-        baseURL: URL?,
-        apiKey: String?,
-        model: String,
-        maxTokens: Int,
-        contextWindowSize: Int?,
-        reasoningConfig: ReasoningConfig?,
-        retryPolicy: RetryPolicy,
-        cachingEnabled: Bool,
-        projectID: String?,
-        location: String?
-    ) -> (any LLMClient)? {
-        // FoundationModelsClient manages tools internally via Apple's
-        // LanguageModelSession. We pass an empty tool list here since tools
-        // are provided at the Chat/Agent level, not at client construction.
+    static func makeClient() -> (any LLMClient)? {
         return FoundationModelsClient<EmptyContext>(
             tools: [] as [any AnyTool<EmptyContext>],
             context: EmptyContext()

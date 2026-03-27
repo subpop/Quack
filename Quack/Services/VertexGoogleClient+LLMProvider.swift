@@ -1,18 +1,18 @@
 import Foundation
 import AgentRunKit
 
-extension VertexGoogleClient: LLMProvider {
-    static let platform: ProviderPlatform = .vertexGemini
+/// Factory and model-listing utilities for Gemini models on Google Cloud Vertex AI.
+///
+/// Used by `ProviderPlatform.vertexGemini` to construct clients and fetch model lists.
+/// Authenticates via Application Default Credentials through `GoogleAuthService`.
+enum VertexGoogleClientFactory {
 
     static func makeClient(
-        baseURL: URL?,
-        apiKey: String?,
         model: String,
         maxTokens: Int,
         contextWindowSize: Int?,
         reasoningConfig: ReasoningConfig?,
         retryPolicy: RetryPolicy,
-        cachingEnabled: Bool,
         projectID: String?,
         location: String?
     ) -> (any LLMClient)? {
@@ -37,12 +37,8 @@ extension VertexGoogleClient: LLMProvider {
         )
     }
 
-    // MARK: - Model Listing
-
     /// Queries the Vertex AI model listing endpoint.
     static func listModels(
-        baseURL: URL?,
-        apiKey: String?,
         projectID: String?,
         location: String?
     ) async throws -> [String] {

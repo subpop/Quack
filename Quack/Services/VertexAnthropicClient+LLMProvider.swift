@@ -1,12 +1,15 @@
 import Foundation
 import AgentRunKit
 
-extension VertexAnthropicClient: LLMProvider {
-    static let platform: ProviderPlatform = .vertexAnthropic
+/// Factory utilities for Anthropic Claude models on Google Cloud Vertex AI.
+///
+/// Used by `ProviderPlatform.vertexAnthropic` to construct clients.
+/// Authenticates via Application Default Credentials through `GoogleAuthService`.
+/// Anthropic does not expose a model-listing endpoint on Vertex, so
+/// `ProviderPlatform.knownModels` is used as the fallback.
+enum VertexAnthropicClientFactory {
 
     static func makeClient(
-        baseURL: URL?,
-        apiKey: String?,
         model: String,
         maxTokens: Int,
         contextWindowSize: Int?,

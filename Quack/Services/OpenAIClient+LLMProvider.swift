@@ -1,8 +1,12 @@
 import Foundation
 import AgentRunKit
 
-extension OpenAIClient: LLMProvider {
-    static let platform: ProviderPlatform = .openAICompatible
+/// Factory and model-listing utilities for OpenAI-compatible providers.
+///
+/// Used by `ProviderPlatform.openAICompatible` to construct clients and fetch
+/// model lists. Works with OpenAI, Ollama, OpenRouter, Groq, Together, and
+/// any provider that implements the OpenAI Chat Completions API.
+enum OpenAIClientFactory {
 
     static func makeClient(
         baseURL: URL?,
@@ -12,9 +16,7 @@ extension OpenAIClient: LLMProvider {
         contextWindowSize: Int?,
         reasoningConfig: ReasoningConfig?,
         retryPolicy: RetryPolicy,
-        cachingEnabled: Bool,
-        projectID: String?,
-        location: String?
+        cachingEnabled: Bool
     ) -> (any LLMClient)? {
         guard let apiKey else { return nil }
         guard let baseURL else { return nil }
@@ -30,17 +32,10 @@ extension OpenAIClient: LLMProvider {
         )
     }
 
-    // MARK: - Model Listing
-
     /// Queries the OpenAI-compatible `GET /models` endpoint.
-    ///
-    /// Works with OpenAI, Ollama, OpenRouter, Groq, Together, and any
-    /// provider that implements the OpenAI models endpoint.
     static func listModels(
         baseURL: URL?,
-        apiKey: String?,
-        projectID: String?,
-        location: String?
+        apiKey: String?
     ) async throws -> [String] {
         guard let baseURL else { return [] }
 

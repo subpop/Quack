@@ -106,17 +106,86 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    // MARK: - Client Dispatch
+    // MARK: - Client Construction
 
-    /// The `LLMProvider` conforming type that handles this platform.
-    var providerType: any LLMProvider.Type {
+    /// Construct an `LLMClient` for this platform from the given parameters.
+    ///
+    /// Returns `nil` if required configuration is missing (e.g. no API key, invalid URL).
+    /// Each case delegates to a platform-specific factory in a separate file to keep
+    /// provider-specific logic isolated.
+    func makeClient(
+        baseURL: URL?,
+        apiKey: String?,
+        model: String,
+        maxTokens: Int,
+        contextWindowSize: Int?,
+        reasoningConfig: ReasoningConfig?,
+        retryPolicy: RetryPolicy,
+        cachingEnabled: Bool,
+        projectID: String?,
+        location: String?
+    ) -> (any LLMClient)? {
         switch self {
-        case .openAICompatible: OpenAIClient.self
-        case .anthropic: AnthropicClient.self
-        case .foundationModels: FoundationModelsClient<EmptyContext>.self
-        case .gemini: GeminiClient.self
-        case .vertexGemini: VertexGoogleClient.self
-        case .vertexAnthropic: VertexAnthropicClient.self
+        case .openAICompatible:
+            return OpenAIClientFactory.makeClient(
+                baseURL: baseURL, apiKey: apiKey, model: model,
+                maxTokens: maxTokens, contextWindowSize: contextWindowSize,
+                reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                cachingEnabled: cachingEnabled
+            )
+        case .anthropic:
+            return AnthropicClientFactory.makeClient(
+                baseURL: baseURL, apiKey: apiKey, model: model,
+                maxTokens: maxTokens, contextWindowSize: contextWindowSize,
+                reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                cachingEnabled: cachingEnabled
+            )
+        case .foundationModels:
+            return FoundationModelsClientFactory.makeClient()
+        case .gemini:
+            return GeminiClientFactory.makeClient(
+                apiKey: apiKey, model: model,
+                maxTokens: maxTokens, contextWindowSize: contextWindowSize,
+                reasoningConfig: reasoningConfig, retryPolicy: retryPolicy
+            )
+        case .vertexGemini:
+            return VertexGoogleClientFactory.makeClient(
+                model: model, maxTokens: maxTokens,
+                contextWindowSize: contextWindowSize,
+                reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                projectID: projectID, location: location
+            )
+        case .vertexAnthropic:
+            return VertexAnthropicClientFactory.makeClient(
+                model: model, maxTokens: maxTokens,
+                contextWindowSize: contextWindowSize,
+                reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                cachingEnabled: cachingEnabled,
+                projectID: projectID, location: location
+            )
+        }
+    }
+
+    /// Query the provider's API for available model identifiers.
+    ///
+    /// Returns an array of model ID strings sorted alphabetically.
+    /// Returns an empty array if the platform doesn't support model listing,
+    /// signaling that the caller should fall back to `knownModels`.
+    func listModels(
+        baseURL: URL?,
+        apiKey: String?,
+        projectID: String?,
+        location: String?
+    ) async throws -> [String] {
+        switch self {
+        case .openAICompatible:
+            return try await OpenAIClientFactory.listModels(baseURL: baseURL, apiKey: apiKey)
+        case .gemini:
+            return try await GeminiClientFactory.listModels(apiKey: apiKey)
+        case .vertexGemini:
+            return try await VertexGoogleClientFactory.listModels(projectID: projectID, location: location)
+        case .anthropic, .vertexAnthropic, .foundationModels:
+            return []
         }
     }
 
