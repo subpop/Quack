@@ -115,28 +115,27 @@ final class ProviderService {
         return url
     }
 
-    /// Thinking budgets for Anthropic models by effort level.
-    /// These must be less than maxTokens to satisfy Anthropic's constraint.
-    private static let reasoningBudgets: [String: Int] = [
+    /// Maps UI effort strings to thinking budget token counts.
+    /// Each LLM client uses this budget directly via `ReasoningConfig.budgetTokens`.
+    private static let thinkingBudgets: [String: Int] = [
         "minimal": 1_024,
         "low": 4_096,
-        "medium": 32_000,
-        "high": 64_000,
-        "xhigh": 100_000
+        "medium": 8_192,
+        "high": 16_384,
+        "xhigh": 32_768
     ]
 
     private static func resolveReasoningConfig(sessionEffort: String?, providerEffort: String?) -> ReasoningConfig? {
         guard let effortString = sessionEffort ?? providerEffort,
-              let effort = ReasoningConfig.Effort(rawValue: effortString),
-              effort != .none
+              effortString != "none",
+              let budget = thinkingBudgets[effortString]
         else { return nil }
-        let budget = reasoningBudgets[effortString] ?? 32_000
-        return ReasoningConfig(effort: effort, budgetTokens: budget)
+        return .budget(budget)
     }
 
     private static func adjustedMaxTokens(baseMaxTokens: Int, reasoningConfig: ReasoningConfig?) -> Int {
-        guard let config = reasoningConfig else { return baseMaxTokens }
-        let budget = config.budgetTokens ?? 32_000
+        guard let config = reasoningConfig,
+              let budget = config.budgetTokens else { return baseMaxTokens }
         let minOutputTokens = 8_192
         let required = budget + minOutputTokens
         return max(baseMaxTokens, required)
