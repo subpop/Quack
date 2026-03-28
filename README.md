@@ -60,3 +60,7 @@ xcodebuild test -project Quack.xcodeproj -scheme Quack
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+
+---
+
+Made with ❤️. Fueled by ☕️ and 🤖.
