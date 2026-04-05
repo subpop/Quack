@@ -198,6 +198,27 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
     var retryBaseDelay: Double { 1.0 }
     var retryMaxDelay: Double { 30.0 }
 
+    // MARK: - Pricing
+
+    /// The models.dev provider ID used for pricing lookups.
+    ///
+    /// Returns `nil` for providers where cost estimation doesn't apply
+    /// (local inference like Ollama, or fully custom endpoints where we
+    /// can't infer the upstream provider).
+    var modelsDevProviderID: String? {
+        switch self {
+        case .openAI:     "openai"
+        case .anthropic:  "anthropic"
+        case .gemini:     "google"
+        case .openRouter: "openrouter"
+        case .groq:       "groq"
+        case .together:   "together-ai"
+        case .mistral:    "mistral"
+        case .ollama:     nil
+        case .custom:     nil
+        }
+    }
+
     // MARK: - Factory
 
     /// Create a new `ProviderProfile` by copying all preset values.
@@ -218,7 +239,8 @@ enum ProviderPreset: String, CaseIterable, Identifiable, Sendable {
             retryMaxDelay: retryMaxDelay,
             iconName: iconName,
             iconIsCustom: isCustomIcon,
-            iconColorName: iconColorName
+            iconColorName: iconColorName,
+            modelsDevProviderID: modelsDevProviderID
         )
     }
 }

@@ -72,6 +72,13 @@ final class ProviderProfile {
     var retryBaseDelay: Double
     var retryMaxDelay: Double
 
+    // MARK: - Pricing
+
+    /// The models.dev provider ID used for pricing lookups.
+    /// Set from the originating `ProviderPreset` at creation time.
+    /// `nil` means no cost estimation is available (e.g. Ollama, custom endpoints).
+    var modelsDevProviderID: String?
+
     // MARK: - Computed Properties
 
     var platform: ProviderPlatform {
@@ -146,7 +153,8 @@ final class ProviderProfile {
         location: String? = nil,
         iconName: String? = nil,
         iconIsCustom: Bool? = nil,
-        iconColorName: String? = nil
+        iconColorName: String? = nil,
+        modelsDevProviderID: String? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -165,6 +173,7 @@ final class ProviderProfile {
         self.retryMaxDelay = retryMaxDelay
         self.projectID = projectID
         self.location = location
+        self.modelsDevProviderID = modelsDevProviderID
         // Use provided icon values, or derive defaults from the platform.
         if let iconName, let iconIsCustom, let iconColorName {
             self.iconName = iconName

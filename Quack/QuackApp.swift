@@ -26,6 +26,7 @@ struct QuackApp: App {
     @State private var builtInToolService = BuiltInToolService()
     @State private var modelListService = ModelListService()
     @State private var notificationService = NotificationService()
+    @State private var modelPricingService = ModelPricingService()
 
     @Environment(\.openWindow) private var openWindow
 
@@ -86,6 +87,7 @@ struct QuackApp: App {
                 .environment(mcpService)
                 .environment(builtInToolService)
                 .environment(modelListService)
+                .environment(modelPricingService)
                 .task {
                     chatService.notificationService = notificationService
                     notificationService.requestAuthorization()
@@ -134,6 +136,7 @@ struct QuackApp: App {
                 .environment(mcpService)
                 .environment(builtInToolService)
                 .environment(modelListService)
+                .environment(modelPricingService)
                 .modelContainer(sharedModelContainer)
         }
     }

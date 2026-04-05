@@ -22,11 +22,13 @@ struct ChatInspectorView: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(MCPService.self) private var mcpService
     @Environment(BuiltInToolService.self) private var builtInToolService
+    @Environment(ModelPricingService.self) private var modelPricingService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     var body: some View {
         Form {
+            sessionInfoSection
             modelSection
             parametersSection
             systemPromptSection
@@ -34,6 +36,72 @@ struct ChatInspectorView: View {
             contextSection
         }
         .formStyle(.grouped)
+    }
+
+    // MARK: - Session Info Section
+
+    private var sessionInfoSection: some View {
+        Section("Session") {
+            let stats = sessionStats
+
+            LabeledContent("Messages", value: stats.messageCount.formatted())
+
+            LabeledContent("Input Tokens", value: stats.inputTokens.formatted())
+
+            LabeledContent("Output Tokens", value: stats.outputTokens.formatted())
+
+            if stats.reasoningTokens > 0 {
+                LabeledContent("Reasoning Tokens", value: stats.reasoningTokens.formatted())
+            }
+
+            LabeledContent("Estimated Cost") {
+                if let cost = stats.estimatedCost {
+                    Text(cost, format: .currency(code: "USD").precision(.fractionLength(2...4)))
+                        .monospacedDigit()
+                } else {
+                    Text("N/A")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    private var sessionStats: SessionStats {
+        let assistantMessages = session.messages.filter { $0.role == .assistant }
+        let userMessages = session.messages.filter { $0.role == .user }
+
+        let inputTokens = assistantMessages.compactMap(\.inputTokens).reduce(0, +)
+        let outputTokens = assistantMessages.compactMap(\.outputTokens).reduce(0, +)
+        let reasoningTokens = assistantMessages.compactMap(\.reasoningTokens).reduce(0, +)
+        let messageCount = userMessages.count + assistantMessages.count
+
+        let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let model = providerService.resolvedModel(for: session, profiles: profiles)
+        let platform = profile?.platform ?? .openAICompatible
+
+        let estimatedCost: Double?
+        if inputTokens > 0 || outputTokens > 0,
+           let pricing = modelPricingService.price(
+               for: model,
+               platform: platform,
+               modelsDevProviderID: profile?.modelsDevProviderID
+           ) {
+            estimatedCost = pricing.cost(
+                inputTokens: inputTokens,
+                outputTokens: outputTokens,
+                reasoningTokens: reasoningTokens
+            )
+        } else {
+            estimatedCost = nil
+        }
+
+        return SessionStats(
+            messageCount: messageCount,
+            inputTokens: inputTokens,
+            outputTokens: outputTokens,
+            reasoningTokens: reasoningTokens,
+            estimatedCost: estimatedCost
+        )
     }
 
     // MARK: - Model Section
@@ -485,6 +553,16 @@ struct ChatInspectorView: View {
     private func save() {
         try? modelContext.save()
     }
+}
+
+// MARK: - Session Stats
+
+private struct SessionStats {
+    let messageCount: Int
+    let inputTokens: Int
+    let outputTokens: Int
+    let reasoningTokens: Int
+    let estimatedCost: Double?
 }
 
 #Preview {

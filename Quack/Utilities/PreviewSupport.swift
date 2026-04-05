@@ -130,6 +130,7 @@ enum PreviewSupport {
     @MainActor static let mcpService = MCPService()
     @MainActor static let builtInToolService = BuiltInToolService()
     @MainActor static let modelListService = ModelListService()
+    @MainActor static let modelPricingService = ModelPricingService()
 }
 
 // MARK: - View Modifier for Preview Environment
@@ -145,5 +146,6 @@ extension View {
             .environment(PreviewSupport.mcpService)
             .environment(PreviewSupport.builtInToolService)
             .environment(PreviewSupport.modelListService)
+            .environment(PreviewSupport.modelPricingService)
     }
 }
