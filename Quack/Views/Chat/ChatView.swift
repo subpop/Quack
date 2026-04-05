@@ -38,7 +38,10 @@ struct ChatView: View {
     var body: some View {
         messageList
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                composer
+                VStack(spacing: 0) {
+                    TokenStatsBar(session: session)
+                    composer
+                }
             }
             .navigationTitle(session.title)
             .navigationSubtitle(modelSubtitle)
