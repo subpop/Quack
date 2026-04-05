@@ -114,14 +114,7 @@ struct MessageBubble: View {
                     switch segment.type {
                     case "text":
                         if !segment.value.isEmpty {
-                            Text(MarkdownRenderer.renderFull(segment.value))
-                                .textSelection(.enabled)
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 10)
-                                .background(
-                                    Color(.controlBackgroundColor),
-                                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                )
+                            MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(segment.value))
                         }
                     case "toolCall":
                         if let tc = toolCallMap[segment.value] {
@@ -140,14 +133,7 @@ struct MessageBubble: View {
                 }
 
                 if !message.content.isEmpty {
-                    Text(MarkdownRenderer.renderFull(message.content))
-                        .textSelection(.enabled)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(
-                            Color(.controlBackgroundColor),
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        )
+                    MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(message.content))
                 }
             }
 

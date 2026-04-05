@@ -150,19 +150,14 @@ struct ChatView: View {
                         if !text.isEmpty {
                             let isLastSegment = index == segments.count - 1
                             HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                Text(MarkdownRenderer.renderFull(text))
-                                    .textSelection(.enabled)
+                                VStack(alignment: .leading, spacing: 6) {
+                                    MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(text))
+                                }
                                 if isStreamingThisSession && isLastSegment {
                                     ProgressView()
                                         .controlSize(.small)
                                 }
                             }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
-                            .background(
-                                Color(.controlBackgroundColor),
-                                in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            )
                             .padding(.trailing, 60)
                             .padding(.horizontal, 16)
                             .frame(maxWidth: .infinity, alignment: .leading)

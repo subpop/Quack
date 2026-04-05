@@ -16,6 +16,43 @@ import Foundation
 import Markdown
 import SwiftUI
 
+/// A structured block produced by the Markdown renderer.
+///
+/// Most content is represented as `.attributedString`, but tables are
+/// extracted as `.table` so that SwiftUI can render them using a proper
+/// grid layout instead of flat inline text.
+enum MarkdownBlock: Identifiable {
+    case attributedString(AttributedString)
+    case table(MarkdownTable)
+
+    var id: String {
+        switch self {
+        case .attributedString(let s):
+            return "text-\(s.hashValue)"
+        case .table(let t):
+            return "table-\(t.hashValue)"
+        }
+    }
+}
+
+/// A parsed Markdown table with styled header cells, body rows,
+/// and column alignment information from GFM syntax.
+struct MarkdownTable: Hashable {
+    let headers: [AttributedString]
+    let alignments: [HorizontalAlignment]
+    let rows: [[AttributedString]]
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(headers.count)
+        hasher.combine(rows.count)
+        for h in headers { hasher.combine(h.hashValue) }
+    }
+
+    static func == (lhs: MarkdownTable, rhs: MarkdownTable) -> Bool {
+        lhs.headers == rhs.headers && rhs.rows == lhs.rows
+    }
+}
+
 enum MarkdownRenderer {
     /// Parse markdown using swift-markdown's CommonMark parser and convert
     /// the resulting AST into an `AttributedString` with proper styling for
@@ -29,6 +66,45 @@ enum MarkdownRenderer {
         let document = Document(parsing: cleaned)
         var visitor = AttributedStringMarkupVisitor()
         return visitor.visit(document)
+    }
+
+    /// Parse markdown and return structured blocks, separating tables
+    /// from inline text so they can be rendered with proper grid layout.
+    static func renderBlocks(_ markdown: String) -> [MarkdownBlock] {
+        let cleaned = preprocess(markdown)
+        let document = Document(parsing: cleaned)
+        var visitor = AttributedStringMarkupVisitor()
+
+        var blocks: [MarkdownBlock] = []
+        var pendingText = AttributedString()
+        let children = Array(document.children)
+
+        for (index, child) in children.enumerated() {
+            if let table = child as? Markdown.Table {
+                // Flush any accumulated text before this table
+                if !pendingText.characters.isEmpty {
+                    blocks.append(.attributedString(pendingText))
+                    pendingText = AttributedString()
+                }
+
+                // Build structured table data
+                let tableBlock = visitor.buildTable(table)
+                blocks.append(.table(tableBlock))
+            } else {
+                // Add inter-block spacing
+                if index > 0 && !pendingText.characters.isEmpty {
+                    pendingText += AttributedString("\n\n")
+                }
+                pendingText += visitor.visit(child)
+            }
+        }
+
+        // Flush remaining text
+        if !pendingText.characters.isEmpty {
+            blocks.append(.attributedString(pendingText))
+        }
+
+        return blocks
     }
 
     // MARK: - Pre-processing
@@ -124,7 +200,7 @@ enum MarkdownRenderer {
 // MARK: - AST → AttributedString Visitor
 
 /// Walks a `swift-markdown` AST and builds a styled `AttributedString`.
-private struct AttributedStringMarkupVisitor: MarkupVisitor {
+struct AttributedStringMarkupVisitor: MarkupVisitor {
     typealias Result = AttributedString
 
     // Tracks nesting for list indentation.
@@ -368,7 +444,59 @@ private struct AttributedStringMarkupVisitor: MarkupVisitor {
         return AttributedString(html.rawHTML)
     }
 
-    // MARK: - Table
+    // MARK: - Table (structured)
+
+    /// Build a `MarkdownTable` from a parsed `Markdown.Table` node,
+    /// extracting header cells, body rows, and column alignments.
+    mutating func buildTable(_ table: Markdown.Table) -> MarkdownTable {
+        // Map column alignments from swift-markdown to SwiftUI
+        let alignments: [HorizontalAlignment] = table.columnAlignments.map { alignment in
+            switch alignment {
+            case .center: return .center
+            case .right: return .trailing
+            case .left, .none: return .leading
+            }
+        }
+
+        // Render header cells
+        let headerCells = Array(table.head.children)
+        var headers: [AttributedString] = []
+        for cell in headerCells {
+            var content = visitTableCell(cell as! Markdown.Table.Cell)
+            if !content.characters.isEmpty {
+                let range = content.startIndex..<content.endIndex
+                content[range].inlinePresentationIntent = .stronglyEmphasized
+            }
+            headers.append(content)
+        }
+
+        // Render body rows
+        var rows: [[AttributedString]] = []
+        for row in table.body.children {
+            let cells = Array(row.children)
+            var rowData: [AttributedString] = []
+            for cell in cells {
+                let content = visitTableCell(cell as! Markdown.Table.Cell)
+                rowData.append(content)
+            }
+            rows.append(rowData)
+        }
+
+        // Ensure alignments array covers all columns
+        let columnCount = max(headers.count, rows.first?.count ?? 0)
+        var paddedAlignments = alignments
+        while paddedAlignments.count < columnCount {
+            paddedAlignments.append(.leading)
+        }
+
+        return MarkdownTable(
+            headers: headers,
+            alignments: paddedAlignments,
+            rows: rows
+        )
+    }
+
+    // MARK: - Table (flat fallback)
 
     mutating func visitTable(_ table: Markdown.Table) -> AttributedString {
         var result = AttributedString()
