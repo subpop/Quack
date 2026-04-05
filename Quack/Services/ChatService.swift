@@ -381,7 +381,7 @@ final class ChatService {
     // MARK: - Private
 
     private func handleStreamEvent(_ event: StreamEvent, sessionID: UUID) {
-        switch event {
+        switch event.kind {
         case .delta(let text):
             streamingContent += text
             // Append to the current text segment, or create one if the last
