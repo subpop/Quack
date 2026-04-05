@@ -17,6 +17,7 @@ import SwiftData
 
 struct ChatSessionRow: View {
     let session: ChatSession
+    let assistant: Assistant?
     let isRenaming: Bool
     @Binding var renameText: String
 
@@ -31,36 +32,61 @@ struct ChatSessionRow: View {
         return "No messages yet"
     }
 
+    // MARK: - Avatar
+
+    private var avatarIcon: String {
+        assistant?.resolvedIcon ?? "person.crop.circle.fill"
+    }
+
+    private var avatarColor: Color {
+        assistant?.resolvedColor ?? .gray
+    }
+
+    private var avatarView: some View {
+        Image(systemName: avatarIcon)
+            .font(.system(size: 12))
+            .foregroundStyle(.white)
+            .frame(width: 24, height: 24)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(avatarColor.gradient)
+            )
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if isRenaming {
-                TextField("Chat name", text: $renameText)
-                    .textFieldStyle(.plain)
-                    .font(.body.weight(.medium))
-            } else {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(session.title)
+        HStack(alignment: .top, spacing: 8) {
+            avatarView
+
+            VStack(alignment: .leading, spacing: 4) {
+                if isRenaming {
+                    TextField("Chat name", text: $renameText)
+                        .textFieldStyle(.plain)
                         .font(.body.weight(.medium))
-                        .lineLimit(1)
+                } else {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(session.title)
+                            .font(.body.weight(.medium))
+                            .lineLimit(1)
 
-                    Spacer()
+                        Spacer()
 
-                    Text(session.updatedAt, format: .dateTime.hour().minute())
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
+                        Text(session.updatedAt, format: .dateTime.hour().minute())
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
 
-                    if session.isPinned {
-                        Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                        if session.isPinned {
+                            Image(systemName: "pin.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
 
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
         .padding(4)
         .padding(.vertical, 2)
@@ -72,7 +98,7 @@ struct ChatSessionRow: View {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ChatSessionRow(session: data.session, isRenaming: false, renameText: $renameText)
+    ChatSessionRow(session: data.session, assistant: data.assistants.first, isRenaming: false, renameText: $renameText)
         .frame(width: 260)
         .padding()
         .modelContainer(container)
@@ -84,7 +110,18 @@ struct ChatSessionRow: View {
     let data = PreviewSupport.seed(container)
     let _ = (data.session.isPinned = true)
 
-    ChatSessionRow(session: data.session, isRenaming: false, renameText: $renameText)
+    ChatSessionRow(session: data.session, assistant: data.assistants.first, isRenaming: false, renameText: $renameText)
+        .frame(width: 260)
+        .padding()
+        .modelContainer(container)
+}
+
+#Preview("No Assistant") {
+    @Previewable @State var renameText = ""
+    let container = PreviewSupport.container
+    let data = PreviewSupport.seed(container)
+
+    ChatSessionRow(session: data.session, assistant: nil, isRenaming: false, renameText: $renameText)
         .frame(width: 260)
         .padding()
         .modelContainer(container)
@@ -95,7 +132,7 @@ struct ChatSessionRow: View {
     let container = PreviewSupport.container
     let data = PreviewSupport.seed(container)
 
-    ChatSessionRow(session: data.session, isRenaming: true, renameText: $renameText)
+    ChatSessionRow(session: data.session, assistant: data.assistants.first, isRenaming: true, renameText: $renameText)
         .frame(width: 260)
         .padding()
         .modelContainer(container)

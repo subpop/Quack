@@ -172,6 +172,7 @@ struct SidebarView: View {
     private func sessionRow(_ session: ChatSession) -> some View {
         ChatSessionRow(
             session: session,
+            assistant: assistants.first { $0.id == session.assistantID },
             isRenaming: renamingSessionID == session.id,
             renameText: $renameText
         )
