@@ -21,6 +21,7 @@ struct ChatView: View {
     @Environment(ProviderService.self) private var providerService
     @Environment(ChatService.self) private var chatService
     @Environment(MCPService.self) private var mcpService
+    @Environment(BuiltInToolService.self) private var builtInToolService
 
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
@@ -337,13 +338,7 @@ struct ChatView: View {
 
         inputText = ""
 
-        let tools = mcpService.tools(
-            for: session,
-            allConfigs: mcpServerConfigs,
-            onApprovalNeeded: { [chatService] name, args, desc in
-                await chatService.requestApproval(toolName: name, arguments: args, description: desc)
-            }
-        )
+        let tools = allToolsForSession()
 
         chatService.sendMessage(
             text,
@@ -351,18 +346,12 @@ struct ChatView: View {
             modelContext: modelContext,
             providerService: providerService,
             profiles: profiles,
-            mcpTools: tools
+            tools: tools
         )
     }
 
     private func resubmitMessage(_ message: ChatMessageRecord) {
-        let tools = mcpService.tools(
-            for: session,
-            allConfigs: mcpServerConfigs,
-            onApprovalNeeded: { [chatService] name, args, desc in
-                await chatService.requestApproval(toolName: name, arguments: args, description: desc)
-            }
-        )
+        let tools = allToolsForSession()
 
         chatService.resubmitMessage(
             message,
@@ -370,8 +359,29 @@ struct ChatView: View {
             modelContext: modelContext,
             providerService: providerService,
             profiles: profiles,
-            mcpTools: tools
+            tools: tools
         )
+    }
+
+    /// Combines built-in tools and MCP server tools for the current session,
+    /// each wrapped with the appropriate permission enforcement.
+    private func allToolsForSession() -> [any AnyTool<EmptyContext>] {
+        let approvalHandler: @Sendable (String, String, String) async -> Bool = { [chatService] name, args, desc in
+            await chatService.requestApproval(toolName: name, arguments: args, description: desc)
+        }
+
+        let builtIn = builtInToolService.tools(
+            for: session,
+            onApprovalNeeded: approvalHandler
+        )
+
+        let mcp = mcpService.tools(
+            for: session,
+            allConfigs: mcpServerConfigs,
+            onApprovalNeeded: approvalHandler
+        )
+
+        return builtIn + mcp
     }
 
     private var modelSubtitle: String {

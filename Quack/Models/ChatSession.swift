@@ -45,6 +45,9 @@ final class ChatSession {
     // MCP server IDs enabled for this session (stored as comma-separated UUIDs)
     var enabledMCPServerIDsRaw: String?
 
+    // Built-in tool IDs enabled for this session (stored as comma-separated IDs)
+    var enabledBuiltInToolIDsRaw: String?
+
     /// Per-tool permission overrides for this session.
     /// JSON-encoded `[String: String]` mapping tool name -> ToolPermission raw value.
     /// nil means "use the server-level default for all tools."
@@ -75,6 +78,18 @@ final class ChatSession {
         }
         set {
             enabledMCPServerIDsRaw = newValue?.map(\.uuidString).joined(separator: ",")
+        }
+    }
+
+    /// Built-in tool IDs enabled for this session.
+    /// Returns nil if no built-in tools are enabled.
+    var enabledBuiltInToolIDs: [String]? {
+        get {
+            guard let raw = enabledBuiltInToolIDsRaw, !raw.isEmpty else { return nil }
+            return raw.split(separator: ",").map(String.init)
+        }
+        set {
+            enabledBuiltInToolIDsRaw = newValue?.joined(separator: ",")
         }
     }
 
@@ -181,6 +196,7 @@ final class ChatSession {
         self.maxMessages = assistant.maxMessages
         self.maxToolRounds = assistant.maxToolRounds
         self.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
+        self.enabledBuiltInToolIDsRaw = assistant.enabledBuiltInToolIDsRaw
         self.toolPermissionOverridesJSON = assistant.toolPermissionDefaultsJSON
     }
 }

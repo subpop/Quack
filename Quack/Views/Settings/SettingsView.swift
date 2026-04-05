@@ -27,8 +27,8 @@ struct SettingsView: View {
                 ProvidersSettingsView()
             }
 
-            Tab("MCP Servers", systemImage: "puzzlepiece.extension") {
-                MCPSettingsView()
+            Tab("Tools", systemImage: "wrench.and.screwdriver") {
+                ToolsSettingsView()
             }
 
             Tab("Updates", systemImage: "arrow.triangle.2.circlepath") {

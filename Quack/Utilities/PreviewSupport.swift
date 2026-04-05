@@ -128,6 +128,7 @@ enum PreviewSupport {
     @MainActor static let providerService = ProviderService()
     @MainActor static let chatService = ChatService()
     @MainActor static let mcpService = MCPService()
+    @MainActor static let builtInToolService = BuiltInToolService()
     @MainActor static let modelListService = ModelListService()
 }
 
@@ -142,6 +143,7 @@ extension View {
             .environment(PreviewSupport.providerService)
             .environment(PreviewSupport.chatService)
             .environment(PreviewSupport.mcpService)
+            .environment(PreviewSupport.builtInToolService)
             .environment(PreviewSupport.modelListService)
     }
 }

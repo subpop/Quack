@@ -132,6 +132,7 @@ struct AssistantsSettingsView: View {
         copy.maxMessages = assistant.maxMessages
         copy.maxToolRounds = assistant.maxToolRounds
         copy.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
+        copy.enabledBuiltInToolIDsRaw = assistant.enabledBuiltInToolIDsRaw
         copy.toolPermissionDefaultsJSON = assistant.toolPermissionDefaultsJSON
         copy.iconName = assistant.iconName
         copy.colorRaw = assistant.colorRaw
@@ -209,6 +210,7 @@ struct AssistantDetailSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(MCPService.self) private var mcpService
+    @Environment(BuiltInToolService.self) private var builtInToolService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
@@ -439,15 +441,31 @@ struct AssistantDetailSheet: View {
                 })
             }
 
-            // MCP Servers
+            // Tools
             Section {
+                // Built-in Tools
+                ForEach(BuiltInTool.allCases) { tool in
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Toggle(
+                                tool.displayName,
+                                isOn: builtInToolToggleBinding(for: tool)
+                            )
+
+                            Spacer()
+
+                            let isEnabledForAssistant = assistant.enabledBuiltInToolIDs?.contains(tool.rawValue) ?? false
+                            if isEnabledForAssistant, builtInToolService.isEnabled(tool) {
+                                builtInToolPermissionPicker(for: tool)
+                            }
+                        }
+                    }
+                }
+
+                // MCP Servers
                 let enabledServers = mcpServerConfigs.filter(\.isEnabled)
 
-                if enabledServers.isEmpty {
-                    Text("No MCP servers configured.")
-                        .foregroundStyle(.secondary)
-                        .font(.callout)
-                } else {
+                if !enabledServers.isEmpty {
                     ForEach(enabledServers) { server in
                         VStack(alignment: .leading, spacing: 0) {
                             HStack {
@@ -495,9 +513,9 @@ struct AssistantDetailSheet: View {
                     }
                 }
             } header: {
-                Text("MCP Servers")
+                Text("Tools")
             } footer: {
-                Text("Servers enabled here will be active by default in new chats. Set per-tool permissions to control how tools are executed.")
+                Text("Tools enabled here will be active by default in new chats. Set per-tool permissions to control how tools are executed.")
             }
 
             // Default
@@ -668,6 +686,48 @@ struct AssistantDetailSheet: View {
                 save()
             }
         )
+    }
+
+    private func builtInToolToggleBinding(for tool: BuiltInTool) -> Binding<Bool> {
+        Binding(
+            get: {
+                assistant.enabledBuiltInToolIDs?.contains(tool.rawValue) ?? false
+            },
+            set: { isEnabled in
+                var ids = assistant.enabledBuiltInToolIDs ?? []
+                if isEnabled {
+                    if !ids.contains(tool.rawValue) { ids.append(tool.rawValue) }
+                } else {
+                    ids.removeAll { $0 == tool.rawValue }
+                    // Clear any per-tool permission default
+                    assistant.setToolPermission(nil, for: tool.rawValue, serverDefault: builtInToolService.defaultPermission(for: tool))
+                }
+                assistant.enabledBuiltInToolIDs = ids.isEmpty ? nil : ids
+                save()
+            }
+        )
+    }
+
+    private func builtInToolPermissionPicker(for tool: BuiltInTool) -> some View {
+        let globalDefault = builtInToolService.defaultPermission(for: tool)
+        let effective = assistant.effectivePermission(for: tool.rawValue, serverDefault: globalDefault)
+
+        return Picker("", selection: Binding(
+            get: { effective },
+            set: { newValue in
+                assistant.setToolPermission(newValue, for: tool.rawValue, serverDefault: globalDefault)
+                save()
+            }
+        )) {
+            ForEach(ToolPermission.allCases, id: \.self) { perm in
+                Label(perm.label, systemImage: permissionIcon(for: perm))
+                    .tag(perm)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .foregroundStyle(permissionColor(for: effective))
     }
 
     private func mcpToggleBinding(for server: MCPServerConfig) -> Binding<Bool> {

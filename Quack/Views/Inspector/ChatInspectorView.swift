@@ -21,6 +21,7 @@ struct ChatInspectorView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(ProviderService.self) private var providerService
     @Environment(MCPService.self) private var mcpService
+    @Environment(BuiltInToolService.self) private var builtInToolService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
@@ -29,7 +30,7 @@ struct ChatInspectorView: View {
             modelSection
             parametersSection
             systemPromptSection
-            mcpSection
+            toolsSection
             contextSection
         }
         .formStyle(.grouped)
@@ -158,17 +159,33 @@ struct ChatInspectorView: View {
         }
     }
 
-    // MARK: - MCP Section
+    // MARK: - Tools Section
 
-    private var mcpSection: some View {
-        Section("MCP Servers") {
+    private var toolsSection: some View {
+        Section("Tools") {
+            // Built-in Tools
+            ForEach(BuiltInTool.allCases) { tool in
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        Toggle(
+                            tool.displayName,
+                            isOn: builtInToolToggleBinding(for: tool)
+                        )
+
+                        Spacer()
+
+                        let isEnabledForSession = session.enabledBuiltInToolIDs?.contains(tool.rawValue) ?? false
+                        if isEnabledForSession, builtInToolService.isEnabled(tool) {
+                            builtInToolPermissionPicker(for: tool)
+                        }
+                    }
+                }
+            }
+
+            // MCP Servers
             let enabledServers = mcpServerConfigs.filter(\.isEnabled)
 
-            if enabledServers.isEmpty {
-                Text("No MCP servers configured.")
-                    .foregroundStyle(.secondary)
-                    .font(.callout)
-            } else {
+            if !enabledServers.isEmpty {
                 ForEach(enabledServers) { server in
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
@@ -365,6 +382,48 @@ struct ChatInspectorView: View {
                 save()
             }
         )
+    }
+
+    private func builtInToolToggleBinding(for tool: BuiltInTool) -> Binding<Bool> {
+        Binding(
+            get: {
+                session.enabledBuiltInToolIDs?.contains(tool.rawValue) ?? false
+            },
+            set: { isEnabled in
+                var ids = session.enabledBuiltInToolIDs ?? []
+                if isEnabled {
+                    if !ids.contains(tool.rawValue) { ids.append(tool.rawValue) }
+                } else {
+                    ids.removeAll { $0 == tool.rawValue }
+                    // Clear any per-tool permission override
+                    session.setToolPermission(nil, for: tool.rawValue, serverDefault: builtInToolService.defaultPermission(for: tool))
+                }
+                session.enabledBuiltInToolIDs = ids.isEmpty ? nil : ids
+                save()
+            }
+        )
+    }
+
+    private func builtInToolPermissionPicker(for tool: BuiltInTool) -> some View {
+        let globalDefault = builtInToolService.defaultPermission(for: tool)
+        let effective = session.effectivePermission(for: tool.rawValue, serverDefault: globalDefault)
+
+        return Picker("", selection: Binding(
+            get: { effective },
+            set: { newValue in
+                session.setToolPermission(newValue, for: tool.rawValue, serverDefault: globalDefault)
+                save()
+            }
+        )) {
+            ForEach(ToolPermission.allCases, id: \.self) { perm in
+                Label(perm.label, systemImage: permissionIcon(for: perm))
+                    .tag(perm)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .foregroundStyle(permissionColor(for: effective))
     }
 
     private func mcpToggleBinding(for server: MCPServerConfig) -> Binding<Bool> {

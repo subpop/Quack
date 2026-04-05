@@ -23,6 +23,7 @@ struct QuackApp: App {
     @State private var providerService = ProviderService()
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
+    @State private var builtInToolService = BuiltInToolService()
     @State private var modelListService = ModelListService()
     @State private var notificationService = NotificationService()
 
@@ -83,6 +84,7 @@ struct QuackApp: App {
                 .environment(providerService)
                 .environment(chatService)
                 .environment(mcpService)
+                .environment(builtInToolService)
                 .environment(modelListService)
                 .task {
                     chatService.notificationService = notificationService
@@ -130,6 +132,7 @@ struct QuackApp: App {
                 .environment(providerService)
                 .environment(chatService)
                 .environment(mcpService)
+                .environment(builtInToolService)
                 .environment(modelListService)
                 .modelContainer(sharedModelContainer)
         }

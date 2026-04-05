@@ -15,9 +15,10 @@
 import SwiftUI
 import SwiftData
 
-struct MCPSettingsView: View {
+struct ToolsSettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(MCPService.self) private var mcpService
+    @Environment(BuiltInToolService.self) private var builtInToolService
     @Query private var servers: [MCPServerConfig]
 
     @State private var editingServer: MCPServerConfig?
@@ -26,39 +27,8 @@ struct MCPSettingsView: View {
 
     var body: some View {
         Form {
-            Section("Servers") {
-                ForEach(servers) { server in
-                    MCPServerRow(
-                        server: server,
-                        serverState: mcpService.state(for: server.id)
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        editingServer = server
-                    }
-                    .contextMenu {
-                        Button("Edit\u{2026}") {
-                            editingServer = server
-                        }
-
-                        Divider()
-
-                        Toggle("Enabled", isOn: Binding(
-                            get: { server.isEnabled },
-                            set: { newValue in
-                                server.isEnabled = newValue
-                                try? modelContext.save()
-                            }
-                        ))
-
-                        Divider()
-
-                        Button("Delete\u{2026}", role: .destructive) {
-                            serverToDelete = server
-                        }
-                    }
-                }
-            }
+            builtInToolsSection
+            mcpServersSection
         }
         .formStyle(.grouped)
         .safeAreaInset(edge: .bottom) {
@@ -101,6 +71,124 @@ struct MCPSettingsView: View {
             if let server = serverToDelete {
                 Text("Are you sure you want to delete \"\(server.name.isEmpty ? "Unnamed Server" : server.name)\"? This action cannot be undone.")
             }
+        }
+    }
+
+    // MARK: - Built-in Tools Section
+
+    private var builtInToolsSection: some View {
+        Section("Built-in Tools") {
+            ForEach(BuiltInTool.allCases) { tool in
+                HStack(spacing: 12) {
+                    // Icon badge
+                    Image(systemName: tool.iconName)
+                        .font(.title3)
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(.teal.gradient)
+                        )
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(tool.displayName)
+                            .fontWeight(.medium)
+                        Text(tool.toolDescription)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    builtInToolPermissionPicker(for: tool)
+
+                    Toggle("", isOn: builtInToolToggle(for: tool))
+                        .labelsHidden()
+                }
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    // MARK: - MCP Servers Section
+
+    private var mcpServersSection: some View {
+        Section("MCP Servers") {
+            ForEach(servers) { server in
+                MCPServerRow(
+                    server: server,
+                    serverState: mcpService.state(for: server.id)
+                )
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    editingServer = server
+                }
+                .contextMenu {
+                    Button("Edit\u{2026}") {
+                        editingServer = server
+                    }
+
+                    Divider()
+
+                    Toggle("Enabled", isOn: Binding(
+                        get: { server.isEnabled },
+                        set: { newValue in
+                            server.isEnabled = newValue
+                            try? modelContext.save()
+                        }
+                    ))
+
+                    Divider()
+
+                    Button("Delete\u{2026}", role: .destructive) {
+                        serverToDelete = server
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Built-in Tool Helpers
+
+    private func builtInToolToggle(for tool: BuiltInTool) -> Binding<Bool> {
+        Binding(
+            get: { builtInToolService.isEnabled(tool) },
+            set: { builtInToolService.setEnabled($0, for: tool) }
+        )
+    }
+
+    private func builtInToolPermissionPicker(for tool: BuiltInTool) -> some View {
+        let effective = builtInToolService.defaultPermission(for: tool)
+
+        return Picker("", selection: Binding(
+            get: { effective },
+            set: { builtInToolService.setDefaultPermission($0, for: tool) }
+        )) {
+            ForEach(ToolPermission.allCases, id: \.self) { perm in
+                Label(perm.label, systemImage: permissionIcon(for: perm))
+                    .tag(perm)
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .foregroundStyle(permissionColor(for: effective))
+    }
+
+    private func permissionIcon(for permission: ToolPermission) -> String {
+        switch permission {
+        case .always: "checkmark.circle.fill"
+        case .ask: "questionmark.circle.fill"
+        case .deny: "xmark.circle.fill"
+        }
+    }
+
+    private func permissionColor(for permission: ToolPermission) -> Color {
+        switch permission {
+        case .always: .green
+        case .ask: .orange
+        case .deny: .red
         }
     }
 }
@@ -250,7 +338,7 @@ private struct AddMCPServerSheet: View {
     let container = PreviewSupport.container
     let _ = PreviewSupport.seed(container)
 
-    MCPSettingsView()
+    ToolsSettingsView()
         .previewEnvironment(container: container)
         .frame(width: 600, height: 480)
 }

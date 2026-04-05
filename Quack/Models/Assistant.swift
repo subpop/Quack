@@ -42,6 +42,9 @@ final class Assistant {
     // MCP server IDs enabled by default (stored as comma-separated UUIDs)
     var enabledMCPServerIDsRaw: String?
 
+    // Built-in tool IDs enabled by default (stored as comma-separated IDs)
+    var enabledBuiltInToolIDsRaw: String?
+
     /// Per-tool permission defaults for this assistant.
     /// JSON-encoded `[String: String]` mapping tool name -> ToolPermission raw value.
     /// When a new ChatSession is created from this assistant, these defaults are
@@ -110,6 +113,18 @@ final class Assistant {
         }
         set {
             enabledMCPServerIDsRaw = newValue?.map(\.uuidString).joined(separator: ",")
+        }
+    }
+
+    /// Built-in tool IDs enabled by default for new sessions created from this assistant.
+    /// Returns nil if no built-in tools are enabled.
+    var enabledBuiltInToolIDs: [String]? {
+        get {
+            guard let raw = enabledBuiltInToolIDsRaw, !raw.isEmpty else { return nil }
+            return raw.split(separator: ",").map(String.init)
+        }
+        set {
+            enabledBuiltInToolIDsRaw = newValue?.joined(separator: ",")
         }
     }
 

@@ -89,7 +89,7 @@ final class ChatService {
         modelContext: ModelContext,
         providerService: ProviderService,
         profiles: [ProviderProfile],
-        mcpTools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<EmptyContext>]
     ) {
         // Cancel any existing stream
         stopStreaming()
@@ -162,7 +162,7 @@ final class ChatService {
         // Create Chat instance and stream
         let chat = Chat<EmptyContext>(
             client: client,
-            tools: mcpTools,
+            tools: tools,
             systemPrompt: systemPrompt,
             maxToolRounds: maxToolRounds
         )
@@ -243,7 +243,7 @@ final class ChatService {
         modelContext: ModelContext,
         providerService: ProviderService,
         profiles: [ProviderProfile],
-        mcpTools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<EmptyContext>]
     ) {
         // Remove all assistant and tool messages after the last user message.
         // With multi-turn tool loops, there may be multiple assistant + tool
@@ -265,7 +265,7 @@ final class ChatService {
                 modelContext: modelContext,
                 providerService: providerService,
                 profiles: profiles,
-                mcpTools: mcpTools
+                tools: tools
             )
         }
     }
@@ -279,7 +279,7 @@ final class ChatService {
         modelContext: ModelContext,
         providerService: ProviderService,
         profiles: [ProviderProfile],
-        mcpTools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<EmptyContext>]
     ) {
         guard message.role == .user else { return }
 
@@ -347,7 +347,7 @@ final class ChatService {
 
         let chat = Chat<EmptyContext>(
             client: client,
-            tools: mcpTools,
+            tools: tools,
             systemPrompt: systemPrompt,
             maxToolRounds: maxToolRounds
         )
