@@ -2,6 +2,29 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <item>
+            <title>0.1.2</title>
+            <pubDate>Fri, 10 Apr 2026 14:10:16 -0400</pubDate>
+            <link>https://subpop.github.io/Quack</link>
+            <sparkle:version>3</sparkle:version>
+            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/subpop/Quack/releases/download/v0.1.2/Quack-0.1.2.dmg" length="6325775" type="application/octet-stream" sparkle:edSignature="4jrGmMgtVVNW2syyWHFTLzPOzD0d7UYd+y4DSjgjL1TmKQbVzkc8aE3AOfednpZcOw1DolbmSl074sgB5O56Dw=="/>
+        <description><![CDATA[<div>
+    <h2>0.1.2 (3) (2026-04-10)</h2>
+<ul>
+<li>🛠️ Built-in tools system with dedicated settings view</li>
+<li>📊 Session statistics with token usage tracking</li>
+<li>📈 Token stats bar displayed above the compose view</li>
+<li>📋 Proper Markdown table rendering with SwiftUI Grid layout</li>
+<li>🤖 Assistant avatars shown in sidebar session rows</li>
+<li>🏗️ Moved DEVELOPMENT_TEAM to Secrets.xcconfig for cleaner project
+config</li>
+<li>🎨 UI polish (increased compose field corner radius)</li>
+<li>🐛 Fix Sparkle feed URL, internal streaming event refactor</li>
+</ul>
+</div>]]></description>
+</item>
+        <item>
             <title>0.1.1</title>
             <pubDate>Sat, 28 Mar 2026 00:14:20 -0400</pubDate>
             <link>https://subpop.github.io/Quack</link>
