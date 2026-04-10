@@ -5,8 +5,13 @@ Thank you for your interest in contributing to Quack. This document explains how
 ## Getting Started
 
 1. Fork and clone the repository.
-2. Open `Quack.xcodeproj` in Xcode.
-3. Build and run (Cmd+R) to verify everything works.
+2. Copy the secrets configuration template:
+   ```sh
+   cp Secrets.xcconfig.example Secrets.xcconfig
+   ```
+3. Fill in your values in `Secrets.xcconfig` (see the template for details). This file is gitignored and will not be committed.
+4. Open `Quack.xcodeproj` in Xcode.
+5. Build and run (Cmd+R) to verify everything works.
 
 ### Requirements
 
@@ -14,6 +19,12 @@ Thank you for your interest in contributing to Quack. This document explains how
 - Xcode with Swift 6.0 support
 
 Dependencies are managed via Swift Package Manager and resolve automatically on first build.
+
+### Optional API Keys
+
+Some built-in tools require API keys configured via `Secrets.xcconfig`:
+
+- **`TAVILY_API_KEY`** -- Enables the Web Search tool. Obtain one at https://app.tavily.com/home (free tier: 1,000 searches/month). If omitted, the Web Search tool is simply not available.
 
 ## Making Changes
 

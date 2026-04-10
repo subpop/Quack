@@ -100,6 +100,11 @@ iOSInjectionProject/
 
 # End of https://www.toptal.com/developers/gitignore/api/xcode,swift
 
+### Secrets ###
+
+Secrets.xcconfig
+Quack/Generated/
+
 ### Agents ###
 
 *.cursor*

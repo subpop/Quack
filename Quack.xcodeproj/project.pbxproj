@@ -28,6 +28,7 @@
 		3B4165C42F76ACF6007C292E /* Quack-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Quack-Info.plist"; sourceTree = "<group>"; };
 		3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B84807F2F730847000F16F0 /* Quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BSEC0013000000100000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -70,6 +71,7 @@
 			children = (
 				3B4165552F76954D007C292E /* README.md */,
 				3B4165C42F76ACF6007C292E /* Quack-Info.plist */,
+				3BSEC0013000000100000001 /* Secrets.xcconfig */,
 				3B8480812F730847000F16F0 /* Quack */,
 				3B7BF95C2F75862400C9A0FD /* QuackTests */,
 				3B8480802F730847000F16F0 /* Products */,
@@ -115,6 +117,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3B84808C2F730848000F16F0 /* Build configuration list for PBXNativeTarget "Quack" */;
 			buildPhases = (
+				3BSEC0023000000200000002 /* Generate Secrets */,
 				3B84807B2F730847000F16F0 /* Sources */,
 				3B84807C2F730847000F16F0 /* Frameworks */,
 				3B84807D2F730847000F16F0 /* Resources */,
@@ -198,6 +201,26 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		3BSEC0023000000200000002 /* Generate Secrets */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Secrets.xcconfig",
+				"$(SRCROOT)/scripts/generate-secrets.sh",
+			);
+			name = "Generate Secrets";
+			outputPaths = (
+				"$(SRCROOT)/Quack/Generated/Secrets.swift",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"${SRCROOT}/scripts/generate-secrets.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		3B7BF9572F75862400C9A0FD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -226,6 +249,7 @@
 /* Begin XCBuildConfiguration section */
 		3B7BF9622F75862400C9A0FD /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -248,6 +272,7 @@
 		};
 		3B7BF9632F75862400C9A0FD /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -270,6 +295,7 @@
 		};
 		3B84808A2F730848000F16F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -307,7 +333,7 @@
 				DEVELOPMENT_TEAM = 46UKXDYHHC;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -337,6 +363,7 @@
 		};
 		3B84808B2F730848000F16F0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -374,7 +401,7 @@
 				DEVELOPMENT_TEAM = 46UKXDYHHC;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -396,6 +423,7 @@
 		};
 		3B84808D2F730848000F16F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -430,6 +458,7 @@
 		};
 		3B84808E2F730848000F16F0 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

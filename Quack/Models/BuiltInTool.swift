@@ -25,8 +25,21 @@ enum BuiltInTool: String, CaseIterable, Codable, Identifiable {
     case writeFile = "builtin-write_file"
     case runCommand = "builtin-run_command"
     case webFetch = "builtin-web_fetch"
+    case webSearch = "builtin-web_search"
 
     var id: String { rawValue }
+
+    /// The subset of `allCases` whose build-time requirements are satisfied.
+    ///
+    /// Tools with `requiresBuildTimeKey == true` are only included when their
+    /// API key was provided via `Secrets.xcconfig` at build time.
+    nonisolated(unsafe) static var availableCases: [BuiltInTool] {
+        allCases.filter { tool in
+            guard tool.requiresBuildTimeKey else { return true }
+            guard let value = tool.buildTimeKey, !value.isEmpty else { return false }
+            return true
+        }
+    }
 
     /// Human-readable display name shown in the UI.
     var displayName: String {
@@ -35,6 +48,7 @@ enum BuiltInTool: String, CaseIterable, Codable, Identifiable {
         case .writeFile: "Write File"
         case .runCommand: "Run Command"
         case .webFetch: "Web Fetch"
+        case .webSearch: "Web Search"
         }
     }
 
@@ -45,6 +59,7 @@ enum BuiltInTool: String, CaseIterable, Codable, Identifiable {
         case .writeFile: "Write content to a file at a given path."
         case .runCommand: "Execute a shell command and return its output."
         case .webFetch: "Fetch the content of a URL and return the response body."
+        case .webSearch: "Search the web using Tavily and return relevant results."
         }
     }
 
@@ -55,6 +70,29 @@ enum BuiltInTool: String, CaseIterable, Codable, Identifiable {
         case .writeFile: "square.and.pencil"
         case .runCommand: "terminal"
         case .webFetch: "globe"
+        case .webSearch: "magnifyingglass"
+        }
+    }
+
+    /// Whether this tool requires a build-time API key to be available.
+    ///
+    /// Tools that return `true` are only registered when their key was
+    /// provided via `Secrets.xcconfig` and baked into the binary by
+    /// `scripts/generate-secrets.sh`.
+    nonisolated var requiresBuildTimeKey: Bool {
+        switch self {
+        case .webSearch: true
+        default: false
+        }
+    }
+
+    /// The obfuscated API key for this tool, read from the generated
+    /// `Secrets` enum. Returns `nil` for tools that don't require one
+    /// or when the key was not provided at build time.
+    nonisolated var buildTimeKey: String? {
+        switch self {
+        case .webSearch: Secrets.tavilyAPIKey
+        default: nil
         }
     }
 }

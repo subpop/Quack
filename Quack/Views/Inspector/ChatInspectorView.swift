@@ -232,7 +232,7 @@ struct ChatInspectorView: View {
     private var toolsSection: some View {
         Section("Tools") {
             // Built-in Tools
-            ForEach(BuiltInTool.allCases) { tool in
+            ForEach(BuiltInTool.availableCases) { tool in
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Toggle(

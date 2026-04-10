@@ -32,12 +32,12 @@ final class BuiltInToolService {
     // MARK: - Observable State
 
     /// Which built-in tools are globally enabled.
-    private(set) var enabledTools: Set<BuiltInTool> = Set(BuiltInTool.allCases)
+    private(set) var enabledTools: Set<BuiltInTool> = Set(BuiltInTool.availableCases)
 
     /// Global default permission for each built-in tool.
     private(set) var defaultPermissions: [BuiltInTool: ToolPermission] = {
         var defaults: [BuiltInTool: ToolPermission] = [:]
-        for tool in BuiltInTool.allCases {
+        for tool in BuiltInTool.availableCases {
             defaults[tool] = .ask
         }
         return defaults
@@ -46,12 +46,26 @@ final class BuiltInToolService {
     // MARK: - Private
 
     /// The tool instances, created once and reused.
-    private let toolInstances: [BuiltInTool: any AnyTool<EmptyContext>] = [
-        .readFile: ReadFileTool(),
-        .writeFile: WriteFileTool(),
-        .runCommand: RunCommandTool(),
-        .webFetch: WebFetchTool(),
-    ]
+    ///
+    /// Tools that require a build-time API key (via `Secrets.xcconfig`) are
+    /// only included when the key was provided and obfuscated into the binary
+    /// by `scripts/generate-secrets.sh`.
+    private let toolInstances: [BuiltInTool: any AnyTool<EmptyContext>] = {
+        var tools: [BuiltInTool: any AnyTool<EmptyContext>] = [
+            .readFile: ReadFileTool(),
+            .writeFile: WriteFileTool(),
+            .runCommand: RunCommandTool(),
+            .webFetch: WebFetchTool(),
+        ]
+
+        // Register WebSearch only when a Tavily API key was provided at
+        // build time via Secrets.xcconfig.
+        if let key = Secrets.tavilyAPIKey, !key.isEmpty {
+            tools[.webSearch] = WebSearchTool()
+        }
+
+        return tools
+    }()
 
     private let settingsURL: URL
 
@@ -117,7 +131,7 @@ final class BuiltInToolService {
     ) -> [any AnyTool<EmptyContext>] {
         let sessionEnabledIDs = session.enabledBuiltInToolIDs ?? []
 
-        return BuiltInTool.allCases.compactMap { tool -> (any AnyTool<EmptyContext>)? in
+        return BuiltInTool.availableCases.compactMap { tool -> (any AnyTool<EmptyContext>)? in
             // Must be globally enabled AND enabled for this session
             guard enabledTools.contains(tool),
                   sessionEnabledIDs.contains(tool.rawValue),
@@ -140,7 +154,7 @@ final class BuiltInToolService {
 
     /// Returns all globally-enabled built-in tools as summaries (for UI display).
     var enabledToolSummaries: [ToolSummary] {
-        BuiltInTool.allCases.compactMap { tool in
+        BuiltInTool.availableCases.compactMap { tool in
             guard enabledTools.contains(tool),
                   let instance = toolInstances[tool]
             else { return nil }

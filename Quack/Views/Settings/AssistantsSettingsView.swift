@@ -444,7 +444,7 @@ struct AssistantDetailSheet: View {
             // Tools
             Section {
                 // Built-in Tools
-                ForEach(BuiltInTool.allCases) { tool in
+                ForEach(BuiltInTool.availableCases) { tool in
                     VStack(alignment: .leading, spacing: 0) {
                         HStack {
                             Toggle(

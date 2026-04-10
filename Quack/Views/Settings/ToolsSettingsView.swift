@@ -78,7 +78,7 @@ struct ToolsSettingsView: View {
 
     private var builtInToolsSection: some View {
         Section("Built-in Tools") {
-            ForEach(BuiltInTool.allCases) { tool in
+            ForEach(BuiltInTool.availableCases) { tool in
                 HStack(spacing: 12) {
                     // Icon badge
                     Image(systemName: tool.iconName)
