@@ -118,34 +118,7 @@ final class ChatService {
             }
         }
 
-        // Build the client
-        guard let client = providerService.makeClient(
-            for: session,
-            profiles: profiles
-        ) else {
-            streamingError = "No provider configured. Set up a provider in Settings."
-            errorSessionID = session.id
-            return
-        }
-
-        // Convert history to AgentRunKit messages
-        let history = MessageConverter.toChatMessages(session.sortedMessages)
-
-        // Resolve session parameters
-        let systemPrompt = session.systemPrompt
-        let temperature = session.temperature
-
-        // Build request context for temperature override
-        var extraFields: [String: JSONValue] = [:]
-        if let temperature {
-            extraFields["temperature"] = .double(temperature)
-        }
-        let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
-
-        // Resolve max tool rounds (default 10 matches AgentRunKit)
-        let maxToolRounds = session.maxToolRounds ?? 10
-
-        // Reset streaming state
+        // Reset streaming state early so UI reflects loading
         streamingContent = ""
         streamingReasoning = ""
         streamingError = nil
@@ -159,17 +132,66 @@ final class ChatService {
         isStreaming = true
         streamingSessionID = session.id
 
-        // Create Chat instance and stream
-        let chat = Chat<EmptyContext>(
-            client: client,
-            tools: tools,
-            systemPrompt: systemPrompt,
-            maxToolRounds: maxToolRounds
-        )
-
         let sessionID = session.id
 
         streamTask = Task { [weak self] in
+            do {
+                // Pre-load MLX model if needed (no-op for other providers).
+                // This must happen inside the Task so it can be async and
+                // show loading progress in the UI.
+                try await providerService.prepareMLXModel(
+                    for: session,
+                    profiles: profiles
+                )
+            } catch {
+                await MainActor.run {
+                    self?.streamingError = "Failed to load MLX model: \(error.localizedDescription)"
+                    self?.errorSessionID = sessionID
+                    self?.isStreaming = false
+                    self?.streamingSessionID = nil
+                }
+                return
+            }
+
+            // Build the client (synchronous — MLX container is now cached)
+            guard let client = providerService.makeClient(
+                for: session,
+                profiles: profiles
+            ) else {
+                await MainActor.run {
+                    self?.streamingError = "No provider configured. Set up a provider in Settings."
+                    self?.errorSessionID = sessionID
+                    self?.isStreaming = false
+                    self?.streamingSessionID = nil
+                }
+                return
+            }
+
+            // Convert history to AgentRunKit messages
+            let history = MessageConverter.toChatMessages(session.sortedMessages)
+
+            // Resolve session parameters
+            let systemPrompt = session.systemPrompt
+            let temperature = session.temperature
+
+            // Build request context for temperature override
+            var extraFields: [String: JSONValue] = [:]
+            if let temperature {
+                extraFields["temperature"] = .double(temperature)
+            }
+            let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
+
+            // Resolve max tool rounds (default 10 matches AgentRunKit)
+            let maxToolRounds = session.maxToolRounds ?? 10
+
+            // Create Chat instance and stream
+            let chat = Chat<EmptyContext>(
+                client: client,
+                tools: tools,
+                systemPrompt: systemPrompt,
+                maxToolRounds: maxToolRounds
+            )
+
             do {
                 for try await event in chat.stream(
                     history.last?.isUser == true ? text : text,
@@ -307,31 +329,6 @@ final class ChatService {
 
         let text = message.content
 
-        guard let client = providerService.makeClient(
-            for: session,
-            profiles: profiles
-        ) else {
-            streamingError = "No provider configured. Set up a provider in Settings."
-            errorSessionID = session.id
-            return
-        }
-
-        // Build history up to and including the resubmitted user message
-        let updatedSorted = session.sortedMessages
-        let history = MessageConverter.toChatMessages(updatedSorted)
-
-        let systemPrompt = session.systemPrompt
-        let temperature = session.temperature
-
-        var extraFields: [String: JSONValue] = [:]
-        if let temperature {
-            extraFields["temperature"] = .double(temperature)
-        }
-        let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
-
-        // Resolve max tool rounds (default 10 matches AgentRunKit)
-        let maxToolRounds = session.maxToolRounds ?? 10
-
         streamingContent = ""
         streamingReasoning = ""
         streamingError = nil
@@ -345,16 +342,61 @@ final class ChatService {
         isStreaming = true
         streamingSessionID = session.id
 
-        let chat = Chat<EmptyContext>(
-            client: client,
-            tools: tools,
-            systemPrompt: systemPrompt,
-            maxToolRounds: maxToolRounds
-        )
-
         let sessionID = session.id
 
         streamTask = Task { [weak self] in
+            do {
+                // Pre-load MLX model if needed
+                try await providerService.prepareMLXModel(
+                    for: session,
+                    profiles: profiles
+                )
+            } catch {
+                await MainActor.run {
+                    self?.streamingError = "Failed to load MLX model: \(error.localizedDescription)"
+                    self?.errorSessionID = sessionID
+                    self?.isStreaming = false
+                    self?.streamingSessionID = nil
+                }
+                return
+            }
+
+            guard let client = providerService.makeClient(
+                for: session,
+                profiles: profiles
+            ) else {
+                await MainActor.run {
+                    self?.streamingError = "No provider configured. Set up a provider in Settings."
+                    self?.errorSessionID = sessionID
+                    self?.isStreaming = false
+                    self?.streamingSessionID = nil
+                }
+                return
+            }
+
+            // Build history up to and including the resubmitted user message
+            let updatedSorted = session.sortedMessages
+            let history = MessageConverter.toChatMessages(updatedSorted)
+
+            let systemPrompt = session.systemPrompt
+            let temperature = session.temperature
+
+            var extraFields: [String: JSONValue] = [:]
+            if let temperature {
+                extraFields["temperature"] = .double(temperature)
+            }
+            let requestContext = extraFields.isEmpty ? nil : RequestContext(extraFields: extraFields)
+
+            // Resolve max tool rounds (default 10 matches AgentRunKit)
+            let maxToolRounds = session.maxToolRounds ?? 10
+
+            let chat = Chat<EmptyContext>(
+                client: client,
+                tools: tools,
+                systemPrompt: systemPrompt,
+                maxToolRounds: maxToolRounds
+            )
+
             do {
                 for try await event in chat.stream(
                     text,

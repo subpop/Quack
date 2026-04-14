@@ -11,6 +11,7 @@
 		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
 		3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00013300000000000F013 /* AgentRunKitFoundationModels */; };
 		3BA00004300000000000F004 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00014300000000000F014 /* Sparkle */; };
+		3BA00005300000000000F005 /* AgentRunKitMLX in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00015300000000000F015 /* AgentRunKitMLX */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +61,7 @@
 				3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */,
 				3BA00002300000000000F002 /* Markdown in Frameworks */,
 				3BA00004300000000000F004 /* Sparkle in Frameworks */,
+				3BA00005300000000000F005 /* AgentRunKitMLX in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -133,6 +135,7 @@
 			packageProductDependencies = (
 				3BA00011300000000000F011 /* AgentRunKit */,
 				3BA00013300000000000F013 /* AgentRunKitFoundationModels */,
+				3BA00015300000000000F015 /* AgentRunKitMLX */,
 				3BA00012300000000000F012 /* Markdown */,
 				3BA00014300000000000F014 /* Sparkle */,
 			);
@@ -563,6 +566,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		3BA00015300000000000F015 /* AgentRunKitMLX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			productName = AgentRunKitMLX;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

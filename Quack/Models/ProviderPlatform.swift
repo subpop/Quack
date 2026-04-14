@@ -16,6 +16,8 @@ import Foundation
 import SwiftUI
 import AgentRunKit
 import AgentRunKitFoundationModels
+import AgentRunKitMLX
+import MLXLMCommon
 
 /// The API wire protocol used to communicate with a provider's backend.
 ///
@@ -42,6 +44,9 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Anthropic Claude models on Google Cloud Vertex AI
     case vertexAnthropic = "vertex_anthropic"
 
+    /// MLX on-device inference via mlx-swift
+    case mlx = "mlx"
+
     var id: String { rawValue }
 
     // MARK: - Display
@@ -54,6 +59,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         case .gemini: "Gemini"
         case .vertexGemini: "Vertex AI (Gemini)"
         case .vertexAnthropic: "Vertex AI (Claude)"
+        case .mlx: "MLX (On-Device)"
         }
     }
 
@@ -63,6 +69,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         case .openAICompatible: Image("openai")
         case .gemini: Image("gemini")
         case .anthropic: Image("anthropic")
+        case .mlx: Image(systemName: "cpu")
         default: Image(systemName: "cloud")
         }
     }
@@ -83,7 +90,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     var requiresAPIKey: Bool {
         switch self {
         case .openAICompatible, .anthropic, .gemini: true
-        case .foundationModels, .vertexGemini, .vertexAnthropic: false
+        case .foundationModels, .vertexGemini, .vertexAnthropic, .mlx: false
         }
     }
 
@@ -91,7 +98,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     var requiresBaseURL: Bool {
         switch self {
         case .openAICompatible, .anthropic: true
-        case .foundationModels, .gemini, .vertexGemini, .vertexAnthropic: false
+        case .foundationModels, .gemini, .vertexGemini, .vertexAnthropic, .mlx: false
         }
     }
 
@@ -118,6 +125,7 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         case .gemini, .vertexGemini: 40_000
         case .openAICompatible: 16_384
         case .foundationModels: 4_096
+        case .mlx: 4_096
         }
     }
 
@@ -128,6 +136,9 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     /// Returns `nil` if required configuration is missing (e.g. no API key, invalid URL).
     /// Each case delegates to a platform-specific factory in a separate file to keep
     /// provider-specific logic isolated.
+    ///
+    /// - Parameter mlxContainer: A pre-loaded MLX `ModelContainer`. Required for `.mlx`,
+    ///   ignored by all other platforms. Must be loaded via `MLXModelService` before calling.
     func makeClient(
         baseURL: URL?,
         apiKey: String?,
@@ -138,7 +149,8 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
         retryPolicy: RetryPolicy,
         cachingEnabled: Bool,
         projectID: String?,
-        location: String?
+        location: String?,
+        mlxContainer: ModelContainer? = nil
     ) -> (any LLMClient)? {
         switch self {
         case .openAICompatible:
@@ -178,6 +190,13 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
                 cachingEnabled: cachingEnabled,
                 projectID: projectID, location: location
             )
+        case .mlx:
+            return MLXClientFactory.makeClient(
+                container: mlxContainer,
+                model: model,
+                maxTokens: maxTokens,
+                contextWindowSize: contextWindowSize
+            )
         }
     }
 
@@ -201,6 +220,8 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
             return try await VertexGoogleClientFactory.listModels(projectID: projectID, location: location)
         case .anthropic, .vertexAnthropic, .foundationModels:
             return []
+        case .mlx:
+            return MLXModelService.downloadedModelIDs()
         }
     }
 
@@ -220,6 +241,8 @@ enum ProviderPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
             ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.0-flash-lite"]
         case .vertexAnthropic:
             ["claude-opus-4-6", "claude-sonnet-4-6", "claude-sonnet-4-5@20250929", "claude-haiku-4-5@20251001"]
+        case .mlx:
+            MLXModelService.downloadedModelIDs()
         }
     }
 }

@@ -105,6 +105,8 @@ final class ProviderProfile {
             iconName = "cloud"; iconIsCustom = false; iconColorName = "indigo"
         case .vertexAnthropic:
             iconName = "cloud"; iconIsCustom = false; iconColorName = "purple"
+        case .mlx:
+            iconName = "cpu"; iconIsCustom = false; iconColorName = "teal"
         }
     }
 

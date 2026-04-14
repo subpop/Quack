@@ -23,6 +23,7 @@ struct ProviderDetailSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(ProviderService.self) private var providerService
+    @Environment(MLXModelService.self) private var mlxModelService
 
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
@@ -89,6 +90,18 @@ struct ProviderDetailSheet: View {
                     set: { newValue in
                         profile.platform = newValue
                         profile.baseURL = newValue.defaultBaseURL
+
+                        // When switching to MLX, auto-select a model:
+                        // prefer the currently loaded model, then the first
+                        // downloaded model, so the picker isn't empty.
+                        if newValue == .mlx && profile.defaultModel.isEmpty {
+                            if let loaded = mlxModelService.loadedModelID {
+                                profile.defaultModel = loaded
+                            } else if let first = MLXModelService.downloadedModelIDs().first {
+                                profile.defaultModel = first
+                            }
+                        }
+
                         save()
                         providerService.invalidateCache()
                     }

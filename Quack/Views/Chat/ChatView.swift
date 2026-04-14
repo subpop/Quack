@@ -22,6 +22,7 @@ struct ChatView: View {
     @Environment(ChatService.self) private var chatService
     @Environment(MCPService.self) private var mcpService
     @Environment(BuiltInToolService.self) private var builtInToolService
+    @Environment(MLXModelService.self) private var mlxModelService
 
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
@@ -131,21 +132,15 @@ struct ChatView: View {
             // Interleaved segments: text and tool calls in order
             let segments = chatService.streamingSegments
             if segments.isEmpty && isStreamingThisSession {
-                // No segments yet — show "Thinking..." placeholder
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Thinking...")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    Color(.controlBackgroundColor),
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                )
-                .padding(.horizontal, 16)
+                // No segments yet — show loading placeholder
+                mlxAwareLoadingPlaceholder
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        Color(.controlBackgroundColor),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+                    .padding(.horizontal, 16)
             } else {
                 ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
                     switch segment {
@@ -175,6 +170,63 @@ struct ChatView: View {
             }
         }
         .id("streaming")
+    }
+
+    // MARK: - MLX Loading Placeholder
+
+    /// Shows an MLX-specific loading indicator (download progress or loading spinner)
+    /// when the resolved provider is MLX and the model is being loaded.
+    /// Falls back to the standard "Thinking..." placeholder for other providers.
+    @ViewBuilder
+    private var mlxAwareLoadingPlaceholder: some View {
+        let resolvedProfile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let isMLX = resolvedProfile?.platform == .mlx
+
+        if isMLX {
+            switch mlxModelService.loadState {
+            case .downloading(let progress):
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "arrow.down.circle")
+                            .foregroundStyle(.secondary)
+                        Text("Downloading model\u{2026}")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    ProgressView(value: progress)
+                        .frame(maxWidth: 200)
+                    Text("\(Int(progress * 100))% complete")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+
+            case .loading:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Loading model into memory\u{2026}")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
+            default:
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Thinking\u{2026}")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } else {
+            HStack(spacing: 8) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Thinking\u{2026}")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private func errorView(_ error: String) -> some View {

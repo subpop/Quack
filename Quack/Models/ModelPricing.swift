@@ -89,7 +89,7 @@ final class ModelPricingService {
         platform: ProviderPlatform,
         modelsDevProviderID: String? = nil
     ) -> ModelPricing? {
-        if platform == .foundationModels {
+        if platform == .foundationModels || platform == .mlx {
             return ModelPricing(inputPerMTok: 0, outputPerMTok: 0)
         }
 
@@ -189,6 +189,7 @@ extension ProviderPlatform {
         case .vertexGemini: ["google-vertex", "google"]
         case .vertexAnthropic: ["google-vertex-anthropic", "anthropic"]
         case .foundationModels: []
+        case .mlx: []
         }
     }
 }

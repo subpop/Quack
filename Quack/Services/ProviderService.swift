@@ -15,11 +15,16 @@
 import Foundation
 import SwiftData
 import AgentRunKit
+import MLXLMCommon
 
 @Observable
 @MainActor
 final class ProviderService {
     private var clientCache: [String: any LLMClient] = [:]
+
+    /// The MLX model service, injected at app startup.
+    /// Used to load and cache on-device MLX models.
+    var mlxModelService: MLXModelService?
 
     /// Resolve the effective ProviderProfile for a chat session, falling back to the first enabled profile.
     func resolvedProfile(for session: ChatSession, profiles: [ProviderProfile]) -> ProviderProfile? {
@@ -46,6 +51,9 @@ final class ProviderService {
     /// Acts as a bridge: pulls configuration from the `ProviderProfile`, resolves
     /// API keys from the Keychain, and passes individual values to the platform's
     /// `makeClient()` method.
+    ///
+    /// For MLX providers, the model must be pre-loaded via ``prepareMLXModel(for:profiles:)``
+    /// before calling this method. If the model is not yet loaded, returns `nil`.
     func makeClient(
         for session: ChatSession,
         profiles: [ProviderProfile]
@@ -77,6 +85,14 @@ final class ProviderService {
         }
         let retryPolicy = Self.resolveRetryPolicy(from: profile)
 
+        // For MLX, resolve the pre-loaded container
+        let mlxContainer: MLXLMCommon.ModelContainer?
+        if profile.platform == .mlx {
+            mlxContainer = mlxModelService?.cachedContainer(for: model)
+        } else {
+            mlxContainer = nil
+        }
+
         return profile.platform.makeClient(
             baseURL: baseURL,
             apiKey: apiKey,
@@ -87,8 +103,29 @@ final class ProviderService {
             retryPolicy: retryPolicy,
             cachingEnabled: profile.cachingEnabled,
             projectID: profile.projectID,
-            location: profile.location
+            location: profile.location,
+            mlxContainer: mlxContainer
         )
+    }
+
+    /// Pre-load the MLX model for a session, if applicable.
+    ///
+    /// This must be called before ``makeClient(for:profiles:)`` when the resolved
+    /// provider is an MLX platform. For non-MLX providers, this is a no-op.
+    ///
+    /// - Throws: If the model download or loading fails.
+    func prepareMLXModel(
+        for session: ChatSession,
+        profiles: [ProviderProfile]
+    ) async throws {
+        guard let profile = resolvedProfile(for: session, profiles: profiles),
+              profile.platform == .mlx,
+              let mlxModelService else {
+            return
+        }
+
+        let model = session.modelIdentifier ?? profile.defaultModel
+        try await mlxModelService.loadModel(id: model)
     }
 
     func invalidateCache() {

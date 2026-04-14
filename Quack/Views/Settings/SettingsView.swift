@@ -31,6 +31,10 @@ struct SettingsView: View {
                 ToolsSettingsView()
             }
 
+            Tab("Local Models", systemImage: "cpu") {
+                LocalModelsSettingsView()
+            }
+
             Tab("Updates", systemImage: "arrow.triangle.2.circlepath") {
                 Form {
                     Toggle("Automatically check for updates", isOn: Binding(
