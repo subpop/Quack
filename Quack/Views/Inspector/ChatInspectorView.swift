@@ -26,6 +26,10 @@ struct ChatInspectorView: View {
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
+    @State private var showingPromptGenerator = false
+    @State private var agentDescription = ""
+    @State private var isGeneratingPrompt = false
+
     var body: some View {
         Form {
             sessionInfoSection
@@ -212,10 +216,27 @@ struct ChatInspectorView: View {
 
     private var systemPromptSection: some View {
         Section("System Prompt") {
-            TextEditor(text: systemPromptBinding)
-                .font(.body.monospaced())
-                .frame(minHeight: 80)
-                .scrollContentBackground(.hidden)
+            ZStack(alignment: .bottomTrailing) {
+                TextEditor(text: systemPromptBinding)
+                    .font(.body.monospaced())
+                    .frame(minHeight: 80)
+                    .scrollContentBackground(.hidden)
+
+                Button {
+                    showingPromptGenerator = true
+                } label: {
+                    Image(systemName: "apple.intelligence")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("Generate system prompt")
+                .popover(isPresented: $showingPromptGenerator) {
+                    promptGeneratorPopover
+                }
+            }
 
             if session.systemPrompt != nil {
                 Button("Clear") {
@@ -547,6 +568,54 @@ struct ChatInspectorView: View {
         case .always: .green
         case .ask: .orange
         case .deny: .red
+        }
+    }
+
+    // MARK: - System Prompt Generation
+
+    private var promptGeneratorPopover: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Generate System Prompt")
+                .font(.headline)
+
+            TextField(
+                "A coding assistant that specializes in Swift.",
+                text: $agentDescription,
+                axis: .vertical
+            )
+            .lineLimit(3...6)
+            .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Spacer()
+                if isGeneratingPrompt {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Button("Generate") {
+                    generateSystemPrompt()
+                }
+                .disabled(
+                    agentDescription.trimmingCharacters(in: .whitespaces).isEmpty
+                        || isGeneratingPrompt
+                )
+            }
+        }
+        .padding()
+        .frame(width: 320)
+    }
+
+    private func generateSystemPrompt() {
+        isGeneratingPrompt = true
+        Task {
+            let prompt = await TextGenerationService.generateSystemPrompt(
+                from: agentDescription
+            )
+            session.systemPrompt = prompt
+            save()
+            isGeneratingPrompt = false
+            showingPromptGenerator = false
+            agentDescription = ""
         }
     }
 

@@ -215,6 +215,9 @@ struct AssistantDetailSheet: View {
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
     @State private var showingDeleteConfirmation = false
+    @State private var showingPromptGenerator = false
+    @State private var agentDescription = ""
+    @State private var isGeneratingPrompt = false
 
     /// Server IDs that we started temporarily for tool discovery in this sheet.
     /// When the sheet closes, these will be stopped if no active session needs them.
@@ -317,10 +320,27 @@ struct AssistantDetailSheet: View {
 
             // System Prompt
             Section {
-                TextEditor(text: systemPromptBinding)
-                    .font(.body.monospaced())
-                    .frame(minHeight: 60)
-                    .scrollContentBackground(.hidden)
+                ZStack(alignment: .bottomTrailing) {
+                    TextEditor(text: systemPromptBinding)
+                        .font(.body.monospaced())
+                        .frame(minHeight: 60)
+                        .scrollContentBackground(.hidden)
+
+                    Button {
+                        showingPromptGenerator = true
+                    } label: {
+                        Image(systemName: "apple.intelligence")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Generate system prompt")
+                    .popover(isPresented: $showingPromptGenerator) {
+                        promptGeneratorPopover
+                    }
+                }
 
                 if assistant.systemPrompt != nil {
                     Button("Clear") {
@@ -868,6 +888,54 @@ struct AssistantDetailSheet: View {
             defaults.removeValue(forKey: tool.name)
         }
         assistant.toolPermissionDefaults = defaults.isEmpty ? nil : defaults
+    }
+
+    // MARK: - System Prompt Generation
+
+    private var promptGeneratorPopover: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Generate System Prompt")
+                .font(.headline)
+
+            TextField(
+                "A coding assistant that specializes in Swift.",
+                text: $agentDescription,
+                axis: .vertical
+            )
+            .lineLimit(3...6)
+            .textFieldStyle(.roundedBorder)
+
+            HStack {
+                Spacer()
+                if isGeneratingPrompt {
+                    ProgressView()
+                        .controlSize(.small)
+                }
+                Button("Generate") {
+                    generateSystemPrompt()
+                }
+                .disabled(
+                    agentDescription.trimmingCharacters(in: .whitespaces).isEmpty
+                        || isGeneratingPrompt
+                )
+            }
+        }
+        .padding()
+        .frame(width: 320)
+    }
+
+    private func generateSystemPrompt() {
+        isGeneratingPrompt = true
+        Task {
+            let prompt = await TextGenerationService.generateSystemPrompt(
+                from: agentDescription
+            )
+            assistant.systemPrompt = prompt
+            save()
+            isGeneratingPrompt = false
+            showingPromptGenerator = false
+            agentDescription = ""
+        }
     }
 
     private func save() {

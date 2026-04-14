@@ -106,7 +106,7 @@ final class ChatService {
             let sessionID = session.id
             let messageText = text
             Task { @MainActor in
-                let title = await TitleGenerationService.generateTitle(for: messageText)
+                let title = await TextGenerationService.generateTitle(for: messageText)
                 // Re-fetch session to avoid stale reference
                 let descriptor = FetchDescriptor<ChatSession>(
                     predicate: #Predicate { $0.id == sessionID }

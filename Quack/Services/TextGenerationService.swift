@@ -15,10 +15,13 @@
 import Foundation
 import FoundationModels
 
-/// Generates concise chat session titles using the on-device Foundation Model.
+/// Generates text using the on-device Foundation Model for various purposes
+/// such as chat titles and system prompts.
 ///
-/// Falls back to simple message truncation when the model is unavailable.
-enum TitleGenerationService {
+/// Falls back to simple heuristics when the model is unavailable.
+enum TextGenerationService {
+
+    // MARK: - Chat Titles
 
     /// Generate a short title for a chat session based on the user's first message.
     ///
@@ -51,5 +54,37 @@ enum TitleGenerationService {
         var title = String(text.prefix(50))
         if text.count > 50 { title += "..." }
         return title
+    }
+
+    // MARK: - System Prompts
+
+    /// Generate a system prompt from a natural language description of an assistant.
+    ///
+    /// Uses the on-device Foundation Model to produce a detailed system prompt
+    /// defining the assistant's role, behavior, and guidelines. Falls back to a
+    /// simple template if the model is unavailable or generation fails.
+    @MainActor
+    static func generateSystemPrompt(from description: String) async -> String {
+        let fallback = "You are \(description)."
+
+        let model = SystemLanguageModel.default
+        guard model.isAvailable else {
+            return fallback
+        }
+
+        do {
+            let session = LanguageModelSession(instructions: """
+                You are a system prompt writer. Given a description of an AI assistant, \
+                generate a clear, detailed system prompt that defines the assistant's \
+                role, behavior, and guidelines. Write in second person \
+                (e.g. "You are..."). Be concise but thorough. Respond with only the \
+                system prompt text, no extra explanation or formatting.
+                """)
+            let response = try await session.respond(to: description)
+            let result = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return result.isEmpty ? fallback : result
+        } catch {
+            return fallback
+        }
     }
 }
