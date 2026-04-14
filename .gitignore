@@ -110,3 +110,5 @@ Quack/Generated/
 *.cursor*
 builds
 opencode.json
+*.agents*
+skills-lock.json
