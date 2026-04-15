@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
-import AgentRunKit
+import QuackInterface
 
 /// A view that recursively renders a `JSONValue` as a structured key-value tree.
 ///

@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 // MARK: - Provider Detail Sheet
 
@@ -22,8 +23,8 @@ struct ProviderDetailSheet: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(ProviderService.self) private var providerService
-    @Environment(MLXModelService.self) private var mlxModelService
+    @Environment(\.providerService) private var providerService
+    @Environment(\.mlxModelServiceBox) private var mlxModelService
 
     @State private var apiKey: String = ""
     @State private var showAPIKey: Bool = false
@@ -97,7 +98,7 @@ struct ProviderDetailSheet: View {
                         if newValue == .mlx && profile.defaultModel.isEmpty {
                             if let loaded = mlxModelService.loadedModelID {
                                 profile.defaultModel = loaded
-                            } else if let first = MLXModelService.downloadedModelIDs().first {
+                            } else if let first = mlxDownloadedModelIDsFromDisk().first {
                                 profile.defaultModel = first
                             }
                         }

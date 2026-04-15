@@ -14,12 +14,13 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct MainView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProviderService.self) private var providerService
-    @Environment(ChatService.self) private var chatService
-    @Environment(MCPService.self) private var mcpService
+    @Environment(\.providerService) private var providerService
+    @Environment(\.chatService) private var chatService
+    @Environment(\.mcpService) private var mcpService
 
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]

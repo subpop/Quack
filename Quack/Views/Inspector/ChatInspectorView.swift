@@ -14,14 +14,15 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct ChatInspectorView: View {
     @Bindable var session: ChatSession
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProviderService.self) private var providerService
-    @Environment(MCPService.self) private var mcpService
-    @Environment(BuiltInToolService.self) private var builtInToolService
+    @Environment(\.providerService) private var providerService
+    @Environment(\.mcpService) private var mcpService
+    @Environment(\.builtInToolService) private var builtInToolService
     @Environment(ModelPricingService.self) private var modelPricingService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]

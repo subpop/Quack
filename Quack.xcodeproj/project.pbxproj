@@ -7,61 +7,82 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3BA00001300000000000F001 /* AgentRunKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00011300000000000F011 /* AgentRunKit */; };
 		3BA00002300000000000F002 /* Markdown in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00012300000000000F012 /* Markdown */; };
-		3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00013300000000000F013 /* AgentRunKitFoundationModels */; };
 		3BA00004300000000000F004 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00014300000000000F014 /* Sparkle */; };
-		3BA00005300000000000F005 /* AgentRunKitMLX in Frameworks */ = {isa = PBXBuildFile; productRef = 3BA00015300000000000F015 /* AgentRunKitMLX */; };
+		3BQI00032FC10003001F0EA1 /* QuackInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 3BQI00022FC10002001F0EA1 /* QuackInterface */; };
+		3BQK00012FC00001001F0EA1 /* QuackKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3BQK00002FC00000001F0EA1 /* QuackKit.framework */; };
+		3BQK00022FC00002001F0EA1 /* QuackKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 3BQK00002FC00000001F0EA1 /* QuackKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		3BQK00402FC00040001F0EA1 /* AgentRunKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3BQK00302FC00030001F0EA1 /* AgentRunKit */; };
+		3BQK00412FC00041001F0EA1 /* AgentRunKitFoundationModels in Frameworks */ = {isa = PBXBuildFile; productRef = 3BQK00312FC00031001F0EA1 /* AgentRunKitFoundationModels */; };
+		3BQK00422FC00042001F0EA1 /* AgentRunKitMLX in Frameworks */ = {isa = PBXBuildFile; productRef = 3BQK00322FC00032001F0EA1 /* AgentRunKitMLX */; };
+		3BQK00432FC00043001F0EA1 /* QuackInterface in Frameworks */ = {isa = PBXBuildFile; productRef = 3BQK00332FC00033001F0EA1 /* QuackInterface */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		3B7BF95F2F75862400C9A0FD /* PBXContainerItemProxy */ = {
+		3BQK00032FC00003001F0EA1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 3B8480772F730847000F16F0 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 3B84807E2F730847000F16F0;
-			remoteInfo = Quack;
+			remoteGlobalIDString = 3BQK00102FC00010001F0EA1;
+			remoteInfo = QuackKit;
 		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3BQK00042FC00004001F0EA1 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				3BQK00022FC00002001F0EA1 /* QuackKit.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3B4165552F76954D007C292E /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3B4165C42F76ACF6007C292E /* Quack-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Quack-Info.plist"; sourceTree = "<group>"; };
-		3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QuackTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B84807F2F730847000F16F0 /* Quack.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Quack.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3BQK00002FC00000001F0EA1 /* QuackKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = QuackKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3BSEC0013000000100000001 /* Secrets.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Secrets.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3B7BF95C2F75862400C9A0FD /* QuackTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = QuackTests;
-			sourceTree = "<group>";
-		};
 		3B8480812F730847000F16F0 /* Quack */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Quack;
 			sourceTree = "<group>";
 		};
+		3BQK00112FC00011001F0EA1 /* QuackKit */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = QuackKit;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		3B7BF9582F75862400C9A0FD /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		3B84807C2F730847000F16F0 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3BA00001300000000000F001 /* AgentRunKit in Frameworks */,
-				3BA00003300000000000F003 /* AgentRunKitFoundationModels in Frameworks */,
+				3BQK00012FC00001001F0EA1 /* QuackKit.framework in Frameworks */,
 				3BA00002300000000000F002 /* Markdown in Frameworks */,
 				3BA00004300000000000F004 /* Sparkle in Frameworks */,
-				3BA00005300000000000F005 /* AgentRunKitMLX in Frameworks */,
+				3BQI00032FC10003001F0EA1 /* QuackInterface in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3BQK00122FC00012001F0EA1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3BQK00402FC00040001F0EA1 /* AgentRunKit in Frameworks */,
+				3BQK00412FC00041001F0EA1 /* AgentRunKitFoundationModels in Frameworks */,
+				3BQK00422FC00042001F0EA1 /* AgentRunKitMLX in Frameworks */,
+				3BQK00432FC00043001F0EA1 /* QuackInterface in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,7 +96,7 @@
 				3B4165C42F76ACF6007C292E /* Quack-Info.plist */,
 				3BSEC0013000000100000001 /* Secrets.xcconfig */,
 				3B8480812F730847000F16F0 /* Quack */,
-				3B7BF95C2F75862400C9A0FD /* QuackTests */,
+				3BQK00112FC00011001F0EA1 /* QuackKit */,
 				3B8480802F730847000F16F0 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -84,37 +105,24 @@
 			isa = PBXGroup;
 			children = (
 				3B84807F2F730847000F16F0 /* Quack.app */,
-				3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */,
+				3BQK00002FC00000001F0EA1 /* QuackKit.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
-/* Begin PBXNativeTarget section */
-		3B7BF95A2F75862400C9A0FD /* QuackTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 3B7BF9612F75862400C9A0FD /* Build configuration list for PBXNativeTarget "QuackTests" */;
-			buildPhases = (
-				3B7BF9572F75862400C9A0FD /* Sources */,
-				3B7BF9582F75862400C9A0FD /* Frameworks */,
-				3B7BF9592F75862400C9A0FD /* Resources */,
+/* Begin PBXHeadersBuildPhase section */
+		3BQK00132FC00013001F0EA1 /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
-			buildRules = (
-			);
-			dependencies = (
-				3B7BF9602F75862400C9A0FD /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				3B7BF95C2F75862400C9A0FD /* QuackTests */,
-			);
-			name = QuackTests;
-			packageProductDependencies = (
-			);
-			productName = QuackTests;
-			productReference = 3B7BF95B2F75862400C9A0FD /* QuackTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
 		3B84807E2F730847000F16F0 /* Quack */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3B84808C2F730848000F16F0 /* Build configuration list for PBXNativeTarget "Quack" */;
@@ -123,25 +131,52 @@
 				3B84807B2F730847000F16F0 /* Sources */,
 				3B84807C2F730847000F16F0 /* Frameworks */,
 				3B84807D2F730847000F16F0 /* Resources */,
+				3BQK00042FC00004001F0EA1 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3BQK00052FC00005001F0EA1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3B8480812F730847000F16F0 /* Quack */,
 			);
 			name = Quack;
 			packageProductDependencies = (
-				3BA00011300000000000F011 /* AgentRunKit */,
-				3BA00013300000000000F013 /* AgentRunKitFoundationModels */,
-				3BA00015300000000000F015 /* AgentRunKitMLX */,
 				3BA00012300000000000F012 /* Markdown */,
 				3BA00014300000000000F014 /* Sparkle */,
+				3BQI00022FC10002001F0EA1 /* QuackInterface */,
 			);
 			productName = Quack;
 			productReference = 3B84807F2F730847000F16F0 /* Quack.app */;
 			productType = "com.apple.product-type.application";
+		};
+		3BQK00102FC00010001F0EA1 /* QuackKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3BQK00202FC00020001F0EA1 /* Build configuration list for PBXNativeTarget "QuackKit" */;
+			buildPhases = (
+				3BQK00142FC00014001F0EA1 /* Sources */,
+				3BQK00122FC00012001F0EA1 /* Frameworks */,
+				3BQK00152FC00015001F0EA1 /* Resources */,
+				3BQK00132FC00013001F0EA1 /* Headers */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3BQK00112FC00011001F0EA1 /* QuackKit */,
+			);
+			name = QuackKit;
+			packageProductDependencies = (
+				3BQK00302FC00030001F0EA1 /* AgentRunKit */,
+				3BQK00312FC00031001F0EA1 /* AgentRunKitFoundationModels */,
+				3BQK00322FC00032001F0EA1 /* AgentRunKitMLX */,
+				3BQK00332FC00033001F0EA1 /* QuackInterface */,
+			);
+			productName = QuackKit;
+			productReference = 3BQK00002FC00000001F0EA1 /* QuackKit.framework */;
+			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
 
@@ -153,11 +188,10 @@
 				LastSwiftUpdateCheck = 2640;
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
-					3B7BF95A2F75862400C9A0FD = {
-						CreatedOnToolsVersion = 26.4;
-						TestTargetID = 3B84807E2F730847000F16F0;
-					};
 					3B84807E2F730847000F16F0 = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					3BQK00102FC00010001F0EA1 = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -175,6 +209,7 @@
 				3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */,
 				3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */,
 				3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */,
+				3BQI00012FC10001001F0EA1 /* XCLocalSwiftPackageReference "Packages/QuackInterface" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B8480802F730847000F16F0 /* Products */;
@@ -182,20 +217,20 @@
 			projectRoot = "";
 			targets = (
 				3B84807E2F730847000F16F0 /* Quack */,
-				3B7BF95A2F75862400C9A0FD /* QuackTests */,
+				3BQK00102FC00010001F0EA1 /* QuackKit */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		3B7BF9592F75862400C9A0FD /* Resources */ = {
+		3B84807D2F730847000F16F0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3B84807D2F730847000F16F0 /* Resources */ = {
+		3BQK00152FC00015001F0EA1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -225,14 +260,14 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		3B7BF9572F75862400C9A0FD /* Sources */ = {
+		3B84807B2F730847000F16F0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		3B84807B2F730847000F16F0 /* Sources */ = {
+		3BQK00142FC00014001F0EA1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -242,58 +277,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		3B7BF9602F75862400C9A0FD /* PBXTargetDependency */ = {
+		3BQK00052FC00005001F0EA1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 3B84807E2F730847000F16F0 /* Quack */;
-			targetProxy = 3B7BF95F2F75862400C9A0FD /* PBXContainerItemProxy */;
+			target = 3BQK00102FC00010001F0EA1 /* QuackKit */;
+			targetProxy = 3BQK00032FC00003001F0EA1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		3B7BF9622F75862400C9A0FD /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.3;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Quack.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Quack";
-			};
-			name = Debug;
-		};
-		3B7BF9632F75862400C9A0FD /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEAD_CODE_STRIPPING = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 26.3;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Quack.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Quack";
-			};
-			name = Release;
-		};
 		3B84808A2F730848000F16F0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 3BSEC0013000000100000001 /* Secrets.xcconfig */;
@@ -488,18 +479,77 @@
 			};
 			name = Release;
 		};
+		3BQK00212FC00021001F0EA1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackKit;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		3BQK00222FC00022001F0EA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEFINES_MODULE = YES;
+				DEVELOPMENT_TEAM = "";
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_MODULE_VERIFIER = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 26.0;
+				MARKETING_VERSION = 1.0;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				PRODUCT_BUNDLE_IDENTIFIER = app.subpop.QuackKit;
+				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
+				SKIP_INSTALL = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3B7BF9612F75862400C9A0FD /* Build configuration list for PBXNativeTarget "QuackTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				3B7BF9622F75862400C9A0FD /* Debug */,
-				3B7BF9632F75862400C9A0FD /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		3B84807A2F730847000F16F0 /* Build configuration list for PBXProject "Quack" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -518,12 +568,25 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		3BQK00202FC00020001F0EA1 /* Build configuration list for PBXNativeTarget "QuackKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3BQK00212FC00021001F0EA1 /* Debug */,
+				3BQK00222FC00022001F0EA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
 		3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../AgentRunKit;
+		};
+		3BQI00012FC10001001F0EA1 /* XCLocalSwiftPackageReference "Packages/QuackInterface" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/QuackInterface;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -547,30 +610,38 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3BA00011300000000000F011 /* AgentRunKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
-			productName = AgentRunKit;
-		};
 		3BA00012300000000000F012 /* Markdown */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */;
 			productName = Markdown;
-		};
-		3BA00013300000000000F013 /* AgentRunKitFoundationModels */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
-			productName = AgentRunKitFoundationModels;
 		};
 		3BA00014300000000000F014 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
 		};
-		3BA00015300000000000F015 /* AgentRunKitMLX */ = {
+		3BQI00022FC10002001F0EA1 /* QuackInterface */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = QuackInterface;
+		};
+		3BQK00302FC00030001F0EA1 /* AgentRunKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			productName = AgentRunKit;
+		};
+		3BQK00312FC00031001F0EA1 /* AgentRunKitFoundationModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			productName = AgentRunKitFoundationModels;
+		};
+		3BQK00322FC00032001F0EA1 /* AgentRunKitMLX */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
 			productName = AgentRunKitMLX;
+		};
+		3BQK00332FC00033001F0EA1 /* QuackInterface */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = QuackInterface;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

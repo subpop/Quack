@@ -14,10 +14,11 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct ProvidersSettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProviderService.self) private var providerService
+    @Environment(\.providerService) private var providerService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
     @State private var editingProfile: ProviderProfile?

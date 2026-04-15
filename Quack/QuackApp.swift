@@ -14,6 +14,8 @@
 
 import SwiftUI
 import SwiftData
+import QuackKit
+import MLXLMCommon
 import os
 
 @main
@@ -27,11 +29,79 @@ struct QuackApp: App {
     @State private var modelListService = ModelListService()
     @State private var notificationService = NotificationService()
     @State private var modelPricingService = ModelPricingService()
-    @State private var mlxModelService = MLXModelService()
+    @State private var mlxModelService: MLXModelService
+    @State private var mlxModelServiceBox: MLXModelServiceBox
 
     @Environment(\.openWindow) private var openWindow
 
-    var sharedModelContainer: ModelContainer = {
+    init() {
+        let service = MLXModelService()
+        _mlxModelService = State(initialValue: service)
+        _mlxModelServiceBox = State(initialValue: MLXModelServiceBox(service: service))
+
+        // Inject build-time secrets into the framework.
+        SecretsProvider.tavilyAPIKey = Secrets.tavilyAPIKey
+
+        // Register the provider client factory so ProviderPlatform can
+        // construct LLM clients without importing provider-specific modules.
+        ProviderPlatform.clientFactory = { platform, baseURL, apiKey, model, maxTokens, contextWindowSize, reasoningConfig, retryPolicy, cachingEnabled, projectID, location, mlxContainer in
+            switch platform {
+            case .openAICompatible:
+                return OpenAIClientFactory.makeClient(
+                    baseURL: baseURL, apiKey: apiKey, model: model,
+                    maxTokens: maxTokens, contextWindowSize: contextWindowSize,
+                    reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                    cachingEnabled: cachingEnabled)
+            case .anthropic:
+                return AnthropicClientFactory.makeClient(
+                    baseURL: baseURL, apiKey: apiKey, model: model,
+                    maxTokens: maxTokens, contextWindowSize: contextWindowSize,
+                    reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                    cachingEnabled: cachingEnabled)
+            case .foundationModels:
+                return FoundationModelsClientFactory.makeClient()
+            case .gemini:
+                return GeminiClientFactory.makeClient(
+                    apiKey: apiKey, model: model, maxTokens: maxTokens,
+                    contextWindowSize: contextWindowSize,
+                    reasoningConfig: reasoningConfig, retryPolicy: retryPolicy)
+            case .vertexGemini:
+                return VertexGoogleClientFactory.makeClient(
+                    model: model, maxTokens: maxTokens,
+                    contextWindowSize: contextWindowSize,
+                    reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                    projectID: projectID, location: location)
+            case .vertexAnthropic:
+                return VertexAnthropicClientFactory.makeClient(
+                    model: model, maxTokens: maxTokens,
+                    contextWindowSize: contextWindowSize,
+                    reasoningConfig: reasoningConfig, retryPolicy: retryPolicy,
+                    cachingEnabled: cachingEnabled,
+                    projectID: projectID, location: location)
+            case .mlx:
+                return MLXClientFactory.makeClient(
+                    container: mlxContainer as? MLXLMCommon.ModelContainer, model: model,
+                    maxTokens: maxTokens, contextWindowSize: contextWindowSize)
+            }
+        }
+
+        // Register the model list factory so ProviderPlatform can list
+        // available models from provider APIs.
+        ProviderPlatform.modelListFactory = { platform, baseURL, apiKey, projectID, location in
+            switch platform {
+            case .openAICompatible:
+                return try await OpenAIClientFactory.listModels(baseURL: baseURL, apiKey: apiKey)
+            case .gemini:
+                return try await GeminiClientFactory.listModels(apiKey: apiKey)
+            case .vertexGemini:
+                return try await VertexGoogleClientFactory.listModels(projectID: projectID, location: location)
+            default:
+                return []
+            }
+        }
+    }
+
+    var sharedModelContainer: SwiftData.ModelContainer = {
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -83,15 +153,18 @@ struct QuackApp: App {
     var body: some Scene {
         WindowGroup(id: "main") {
             MainView()
-                .environment(providerService)
-                .environment(chatService)
-                .environment(mcpService)
-                .environment(builtInToolService)
-                .environment(modelListService)
+                .environment(\.providerService, providerService)
+                .environment(\.chatService, chatService)
+                .environment(\.mcpService, mcpService)
+                .environment(\.builtInToolService, builtInToolService)
+                .environment(\.modelListService, modelListService)
                 .environment(modelPricingService)
-                .environment(mlxModelService)
+                .environment(\.mlxModelServiceBox, mlxModelServiceBox)
                 .task {
                     chatService.notificationService = notificationService
+                    chatService.titleGenerator = { message in
+                        await TextGenerationService.generateTitle(for: message)
+                    }
                     notificationService.requestAuthorization()
                     providerService.mlxModelService = mlxModelService
                 }
@@ -134,13 +207,13 @@ struct QuackApp: App {
 
         Settings {
             SettingsView(updater: updater)
-                .environment(providerService)
-                .environment(chatService)
-                .environment(mcpService)
-                .environment(builtInToolService)
-                .environment(modelListService)
+                .environment(\.providerService, providerService)
+                .environment(\.chatService, chatService)
+                .environment(\.mcpService, mcpService)
+                .environment(\.builtInToolService, builtInToolService)
+                .environment(\.modelListService, modelListService)
                 .environment(modelPricingService)
-                .environment(mlxModelService)
+                .environment(\.mlxModelServiceBox, mlxModelServiceBox)
                 .modelContainer(sharedModelContainer)
         }
     }

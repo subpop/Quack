@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import QuackInterface
 
 /// A searchable model browser that queries the HuggingFace API for
 /// MLX-compatible text-generation models from the `mlx-community` organization.

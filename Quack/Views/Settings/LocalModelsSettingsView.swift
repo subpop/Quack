@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import QuackInterface
 
 /// Settings tab for managing local MLX models.
 ///
@@ -20,11 +21,11 @@ import SwiftUI
 /// load/delete actions, and a browser for discovering new models from
 /// the mlx-community on HuggingFace.
 struct LocalModelsSettingsView: View {
-    @Environment(MLXModelService.self) private var mlxModelService
+    @Environment(\.mlxModelServiceBox) private var mlxModelService
     @Environment(\.openURL) private var openURL
 
     @State private var showingModelBrowser = false
-    @State private var modelToDelete: MLXModelService.DownloadedModel?
+    @State private var modelToDelete: DownloadedMLXModel?
 
     var body: some View {
         Form {

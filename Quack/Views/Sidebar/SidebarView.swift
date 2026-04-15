@@ -14,10 +14,11 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProviderService.self) private var providerService
+    @Environment(\.providerService) private var providerService
     @Query(sort: \ChatSession.updatedAt, order: .reverse) private var allSessions: [ChatSession]
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 

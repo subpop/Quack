@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 /// A helper type for inline-editable environment variable rows.
 private struct EnvVariable: Identifiable {
@@ -29,7 +30,7 @@ struct MCPServerDetailSheet: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(MCPService.self) private var mcpService
+    @Environment(\.mcpService) private var mcpService
 
     @State private var argumentsText: String = ""
     @State private var envVariables: [EnvVariable] = []

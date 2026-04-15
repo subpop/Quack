@@ -14,15 +14,15 @@
 
 import SwiftUI
 import SwiftData
-import AgentRunKit
+import QuackInterface
 
 struct ChatView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProviderService.self) private var providerService
-    @Environment(ChatService.self) private var chatService
-    @Environment(MCPService.self) private var mcpService
-    @Environment(BuiltInToolService.self) private var builtInToolService
-    @Environment(MLXModelService.self) private var mlxModelService
+    @Environment(\.providerService) private var providerService
+    @Environment(\.chatService) private var chatService
+    @Environment(\.mcpService) private var mcpService
+    @Environment(\.builtInToolService) private var builtInToolService
+    @Environment(\.mlxModelServiceBox) private var mlxModelService
 
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
@@ -254,7 +254,7 @@ struct ChatView: View {
         .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func toolApprovalView(_ approval: ChatService.PendingToolApproval) -> some View {
+    private func toolApprovalView(_ approval: PendingToolApproval) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "exclamationmark.shield.fill")
@@ -416,8 +416,9 @@ struct ChatView: View {
     /// Combines built-in tools and MCP server tools for the current session,
     /// each wrapped with the appropriate permission enforcement.
     private func allToolsForSession() -> [any AnyTool<EmptyContext>] {
-        let approvalHandler: @Sendable (String, String, String) async -> Bool = { [chatService] name, args, desc in
-            await chatService.requestApproval(toolName: name, arguments: args, description: desc)
+        let svc = chatService
+        let approvalHandler: @Sendable (String, String, String) async -> Bool = { name, args, desc in
+            await svc.requestApproval(toolName: name, arguments: args, description: desc)
         }
 
         let builtIn = builtInToolService.tools(

@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct AssistantsSettingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -209,8 +210,8 @@ struct AssistantDetailSheet: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(MCPService.self) private var mcpService
-    @Environment(BuiltInToolService.self) private var builtInToolService
+    @Environment(\.mcpService) private var mcpService
+    @Environment(\.builtInToolService) private var builtInToolService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 

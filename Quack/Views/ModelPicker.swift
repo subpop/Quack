@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
+import QuackInterface
 
 /// A model selection picker that lists models from the provider's API
 /// (or hardcoded fallbacks) with a "Custom..." option for arbitrary model IDs.
@@ -30,7 +31,7 @@ struct ModelPicker: View {
     /// When set, an additional "Default" option is shown at the top of the picker.
     let placeholder: String?
 
-    @Environment(ModelListService.self) private var modelListService
+    @Environment(\.modelListService) private var modelListService
 
     /// Sentinel value representing the "Custom..." picker option.
     private static let customTag = "__custom__"

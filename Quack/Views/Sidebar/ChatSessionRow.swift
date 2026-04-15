@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct ChatSessionRow: View {
     let session: ChatSession

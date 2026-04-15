@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import QuackInterface
 import SwiftUI
 import SwiftData
 
@@ -125,13 +126,13 @@ enum PreviewSupport {
 
     // MARK: - Services
 
-    @MainActor static let providerService = ProviderService()
-    @MainActor static let chatService = ChatService()
-    @MainActor static let mcpService = MCPService()
-    @MainActor static let builtInToolService = BuiltInToolService()
-    @MainActor static let modelListService = ModelListService()
+    @MainActor static let providerService: any ProviderServiceProtocol = PreviewProviderService()
+    @MainActor static let chatService: any ChatServiceProtocol = PreviewChatService()
+    @MainActor static let mcpService: any MCPServiceProtocol = PreviewMCPService()
+    @MainActor static let builtInToolService: any BuiltInToolServiceProtocol = PreviewBuiltInToolService()
+    @MainActor static let modelListService: any ModelListServiceProtocol = PreviewModelListService()
     @MainActor static let modelPricingService = ModelPricingService()
-    @MainActor static let mlxModelService = MLXModelService()
+    @MainActor static let mlxModelServiceBox = MLXModelServiceBox(service: StubMLXModelService())
 }
 
 // MARK: - View Modifier for Preview Environment
@@ -142,12 +143,12 @@ extension View {
     func previewEnvironment(container: ModelContainer) -> some View {
         self
             .modelContainer(container)
-            .environment(PreviewSupport.providerService)
-            .environment(PreviewSupport.chatService)
-            .environment(PreviewSupport.mcpService)
-            .environment(PreviewSupport.builtInToolService)
-            .environment(PreviewSupport.modelListService)
+            .environment(\.providerService, PreviewSupport.providerService)
+            .environment(\.chatService, PreviewSupport.chatService)
+            .environment(\.mcpService, PreviewSupport.mcpService)
+            .environment(\.builtInToolService, PreviewSupport.builtInToolService)
+            .environment(\.modelListService, PreviewSupport.modelListService)
             .environment(PreviewSupport.modelPricingService)
-            .environment(PreviewSupport.mlxModelService)
+            .environment(\.mlxModelServiceBox, PreviewSupport.mlxModelServiceBox)
     }
 }

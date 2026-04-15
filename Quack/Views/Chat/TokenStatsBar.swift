@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 /// A compact bar that shows aggregated input tokens, output tokens, and
 /// estimated cost for a chat session. Numbers animate with a sliding digit
@@ -21,7 +22,7 @@ import SwiftData
 struct TokenStatsBar: View {
     let session: ChatSession
 
-    @Environment(ProviderService.self) private var providerService
+    @Environment(\.providerService) private var providerService
     @Environment(ModelPricingService.self) private var modelPricingService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 

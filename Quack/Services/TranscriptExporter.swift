@@ -14,6 +14,7 @@
 
 import AppKit
 import Foundation
+import QuackInterface
 import UniformTypeIdentifiers
 
 /// Converts a `ChatSession` transcript into Markdown and presents a save panel.
@@ -90,8 +91,8 @@ enum TranscriptExporter {
                 }
 
                 // Decode tool calls and content segments
-                let toolCalls = ChatService.decodeCompletedToolCalls(from: message.toolCallsJSON)
-                let segments = ChatService.decodeContentSegments(from: message.contentSegmentsJSON)
+                let toolCalls = decodeCompletedToolCalls(from: message.toolCallsJSON)
+                let segments = decodeContentSegments(from: message.contentSegmentsJSON)
 
                 if !segments.isEmpty {
                     // Interleaved rendering
@@ -146,7 +147,7 @@ enum TranscriptExporter {
     // MARK: - Tool Call Rendering
 
     private static func renderToolCall(
-        _ toolCall: ChatService.CompletedToolCallData,
+        _ toolCall: CompletedToolCallData,
         toolResultsByCallID: [String: ChatMessageRecord]
     ) -> [String] {
         var lines: [String] = []

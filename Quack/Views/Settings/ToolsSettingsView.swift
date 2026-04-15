@@ -14,11 +14,12 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct ToolsSettingsView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(MCPService.self) private var mcpService
-    @Environment(BuiltInToolService.self) private var builtInToolService
+    @Environment(\.mcpService) private var mcpService
+    @Environment(\.builtInToolService) private var builtInToolService
     @Query private var servers: [MCPServerConfig]
 
     @State private var editingServer: MCPServerConfig?
@@ -197,7 +198,7 @@ struct ToolsSettingsView: View {
 
 private struct MCPServerRow: View {
     let server: MCPServerConfig
-    let serverState: MCPService.ServerState
+    let serverState: MCPServerState
 
     var body: some View {
         HStack(spacing: 12) {

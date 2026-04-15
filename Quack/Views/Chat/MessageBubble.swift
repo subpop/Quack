@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SwiftData
+import QuackInterface
 
 struct MessageBubble: View {
     let message: ChatMessageRecord
@@ -104,8 +105,8 @@ struct MessageBubble: View {
 
             // Interleaved content: use segment ordering if available, otherwise
             // fall back to legacy layout (tool calls first, then text).
-            let toolCalls = ChatService.decodeCompletedToolCalls(from: message.toolCallsJSON)
-            let segments = ChatService.decodeContentSegments(from: message.contentSegmentsJSON)
+            let toolCalls = decodeCompletedToolCalls(from: message.toolCallsJSON)
+            let segments = decodeContentSegments(from: message.contentSegmentsJSON)
 
             if !segments.isEmpty {
                 // Render in interleaved order

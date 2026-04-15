@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import SwiftUI
-import AgentRunKit
+import QuackInterface
 
 // MARK: - Unified Tool Call Display Data
 
@@ -32,7 +32,7 @@ struct ToolCallDisplayData: Identifiable {
     }
 
     /// Create from a live streaming tool call.
-    init(from active: ChatService.ActiveToolCall) {
+    init(from active: ActiveToolCall) {
         self.id = active.id
         self.name = active.name
         self.arguments = active.arguments
@@ -44,7 +44,7 @@ struct ToolCallDisplayData: Identifiable {
     }
 
     /// Create from a persisted completed tool call.
-    init(from completed: ChatService.CompletedToolCallData) {
+    init(from completed: CompletedToolCallData) {
         self.id = completed.id
         self.name = completed.name
         self.arguments = completed.arguments
@@ -198,7 +198,7 @@ struct ToolCallView: View {
 
 #Preview("Running") {
     ToolCallView(toolCall: ToolCallDisplayData(
-        from: ChatService.ActiveToolCall(id: "1", name: "read_file", state: .running)
+        from: ActiveToolCall(id: "1", name: "read_file", state: .running)
     ))
     .padding()
     .frame(width: 400)
@@ -206,7 +206,7 @@ struct ToolCallView: View {
 
 #Preview("Completed - Collapsed") {
     ToolCallView(toolCall: ToolCallDisplayData(
-        from: ChatService.CompletedToolCallData(
+        from: CompletedToolCallData(
             id: "2", name: "search_code",
             arguments: "{\"query\": \"TODO\", \"path\": \"src/\"}",
             result: "Found 3 matches in 2 files:\n- src/main.swift:12\n- src/utils.swift:45\n- src/utils.swift:78",
@@ -219,7 +219,7 @@ struct ToolCallView: View {
 
 #Preview("Failed - Collapsed") {
     ToolCallView(toolCall: ToolCallDisplayData(
-        from: ChatService.CompletedToolCallData(
+        from: CompletedToolCallData(
             id: "3", name: "execute_command",
             arguments: "{\"command\": \"rm -rf /\"}",
             result: "Permission denied: operation not permitted",
