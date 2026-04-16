@@ -1,4 +1,11 @@
 
+## 0.1.3 (4) (2026-04-16)
+
+- 🧠 MLX provider with on-device model management and HuggingFace model browser
+- 🤖 System prompt generation using on-device Foundation Model
+- 🎨 Animated infographic in inspector session info section
+- 🐛 Various bug fixes and improvements
+
 ## 0.1.2 (3) (2026-04-10)
 
 - 🛠️ Built-in tools system with dedicated settings view
