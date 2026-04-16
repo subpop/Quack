@@ -1,17 +1,22 @@
 # Quack
 
-A native macOS AI chat client that connects to multiple LLM providers from a single interface, with full support for MCP (Model Context Protocol) tool use.
+A native macOS AI chat client that connects to multiple LLM providers from a single interface, with built-in tools, MCP (Model Context Protocol) support, and on-device inference.
 
 ![Screenshot](./docs/Screenshot.png)
 
 ## Features
 
-- **Multi-provider support** -- Chat with models from OpenAI, Anthropic, Google Gemini, Vertex AI, Ollama, Apple Intelligence (on-device), OpenRouter, Groq, Together, Mistral, and any OpenAI-compatible endpoint.
-- **MCP integration** -- Connect external MCP servers for tool use with a three-tier permission model (Always Allow, Ask, Deny) and per-session server selection.
-- **Assistants** -- Create reusable presets that bundle a provider, model, system prompt, parameters, and MCP servers together.
-- **Chat management** -- Persistent conversation history, session pinning, archiving, search, and per-session model/parameter overrides.
-- **Streaming responses** -- Live token streaming with reasoning/thinking model support and collapsible reasoning display.
+- **Multi-provider support** -- Chat with models from OpenAI, Anthropic, Google Gemini, Vertex AI, Ollama, Apple Intelligence (on-device), MLX, OpenRouter, Groq, Together, Mistral, and any OpenAI-compatible endpoint.
+- **Built-in tools** -- Read files, write files, run shell commands, fetch URLs, and search the web without any external setup.
+- **MCP integration** -- Connect external MCP servers via stdio transport with a three-tier permission model (Always Allow, Ask, Deny) and per-session server selection.
+- **MLX on-device inference** -- Download, load, and run MLX models from HuggingFace locally on Apple Silicon with no API key required.
+- **Assistants** -- Create reusable presets that bundle a provider, model, system prompt, parameters, tool permissions, and MCP servers together.
+- **Chat management** -- Persistent conversation history with session pinning, archiving, search, date-grouped sidebar, and per-session model/parameter overrides via the inspector panel.
+- **Streaming responses** -- Live token streaming with reasoning/thinking model support, configurable reasoning effort, and collapsible reasoning display.
+- **Token usage and cost tracking** -- Per-message and per-session token statistics with estimated cost calculation via models.dev pricing data.
+- **Transcript export** -- Export any conversation as a Markdown file (Cmd+Shift+E).
 - **Markdown rendering** -- Full CommonMark rendering of LLM output including code blocks, tables, lists, and more.
+- **Auto-generated titles** -- Chat sessions are automatically titled using on-device Apple Intelligence.
 - **Secure credentials** -- API keys stored in the macOS Keychain.
 - **Auto-updates** -- Built-in update mechanism via Sparkle.
 
@@ -37,25 +42,38 @@ Dependencies are managed via Swift Package Manager and resolve automatically on 
 Run the test suite from Xcode (Cmd+U), or from the command line:
 
 ```sh
-xcodebuild test -project Quack.xcodeproj -scheme Quack
+xcodebuild test -project Quack.xcodeproj -scheme QuackKitTests
 ```
 
 ## Supported Providers
 
-| Provider | Connection |
+| Provider | Platform | Connection |
+|---|---|---|
+| OpenAI | OpenAI Compatible | API key |
+| Anthropic (Claude) | Anthropic | API key |
+| Google Gemini | Gemini | API key |
+| Vertex AI (Gemini) | Vertex AI | Google Cloud ADC |
+| Vertex AI (Claude) | Vertex AI | Google Cloud ADC |
+| Apple Intelligence | Foundation Models | On-device (no key required) |
+| MLX | MLX | On-device (no key required) |
+| Ollama | OpenAI Compatible | Local server (no key required) |
+| OpenRouter | OpenAI Compatible | API key |
+| Groq | OpenAI Compatible | API key |
+| Together | OpenAI Compatible | API key |
+| Mistral | OpenAI Compatible | API key |
+| Custom | OpenAI Compatible | Configurable endpoint + API key |
+
+## Built-in Tools
+
+| Tool | Description |
 |---|---|
-| OpenAI | API key |
-| Anthropic (Claude) | API key |
-| Google Gemini | API key |
-| Vertex AI (Gemini) | Google Cloud credentials |
-| Vertex AI (Claude) | Google Cloud credentials |
-| Apple Intelligence | On-device (no key required) |
-| Ollama | Local server |
-| OpenRouter | API key |
-| Groq | API key |
-| Together | API key |
-| Mistral | API key |
-| Custom (OpenAI-compatible) | Configurable endpoint + API key |
+| Read File | Read file contents at a given path |
+| Write File | Write content to a file |
+| Run Command | Execute shell commands |
+| Web Fetch | Fetch URL contents (HTTP/HTTPS) |
+| Web Search | Search the web via Tavily |
+
+Tool permissions are configurable at the global, server, per-tool, per-session, and per-assistant levels using a three-tier model: **Always Allow**, **Ask**, or **Deny**.
 
 ## License
 
