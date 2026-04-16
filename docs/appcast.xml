@@ -2,6 +2,25 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <item>
+            <title>0.1.3</title>
+            <pubDate>Thu, 16 Apr 2026 11:28:07 -0400</pubDate>
+            <link>https://subpop.github.io/Quack</link>
+            <sparkle:version>4</sparkle:version>
+            <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.2</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/subpop/Quack/releases/download/v0.1.3/Quack-0.1.3.dmg" length="19490234" type="application/octet-stream" sparkle:edSignature="xXvwZzkWisENBlTx/SeG9IIWzeRT2clXgkDBbjP3hEeZ2fHY51YElWlc4KGldLW8U/qmvhJZDVhYPBRGnqIgCw=="/>
+        <description><![CDATA[<div>
+    <h2>0.1.3 (4) (2026-04-16)</h2>
+<ul>
+<li>🧠 MLX provider with on-device model management and HuggingFace
+model browser</li>
+<li>🤖 System prompt generation using on-device Foundation Model</li>
+<li>🎨 Animated infographic in inspector session info section</li>
+<li>🐛 Various bug fixes and improvements</li>
+</ul>
+</div>]]></description>
+</item>
+        <item>
             <title>0.1.2</title>
             <pubDate>Fri, 10 Apr 2026 14:10:16 -0400</pubDate>
             <link>https://subpop.github.io/Quack</link>
