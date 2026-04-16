@@ -256,7 +256,7 @@
 			mainGroup = 3B8480762F730847000F16F0;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */,
+				3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */,
 				3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */,
 				3BA00023300000000000F023 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				3BQI00012FC10001001F0EA1 /* XCLocalSwiftPackageReference "Packages/QuackInterface" */,
@@ -699,10 +699,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../AgentRunKit;
-		};
 		3BQI00012FC10001001F0EA1 /* XCLocalSwiftPackageReference "Packages/QuackInterface" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/QuackInterface;
@@ -710,6 +706,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Tom-Ryder/AgentRunKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.30.0;
+			};
+		};
 		3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/swiftlang/swift-markdown.git";
@@ -745,17 +749,17 @@
 		};
 		3BQK00302FC00030001F0EA1 /* AgentRunKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
 			productName = AgentRunKit;
 		};
 		3BQK00312FC00031001F0EA1 /* AgentRunKitFoundationModels */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
 			productName = AgentRunKitFoundationModels;
 		};
 		3BQK00322FC00032001F0EA1 /* AgentRunKitMLX */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3BA00021300000000000F021 /* XCLocalSwiftPackageReference "../AgentRunKit" */;
+			package = 3BA00021300000000000F021 /* XCRemoteSwiftPackageReference "AgentRunKit" */;
 			productName = AgentRunKitMLX;
 		};
 		3BQK00332FC00033001F0EA1 /* QuackInterface */ = {

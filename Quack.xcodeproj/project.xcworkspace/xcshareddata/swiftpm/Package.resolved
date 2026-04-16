@@ -1,6 +1,15 @@
 {
-  "originHash" : "4b2e4cb3364e0e9332edad5fec0b7b01dc2dfffcee83615f497a4ad71448e466",
+  "originHash" : "7d4acae6613dfb9eb2ec49e56dc0b263d4c2ea6143b34775c9438d4fc89710ee",
   "pins" : [
+    {
+      "identity" : "agentrunkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Tom-Ryder/AgentRunKit",
+      "state" : {
+        "revision" : "cc2422f78897bd74874a972ef1fac942669517d6",
+        "version" : "1.30.0"
+      }
+    },
     {
       "identity" : "mlx-swift",
       "kind" : "remoteSourceControl",
@@ -33,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-asn1.git",
       "state" : {
-        "revision" : "9f542610331815e29cc3821d3b6f488db8715517",
-        "version" : "1.6.0"
+        "revision" : "eb50cbd14606a9161cbc5d452f18797c90ef0bab",
+        "version" : "1.7.0"
       }
     },
     {
@@ -60,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-crypto.git",
       "state" : {
-        "revision" : "fa308c07a6fa04a727212d793e761460e41049c3",
-        "version" : "4.3.0"
+        "revision" : "476538ccb827f2dd18efc5de754cc87d77127a47",
+        "version" : "4.4.0"
       }
     },
     {
@@ -69,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/huggingface/swift-jinja.git",
       "state" : {
-        "revision" : "2039e9760ba1694f9962ccd2c616403983d46895",
-        "version" : "2.3.3"
+        "revision" : "0aeefadec459ce8e11a333769950fb86183aca43",
+        "version" : "2.3.5"
       }
     },
     {
