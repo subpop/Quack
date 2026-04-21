@@ -224,6 +224,9 @@ struct AssistantDetailSheet: View {
     /// When the sheet closes, these will be stopped if no active session needs them.
     @State private var temporarilyStartedServers: Set<UUID> = []
 
+    /// The server ID whose error popover is currently shown.
+    @State private var errorPopoverServerID: UUID?
+
     var body: some View {
         VStack(spacing: 0) {
             sheetHeader
@@ -846,10 +849,31 @@ struct AssistantDetailSheet: View {
                 }
                 .help("Connected - \(count) tool(s)")
             case .error(let message):
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .imageScale(.small)
-                    .help("Error: \(message)")
+                Button {
+                    errorPopoverServerID = server.id
+                } label: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .imageScale(.small)
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: Binding(
+                    get: { errorPopoverServerID == server.id },
+                    set: { if !$0 { errorPopoverServerID = nil } }
+                )) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Label("Connection Error", systemImage: "exclamationmark.triangle.fill")
+                            .font(.headline)
+                            .foregroundStyle(.red)
+                        Text(message)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .padding()
+                    .frame(width: 360)
+                }
             case .disconnected:
                 Image(systemName: "circle")
                     .foregroundStyle(.secondary)
