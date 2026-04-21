@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import os
 import SwiftData
 import Observation
 import AgentRunKit
@@ -43,6 +44,15 @@ public final class ChatService: ChatServiceProtocol {
     private var streamedInputTokens: Int?
     private var streamedOutputTokens: Int?
     private var streamedReasoningTokens: Int?
+
+    /// Signposter for measuring streaming markdown rendering performance.
+    private static let signposter = OSSignposter(
+        subsystem: "app.subpop.Quack",
+        category: .pointsOfInterest
+    )
+
+    /// Active signpost interval state for the current streaming session.
+    private var streamIntervalState: OSSignpostIntervalState?
     /// The complete message history returned by the `.finished` event.
     /// Used during finalization to persist intermediate assistant/tool messages.
     private var finishedHistory: [ChatMessage]?
@@ -425,8 +435,18 @@ public final class ChatService: ChatServiceProtocol {
     // MARK: - Private
 
     private func handleStreamEvent(_ event: StreamEvent, sessionID: UUID) {
+        // Begin the stream interval on the first event if needed.
+        if streamIntervalState == nil {
+            streamIntervalState = Self.signposter.beginInterval(
+                "streamSession",
+                id: Self.signposter.makeSignpostID()
+            )
+        }
+
         switch event.kind {
         case .delta(let text):
+            let totalChars = self.streamingContent.count + text.count
+            Self.signposter.emitEvent("streamDelta", "\(text.count) chars, total \(totalChars)")
             streamingContent += text
             // Append to the current text segment, or create one if the last
             // segment is a tool call (or there are no segments yet).
@@ -473,6 +493,13 @@ public final class ChatService: ChatServiceProtocol {
     }
 
     private func finalizeStream(sessionID: UUID, modelContext: ModelContext) {
+        // End the stream session signpost interval.
+        if let state = streamIntervalState {
+            let totalChars = self.streamingContent.count
+            Self.signposter.endInterval("streamSession", state, "\(totalChars) chars total")
+            streamIntervalState = nil
+        }
+
         guard !streamingContent.isEmpty || !streamingReasoning.isEmpty || !activeToolCalls.isEmpty else {
             isStreaming = false
             streamingSessionID = nil

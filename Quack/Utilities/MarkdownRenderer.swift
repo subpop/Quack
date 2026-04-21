@@ -14,6 +14,7 @@
 
 import Foundation
 import Markdown
+import os
 import SwiftUI
 
 /// A structured block produced by the Markdown renderer.
@@ -54,6 +55,13 @@ struct MarkdownTable: Hashable {
 }
 
 enum MarkdownRenderer {
+    /// Signposter for measuring performance of the markdown rendering pipeline.
+    /// Uses `PointsOfInterest` so intervals appear in Instruments' Points of Interest track.
+    private static let signposter = OSSignposter(
+        subsystem: "app.subpop.Quack",
+        category: .pointsOfInterest
+    )
+
     /// Parse markdown using swift-markdown's CommonMark parser and convert
     /// the resulting AST into an `AttributedString` with proper styling for
     /// paragraphs, headings, lists, code blocks, inline formatting, etc.
@@ -62,18 +70,53 @@ enum MarkdownRenderer {
     /// section headers that some models (e.g. Apple Intelligence) jam
     /// inline without any newlines.
     static func renderFull(_ markdown: String) -> AttributedString {
-        let cleaned = preprocess(markdown)
-        let document = Document(parsing: cleaned)
+        let state = signposter.beginInterval("renderFull", id: signposter.makeSignpostID(), "\(markdown.count) chars")
+
+        let cleaned: String = {
+            let s = signposter.beginInterval("preprocess", id: signposter.makeSignpostID())
+            let result = preprocess(markdown)
+            signposter.endInterval("preprocess", s)
+            return result
+        }()
+
+        let document: Document = {
+            let s = signposter.beginInterval("parseAST", id: signposter.makeSignpostID(), "\(cleaned.count) chars")
+            let result = Document(parsing: cleaned)
+            signposter.endInterval("parseAST", s)
+            return result
+        }()
+
         var visitor = AttributedStringMarkupVisitor()
-        return visitor.visit(document)
+        let walkState = signposter.beginInterval("walkAST", id: signposter.makeSignpostID())
+        let result = visitor.visit(document)
+        signposter.endInterval("walkAST", walkState)
+
+        signposter.endInterval("renderFull", state)
+        return result
     }
 
     /// Parse markdown and return structured blocks, separating tables
     /// from inline text so they can be rendered with proper grid layout.
     static func renderBlocks(_ markdown: String) -> [MarkdownBlock] {
-        let cleaned = preprocess(markdown)
-        let document = Document(parsing: cleaned)
+        let state = signposter.beginInterval("renderBlocks", id: signposter.makeSignpostID(), "\(markdown.count) chars")
+
+        let cleaned: String = {
+            let s = signposter.beginInterval("preprocess", id: signposter.makeSignpostID())
+            let result = preprocess(markdown)
+            signposter.endInterval("preprocess", s)
+            return result
+        }()
+
+        let document: Document = {
+            let s = signposter.beginInterval("parseAST", id: signposter.makeSignpostID(), "\(cleaned.count) chars")
+            let result = Document(parsing: cleaned)
+            signposter.endInterval("parseAST", s)
+            return result
+        }()
+
         var visitor = AttributedStringMarkupVisitor()
+
+        let walkState = signposter.beginInterval("walkAST", id: signposter.makeSignpostID())
 
         var blocks: [MarkdownBlock] = []
         var pendingText = AttributedString()
@@ -104,6 +147,9 @@ enum MarkdownRenderer {
             blocks.append(.attributedString(pendingText))
         }
 
+        signposter.endInterval("walkAST", walkState)
+
+        signposter.endInterval("renderBlocks", state, "\(blocks.count) blocks")
         return blocks
     }
 
