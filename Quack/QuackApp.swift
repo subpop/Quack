@@ -25,7 +25,7 @@ struct QuackApp: App {
     @State private var providerService = ProviderService()
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
-    @State private var builtInToolService = BuiltInToolService()
+    @State private var builtInToolService: BuiltInToolService
     @State private var modelListService = ModelListService()
     @State private var notificationService = NotificationService()
     @State private var modelPricingService = ModelPricingService()
@@ -39,8 +39,12 @@ struct QuackApp: App {
         _mlxModelService = State(initialValue: service)
         _mlxModelServiceBox = State(initialValue: MLXModelServiceBox(service: service))
 
-        // Inject build-time secrets into the framework.
-        SecretsProvider.tavilyAPIKey = Secrets.tavilyAPIKey
+        // Inject build-time secrets into the framework — must happen before
+        // BuiltInToolService is created so it can see the Tavily key.
+        let tavilyKey = Secrets.tavilyAPIKey
+        SecretsProvider.tavilyAPIKey = tavilyKey
+        BuiltInTool.webSearchAPIKey = tavilyKey
+        _builtInToolService = State(initialValue: BuiltInToolService())
 
         // Register the provider client factory so ProviderPlatform can
         // construct LLM clients without importing provider-specific modules.

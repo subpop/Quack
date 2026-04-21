@@ -86,12 +86,17 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         }
     }
 
+    /// Injected at app startup from `Secrets.tavilyAPIKey` so that
+    /// `availableCases` can gate the web-search tool without depending
+    /// on QuackKit's `SecretsProvider`.
+    public nonisolated(unsafe) static var webSearchAPIKey: String?
+
     /// The obfuscated API key for this tool, read from the generated
     /// `Secrets` enum. Returns `nil` for tools that don't require one
     /// or when the key was not provided at build time.
     public nonisolated var buildTimeKey: String? {
         switch self {
-        case .webSearch: "" // TODO: inject at runtime
+        case .webSearch: Self.webSearchAPIKey
         default: nil
         }
     }
