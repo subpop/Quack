@@ -111,6 +111,11 @@ struct ChatView: View {
                     scrollToBottom(proxy: proxy)
                 }
             }
+            .onChange(of: chatService.pendingApproval?.id) {
+                if chatService.pendingApproval != nil {
+                    scrollToBottom(proxy: proxy)
+                }
+            }
         }
     }
 
