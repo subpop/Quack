@@ -28,6 +28,7 @@ enum PreviewSupport {
             ProviderProfile.self,
             MCPServerConfig.self,
             Assistant.self,
+            AgentSkill.self,
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [config])
@@ -130,6 +131,7 @@ enum PreviewSupport {
     @MainActor static let chatService: any ChatServiceProtocol = PreviewChatService()
     @MainActor static let mcpService: any MCPServiceProtocol = PreviewMCPService()
     @MainActor static let builtInToolService: any BuiltInToolServiceProtocol = PreviewBuiltInToolService()
+    @MainActor static let skillService: any SkillServiceProtocol = PreviewSkillService()
     @MainActor static let modelListService: any ModelListServiceProtocol = PreviewModelListService()
     @MainActor static let modelPricingService = ModelPricingService()
     @MainActor static let mlxModelServiceBox = MLXModelServiceBox(service: StubMLXModelService())
@@ -147,6 +149,7 @@ extension View {
             .environment(\.chatService, PreviewSupport.chatService)
             .environment(\.mcpService, PreviewSupport.mcpService)
             .environment(\.builtInToolService, PreviewSupport.builtInToolService)
+            .environment(\.skillService, PreviewSupport.skillService)
             .environment(\.modelListService, PreviewSupport.modelListService)
             .environment(PreviewSupport.modelPricingService)
             .environment(\.mlxModelServiceBox, PreviewSupport.mlxModelServiceBox)

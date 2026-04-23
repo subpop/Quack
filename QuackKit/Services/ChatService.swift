@@ -71,6 +71,10 @@ public final class ChatService: ChatServiceProtocol {
     /// Falls back to simple truncation when not set.
     public var titleGenerator: (@MainActor @Sendable (String) async -> String)?
 
+    /// Optional skill service for composing skills into the system prompt.
+    /// Set this from the app layer after creating the SkillService.
+    public var skillService: (any SkillServiceProtocol)?
+
     // MARK: - Init
 
     public init() {}
@@ -174,8 +178,13 @@ public final class ChatService: ChatServiceProtocol {
             // Convert history to AgentRunKit messages
             let history = MessageConverter.toChatMessages(session.sortedMessages)
 
-            // Resolve session parameters
-            let systemPrompt = session.systemPrompt
+            // Resolve session parameters — compose skill catalog into the system prompt
+            let basePrompt = session.systemPrompt
+            let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
+            let systemPrompt = self?.skillService?.composedSystemPrompt(
+                basePrompt: basePrompt,
+                alwaysEnabledSkillNames: alwaysEnabled
+            ) ?? basePrompt
             let temperature = session.temperature
 
             // Build request context for temperature override
@@ -390,7 +399,13 @@ public final class ChatService: ChatServiceProtocol {
             let updatedSorted = session.sortedMessages
             let history = MessageConverter.toChatMessages(updatedSorted)
 
-            let systemPrompt = session.systemPrompt
+            // Compose skill catalog into the system prompt
+            let basePrompt = session.systemPrompt
+            let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
+            let systemPrompt = self?.skillService?.composedSystemPrompt(
+                basePrompt: basePrompt,
+                alwaysEnabledSkillNames: alwaysEnabled
+            ) ?? basePrompt
             let temperature = session.temperature
 
             var extraFields: [String: JSONValue] = [:]

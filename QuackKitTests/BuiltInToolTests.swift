@@ -9,6 +9,7 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.runCommand.rawValue == "builtin-run_command")
         #expect(BuiltInTool.webFetch.rawValue == "builtin-web_fetch")
         #expect(BuiltInTool.webSearch.rawValue == "builtin-web_search")
+        #expect(BuiltInTool.activateSkill.rawValue == "builtin-activate_skill")
     }
 
     @Test func identifiers() {
@@ -23,6 +24,7 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.runCommand.displayName == "Run Command")
         #expect(BuiltInTool.webFetch.displayName == "Web Fetch")
         #expect(BuiltInTool.webSearch.displayName == "Web Search")
+        #expect(BuiltInTool.activateSkill.displayName == "Activate Skill")
     }
 
     @Test func toolDescriptions() {
@@ -37,6 +39,7 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.runCommand.iconName == "terminal")
         #expect(BuiltInTool.webFetch.iconName == "globe")
         #expect(BuiltInTool.webSearch.iconName == "magnifyingglass")
+        #expect(BuiltInTool.activateSkill.iconName == "sparkles")
     }
 
     @Test func requiresBuildTimeKey() {
@@ -45,10 +48,11 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.runCommand.requiresBuildTimeKey == false)
         #expect(BuiltInTool.webFetch.requiresBuildTimeKey == false)
         #expect(BuiltInTool.webSearch.requiresBuildTimeKey == true)
+        #expect(BuiltInTool.activateSkill.requiresBuildTimeKey == false)
     }
 
     @Test func allCasesCount() {
-        #expect(BuiltInTool.allCases.count == 5)
+        #expect(BuiltInTool.allCases.count == 6)
     }
 
     @Test func codableRoundTrip() throws {
@@ -64,5 +68,6 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.writeFile.buildTimeKey == nil)
         #expect(BuiltInTool.runCommand.buildTimeKey == nil)
         #expect(BuiltInTool.webFetch.buildTimeKey == nil)
+        #expect(BuiltInTool.activateSkill.buildTimeKey == nil)
     }
 }

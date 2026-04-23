@@ -60,6 +60,7 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
             .writeFile: WriteFileTool(),
             .runCommand: RunCommandTool(),
             .webFetch: WebFetchTool(),
+            .activateSkill: ActivateSkillTool(),
         ]
 
         // Register WebSearch only when a Tavily API key was provided at
@@ -136,6 +137,12 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
         let sessionEnabledIDs = session.enabledBuiltInToolIDs ?? []
 
         return BuiltInTool.availableCases.compactMap { tool -> (any AnyTool<EmptyContext>)? in
+            // Don't register activate_skill when no skills are discovered.
+            if tool == .activateSkill,
+               SkillService.shared?.allDiscoveredSkills.isEmpty != false {
+                return nil
+            }
+
             // Must be globally enabled AND enabled for this session
             guard enabledTools.contains(tool),
                   sessionEnabledIDs.contains(tool.rawValue),

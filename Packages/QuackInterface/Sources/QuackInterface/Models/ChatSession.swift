@@ -48,6 +48,9 @@ public final class ChatSession {
     // Built-in tool IDs enabled for this session (stored as comma-separated IDs)
     public var enabledBuiltInToolIDsRaw: String?
 
+    // Skill names that are always loaded into the system prompt (stored as comma-separated names)
+    public var alwaysEnabledSkillNamesRaw: String?
+
     /// Per-tool permission overrides for this session.
     /// JSON-encoded `[String: String]` mapping tool name -> ToolPermission raw value.
     /// nil means "use the server-level default for all tools."
@@ -90,6 +93,17 @@ public final class ChatSession {
         }
         set {
             enabledBuiltInToolIDsRaw = newValue?.joined(separator: ",")
+        }
+    }
+
+    /// Skill names that are always loaded into the system prompt for this session.
+    public var alwaysEnabledSkillNames: [String]? {
+        get {
+            guard let raw = alwaysEnabledSkillNamesRaw, !raw.isEmpty else { return nil }
+            return raw.split(separator: ",").map(String.init)
+        }
+        set {
+            alwaysEnabledSkillNamesRaw = newValue?.joined(separator: ",")
         }
     }
 
@@ -197,6 +211,7 @@ public final class ChatSession {
         self.maxToolRounds = assistant.maxToolRounds
         self.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
         self.enabledBuiltInToolIDsRaw = assistant.enabledBuiltInToolIDsRaw
+        self.alwaysEnabledSkillNamesRaw = assistant.alwaysEnabledSkillNamesRaw
         self.toolPermissionOverridesJSON = assistant.toolPermissionDefaultsJSON
     }
 }

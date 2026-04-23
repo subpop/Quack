@@ -29,6 +29,7 @@ struct QuackApp: App {
     @State private var modelListService = ModelListService()
     @State private var notificationService = NotificationService()
     @State private var modelPricingService = ModelPricingService()
+    @State private var skillService = SkillService()
     @State private var mlxModelService: MLXModelService
     @State private var mlxModelServiceBox: MLXModelServiceBox
 
@@ -132,7 +133,7 @@ struct QuackApp: App {
             return try ModelContainer(
                 for: ChatSession.self, ChatMessageRecord.self,
                      ProviderProfile.self, MCPServerConfig.self,
-                     Assistant.self,
+                     Assistant.self, AgentSkill.self,
                 migrationPlan: QuackMigrationPlan.self,
                 configurations: config
             )
@@ -145,7 +146,7 @@ struct QuackApp: App {
                 return try ModelContainer(
                     for: ChatSession.self, ChatMessageRecord.self,
                          ProviderProfile.self, MCPServerConfig.self,
-                         Assistant.self,
+                         Assistant.self, AgentSkill.self,
                     configurations: fallbackConfig
                 )
             } catch {
@@ -161,16 +162,25 @@ struct QuackApp: App {
                 .environment(\.chatService, chatService)
                 .environment(\.mcpService, mcpService)
                 .environment(\.builtInToolService, builtInToolService)
+                .environment(\.skillService, skillService)
                 .environment(\.modelListService, modelListService)
                 .environment(modelPricingService)
                 .environment(\.mlxModelServiceBox, mlxModelServiceBox)
                 .task {
                     chatService.notificationService = notificationService
+                    chatService.skillService = skillService
                     chatService.titleGenerator = { message in
                         await TextGenerationService.generateTitle(for: message)
                     }
                     notificationService.requestAuthorization()
                     providerService.mlxModelService = mlxModelService
+
+                    // Set up the skill service singleton and scan for skills
+                    SkillService.shared = skillService
+                    skillService.reloadSkills(
+                        modelContext: sharedModelContainer.mainContext
+                    )
+                    skillService.scanForSkills()
                 }
         }
         .modelContainer(sharedModelContainer)
@@ -215,6 +225,7 @@ struct QuackApp: App {
                 .environment(\.chatService, chatService)
                 .environment(\.mcpService, mcpService)
                 .environment(\.builtInToolService, builtInToolService)
+                .environment(\.skillService, skillService)
                 .environment(\.modelListService, modelListService)
                 .environment(modelPricingService)
                 .environment(\.mlxModelServiceBox, mlxModelServiceBox)

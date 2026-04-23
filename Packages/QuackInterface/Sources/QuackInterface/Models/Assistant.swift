@@ -45,6 +45,9 @@ public final class Assistant {
     // Built-in tool IDs enabled by default (stored as comma-separated IDs)
     public var enabledBuiltInToolIDsRaw: String?
 
+    // Skill names that are always loaded into the system prompt (stored as comma-separated names)
+    public var alwaysEnabledSkillNamesRaw: String?
+
     /// Per-tool permission defaults for this assistant.
     /// JSON-encoded `[String: String]` mapping tool name -> ToolPermission raw value.
     /// When a new ChatSession is created from this assistant, these defaults are
@@ -125,6 +128,20 @@ public final class Assistant {
         }
         set {
             enabledBuiltInToolIDsRaw = newValue?.joined(separator: ",")
+        }
+    }
+
+    /// Skill names that are always loaded into the system prompt for sessions
+    /// created from this assistant. These skills have their full SKILL.md content
+    /// injected directly, rather than appearing only in the catalog for on-demand
+    /// activation.
+    public var alwaysEnabledSkillNames: [String]? {
+        get {
+            guard let raw = alwaysEnabledSkillNamesRaw, !raw.isEmpty else { return nil }
+            return raw.split(separator: ",").map(String.init)
+        }
+        set {
+            alwaysEnabledSkillNamesRaw = newValue?.joined(separator: ",")
         }
     }
 

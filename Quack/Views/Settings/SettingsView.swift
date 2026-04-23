@@ -31,6 +31,10 @@ struct SettingsView: View {
                 ToolsSettingsView()
             }
 
+            Tab("Skills", systemImage: "sparkles") {
+                SkillsSettingsView()
+            }
+
             Tab("Local Models", systemImage: "cpu") {
                 LocalModelsSettingsView()
             }

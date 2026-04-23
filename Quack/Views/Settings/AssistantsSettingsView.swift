@@ -134,6 +134,7 @@ struct AssistantsSettingsView: View {
         copy.maxToolRounds = assistant.maxToolRounds
         copy.enabledMCPServerIDsRaw = assistant.enabledMCPServerIDsRaw
         copy.enabledBuiltInToolIDsRaw = assistant.enabledBuiltInToolIDsRaw
+        copy.alwaysEnabledSkillNamesRaw = assistant.alwaysEnabledSkillNamesRaw
         copy.toolPermissionDefaultsJSON = assistant.toolPermissionDefaultsJSON
         copy.iconName = assistant.iconName
         copy.colorRaw = assistant.colorRaw
@@ -212,6 +213,7 @@ struct AssistantDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.mcpService) private var mcpService
     @Environment(\.builtInToolService) private var builtInToolService
+    @Environment(\.skillService) private var skillService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
 
@@ -541,6 +543,9 @@ struct AssistantDetailSheet: View {
             } footer: {
                 Text("Tools enabled here will be active by default in new chats. Set per-tool permissions to control how tools are executed.")
             }
+
+            // Skills
+            skillsSection
 
             // Default
             Section {
@@ -913,6 +918,49 @@ struct AssistantDetailSheet: View {
             defaults.removeValue(forKey: tool.name)
         }
         assistant.toolPermissionDefaults = defaults.isEmpty ? nil : defaults
+    }
+
+    // MARK: - Skills Section
+
+    private var skillsSection: some View {
+        Section {
+            let discovered = skillService.discoveredSkills
+
+            if discovered.isEmpty {
+                Text("No skills available.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            } else {
+                ForEach(discovered) { skill in
+                    Toggle(
+                        skill.name,
+                        isOn: alwaysEnabledBinding(for: skill.name)
+                    )
+                }
+            }
+        } header: {
+            Text("Skills")
+        } footer: {
+            Text("Always-enabled skills are loaded into the system prompt for every message. Other skills remain available for the model to activate on demand.")
+        }
+    }
+
+    private func alwaysEnabledBinding(for skillName: String) -> Binding<Bool> {
+        Binding(
+            get: {
+                assistant.alwaysEnabledSkillNames?.contains(skillName) ?? false
+            },
+            set: { isEnabled in
+                var names = assistant.alwaysEnabledSkillNames ?? []
+                if isEnabled {
+                    if !names.contains(skillName) { names.append(skillName) }
+                } else {
+                    names.removeAll { $0 == skillName }
+                }
+                assistant.alwaysEnabledSkillNames = names.isEmpty ? nil : names
+                save()
+            }
+        )
     }
 
     // MARK: - System Prompt Generation

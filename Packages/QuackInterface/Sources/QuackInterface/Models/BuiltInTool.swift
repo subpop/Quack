@@ -26,6 +26,7 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
     case runCommand = "builtin-run_command"
     case webFetch = "builtin-web_fetch"
     case webSearch = "builtin-web_search"
+    case activateSkill = "builtin-activate_skill"
 
     public var id: String { rawValue }
 
@@ -49,6 +50,7 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .runCommand: "Run Command"
         case .webFetch: "Web Fetch"
         case .webSearch: "Web Search"
+        case .activateSkill: "Activate Skill"
         }
     }
 
@@ -60,6 +62,7 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .runCommand: "Execute a shell command and return its output."
         case .webFetch: "Fetch the content of a URL and return the response body."
         case .webSearch: "Search the web using Tavily and return relevant results."
+        case .activateSkill: "Load specialized skill instructions on demand."
         }
     }
 
@@ -71,6 +74,7 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .runCommand: "terminal"
         case .webFetch: "globe"
         case .webSearch: "magnifyingglass"
+        case .activateSkill: "sparkles"
         }
     }
 

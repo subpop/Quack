@@ -23,6 +23,7 @@ struct ChatInspectorView: View {
     @Environment(\.providerService) private var providerService
     @Environment(\.mcpService) private var mcpService
     @Environment(\.builtInToolService) private var builtInToolService
+    @Environment(\.skillService) private var skillService
     @Environment(ModelPricingService.self) private var modelPricingService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
     @Query private var mcpServerConfigs: [MCPServerConfig]
@@ -38,6 +39,7 @@ struct ChatInspectorView: View {
             parametersSection
             systemPromptSection
             toolsSection
+            skillsSection
             contextSection
         }
         .formStyle(.grouped)
@@ -506,6 +508,45 @@ struct ChatInspectorView: View {
                     .help("Disconnected")
             }
         }
+    }
+
+    // MARK: - Skills Section
+
+    private var skillsSection: some View {
+        Section("Skills") {
+            let discovered = skillService.discoveredSkills
+
+            if discovered.isEmpty {
+                Text("No skills available.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            } else {
+                ForEach(discovered) { skill in
+                    Toggle(
+                        skill.name,
+                        isOn: alwaysEnabledSkillBinding(for: skill.name)
+                    )
+                }
+            }
+        }
+    }
+
+    private func alwaysEnabledSkillBinding(for skillName: String) -> Binding<Bool> {
+        Binding(
+            get: {
+                session.alwaysEnabledSkillNames?.contains(skillName) ?? false
+            },
+            set: { isEnabled in
+                var names = session.alwaysEnabledSkillNames ?? []
+                if isEnabled {
+                    if !names.contains(skillName) { names.append(skillName) }
+                } else {
+                    names.removeAll { $0 == skillName }
+                }
+                session.alwaysEnabledSkillNames = names.isEmpty ? nil : names
+                save()
+            }
+        )
     }
 
     // MARK: - Context Section
