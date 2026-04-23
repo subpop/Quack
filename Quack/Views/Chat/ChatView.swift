@@ -40,6 +40,10 @@ struct ChatView: View {
         messageList
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 0) {
+                    if isStreamingThisSession {
+                        ResponseIndicatorView()
+                            .padding(.vertical, 6)
+                    }
                     TokenStatsBar(session: session)
                     composer
                 }
@@ -131,8 +135,8 @@ struct ChatView: View {
 
             // Interleaved segments: text and tool calls in order
             let segments = chatService.streamingSegments
-            if segments.isEmpty && isStreamingThisSession {
-                // No segments yet — show loading placeholder
+            if segments.isEmpty && isStreamingThisSession && showsMLXLoadingPlaceholder {
+                // No segments yet and MLX is preparing — show loading placeholder
                 mlxAwareLoadingPlaceholder
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
@@ -141,20 +145,13 @@ struct ChatView: View {
                         in: RoundedRectangle(cornerRadius: 16, style: .continuous)
                     )
                     .padding(.horizontal, 16)
-            } else {
+            } else if !segments.isEmpty {
                 ForEach(Array(segments.enumerated()), id: \.offset) { index, segment in
                     switch segment {
                     case .text(let text):
                         if !text.isEmpty {
-                            let isLastSegment = index == segments.count - 1
-                            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(text))
-                                }
-                                if isStreamingThisSession && isLastSegment {
-                                    ProgressView()
-                                        .controlSize(.small)
-                                }
+                            VStack(alignment: .leading, spacing: 6) {
+                                MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(text))
                             }
                             .padding(.trailing, 60)
                             .padding(.horizontal, 16)
@@ -174,9 +171,24 @@ struct ChatView: View {
 
     // MARK: - MLX Loading Placeholder
 
+    /// Whether the MLX loading placeholder has content worth showing
+    /// (downloading or loading states). False for non-MLX providers
+    /// and when the MLX model is already ready.
+    private var showsMLXLoadingPlaceholder: Bool {
+        let resolvedProfile = providerService.resolvedProfile(for: session, profiles: profiles)
+        guard resolvedProfile?.platform == .mlx else { return false }
+        switch mlxModelService.loadState {
+        case .downloading, .loading:
+            return true
+        default:
+            return false
+        }
+    }
+
     /// Shows an MLX-specific loading indicator (download progress or loading spinner)
-    /// when the resolved provider is MLX and the model is being loaded.
-    /// Falls back to the standard "Thinking..." placeholder for other providers.
+    /// when the resolved provider is MLX and the model is being prepared.
+    /// Empty for non-MLX providers since the response indicator is shown
+    /// above the composer instead.
     @ViewBuilder
     private var mlxAwareLoadingPlaceholder: some View {
         let resolvedProfile = providerService.resolvedProfile(for: session, profiles: profiles)
@@ -210,21 +222,7 @@ struct ChatView: View {
                 }
 
             default:
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Thinking\u{2026}")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        } else {
-            HStack(spacing: 8) {
-                ProgressView()
-                    .controlSize(.small)
-                Text("Thinking\u{2026}")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                EmptyView()
             }
         }
     }
