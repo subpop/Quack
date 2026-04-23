@@ -18,7 +18,7 @@ import QuackInterface
 
 /// Built-in tool that fetches the content of a URL and returns the response body.
 public struct WebFetchTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-web_fetch" }
     public var description: String { "Fetch the content of a URL and return the response body." }
@@ -34,7 +34,7 @@ public struct WebFetchTool: AnyTool, Sendable {
         )
     }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let url: String
         }

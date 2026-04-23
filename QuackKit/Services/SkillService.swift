@@ -74,11 +74,11 @@ public final class SkillService: SkillServiceProtocol {
 
     // MARK: - Singleton
 
-    // TODO: Refactor to a custom ToolContext when feasible.
-    // This singleton exists so ActivateSkillTool can access skill content
-    // without a custom ToolContext. The clean solution is to introduce a
-    // QuackToolContext that carries the SkillService reference, replacing
-    // EmptyContext throughout the tool chain (~20 files, ~67 references).
+    // This singleton is used by ActivateSkillTool to access skill content.
+    // QuackToolContext now exists but SkillService is kept as a singleton
+    // rather than carried in the context to avoid circular dependencies
+    // between QuackInterface (where QuackToolContext lives) and QuackKit
+    // (where SkillService lives).
     public static var shared: SkillService?
 
     // MARK: - Observable State

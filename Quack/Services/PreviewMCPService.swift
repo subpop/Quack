@@ -22,7 +22,7 @@ import AgentRunKit
 @MainActor
 final class PreviewMCPService: MCPServiceProtocol {
     var serverStates: [UUID: MCPServerState] = [:]
-    var availableTools: [any AnyTool<EmptyContext>] = []
+    var availableTools: [any AnyTool<QuackToolContext>] = []
     var isConnecting: Bool = false
     var isConnected: Bool = false
 
@@ -35,7 +35,7 @@ final class PreviewMCPService: MCPServiceProtocol {
         for session: ChatSession,
         allConfigs: [MCPServerConfig],
         onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] { [] }
+    ) -> [any AnyTool<QuackToolContext>] { [] }
 
     func state(for serverID: UUID) -> MCPServerState { .disconnected }
     func toolCount(for serverID: UUID) -> Int { 0 }

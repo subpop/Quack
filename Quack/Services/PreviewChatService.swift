@@ -38,7 +38,7 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func resubmitMessage(
@@ -47,7 +47,7 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func regenerateLastResponse(
@@ -55,7 +55,7 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func stopStreaming() {}

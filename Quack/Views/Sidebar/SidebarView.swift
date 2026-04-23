@@ -25,6 +25,7 @@ struct SidebarView: View {
     @Binding var selectedSessionID: UUID?
     var assistants: [Assistant]
     var onNewChat: (Assistant?) -> Void
+    var onNewChatWithOptions: () -> Void
 
     @State private var searchText = ""
     @State private var renamingSessionID: UUID?
@@ -153,6 +154,14 @@ struct SidebarView: View {
                         }
                     }
                 }
+
+                Divider()
+
+                Button {
+                    onNewChatWithOptions()
+                } label: {
+                    Label("New Chat with Options\u{2026}", systemImage: "folder.badge.plus")
+                }
             } label: {
                 Label("New Chat", systemImage: "square.and.pencil")
             } primaryAction: {
@@ -160,8 +169,22 @@ struct SidebarView: View {
             }
             .help("New Conversation")
         } else {
-            Button(action: { onNewChat(nil) }) {
+            Menu {
+                Button(action: { onNewChat(nil) }) {
+                    Label("New Chat", systemImage: "square.and.pencil")
+                }
+
+                Divider()
+
+                Button {
+                    onNewChatWithOptions()
+                } label: {
+                    Label("New Chat with Options\u{2026}", systemImage: "folder.badge.plus")
+                }
+            } label: {
                 Label("New Chat", systemImage: "square.and.pencil")
+            } primaryAction: {
+                onNewChat(nil)
             }
             .help("New Conversation")
         }
@@ -280,7 +303,7 @@ struct SidebarView: View {
     let container = PreviewSupport.container
     let _ = PreviewSupport.seed(container)
 
-    SidebarView(selectedSessionID: $selectedID, assistants: [], onNewChat: { _ in })
+    SidebarView(selectedSessionID: $selectedID, assistants: [], onNewChat: { _ in }, onNewChatWithOptions: {})
         .frame(width: 280, height: 500)
         .modelContainer(container)
 }

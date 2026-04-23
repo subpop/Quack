@@ -87,7 +87,7 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {
         guard let providerService = providerService as? ProviderService else { return }
 
@@ -181,10 +181,17 @@ public final class ChatService: ChatServiceProtocol {
             // Resolve session parameters — compose skill catalog into the system prompt
             let basePrompt = session.systemPrompt
             let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
-            let systemPrompt = self?.skillService?.composedSystemPrompt(
+            var systemPrompt = self?.skillService?.composedSystemPrompt(
                 basePrompt: basePrompt,
                 alwaysEnabledSkillNames: alwaysEnabled
             ) ?? basePrompt
+
+            // Inject working directory context into the system prompt
+            if let workDir = session.workingDirectory {
+                let directive = "\n\nYour current working directory is: \(workDir)\nWhen using file tools or running commands, use this as the base directory unless the user specifies otherwise. Relative paths are resolved against this directory."
+                systemPrompt = (systemPrompt ?? "") + directive
+            }
+
             let temperature = session.temperature
 
             // Build request context for temperature override
@@ -198,7 +205,8 @@ public final class ChatService: ChatServiceProtocol {
             let maxToolRounds = session.maxToolRounds ?? 10
 
             // Create Chat instance and stream
-            let chat = Chat<EmptyContext>(
+            let toolContext = QuackToolContext(workingDirectory: session.workingDirectory)
+            let chat = Chat<QuackToolContext>(
                 client: client,
                 tools: tools,
                 systemPrompt: systemPrompt,
@@ -209,7 +217,7 @@ public final class ChatService: ChatServiceProtocol {
                 for try await event in chat.stream(
                     history.last?.isUser == true ? text : text,
                     history: Array(history.dropLast()),
-                    context: EmptyContext(),
+                    context: toolContext,
                     requestContext: requestContext
                 ) {
                     guard !Task.isCancelled else { break }
@@ -285,7 +293,7 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {
         // Remove all assistant and tool messages after the last user message.
         // With multi-turn tool loops, there may be multiple assistant + tool
@@ -321,7 +329,7 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {
         guard let providerService = providerService as? ProviderService else { return }
         guard message.role == .user else { return }
@@ -402,10 +410,17 @@ public final class ChatService: ChatServiceProtocol {
             // Compose skill catalog into the system prompt
             let basePrompt = session.systemPrompt
             let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
-            let systemPrompt = self?.skillService?.composedSystemPrompt(
+            var systemPrompt = self?.skillService?.composedSystemPrompt(
                 basePrompt: basePrompt,
                 alwaysEnabledSkillNames: alwaysEnabled
             ) ?? basePrompt
+
+            // Inject working directory context into the system prompt
+            if let workDir = session.workingDirectory {
+                let directive = "\n\nYour current working directory is: \(workDir)\nWhen using file tools or running commands, use this as the base directory unless the user specifies otherwise. Relative paths are resolved against this directory."
+                systemPrompt = (systemPrompt ?? "") + directive
+            }
+
             let temperature = session.temperature
 
             var extraFields: [String: JSONValue] = [:]
@@ -417,7 +432,8 @@ public final class ChatService: ChatServiceProtocol {
             // Resolve max tool rounds (default 10 matches AgentRunKit)
             let maxToolRounds = session.maxToolRounds ?? 10
 
-            let chat = Chat<EmptyContext>(
+            let toolContext = QuackToolContext(workingDirectory: session.workingDirectory)
+            let chat = Chat<QuackToolContext>(
                 client: client,
                 tools: tools,
                 systemPrompt: systemPrompt,
@@ -428,7 +444,7 @@ public final class ChatService: ChatServiceProtocol {
                 for try await event in chat.stream(
                     text,
                     history: Array(history.dropLast()),
-                    context: EmptyContext(),
+                    context: toolContext,
                     requestContext: requestContext
                 ) {
                     guard !Task.isCancelled else { break }

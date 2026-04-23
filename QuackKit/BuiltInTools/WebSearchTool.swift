@@ -19,7 +19,7 @@ import QuackInterface
 /// Built-in tool that searches the web using the Tavily Search API and returns
 /// relevant results optimized for LLM consumption.
 public struct WebSearchTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-web_search" }
     public var description: String {
@@ -54,7 +54,7 @@ public struct WebSearchTool: AnyTool, Sendable {
         )
     }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let query: String
             let max_results: Int?

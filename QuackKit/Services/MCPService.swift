@@ -17,6 +17,24 @@ import SwiftData
 import AgentRunKit
 import QuackInterface
 
+/// Bridges an MCP tool (typed `AnyTool<EmptyContext>`) so it can be used in
+/// a `QuackToolContext` tool chain. MCP tools never read the context — they
+/// always call out to an external server process — so the bridge simply
+/// discards the `QuackToolContext` and passes `EmptyContext()` internally.
+struct MCPToolBridge: AnyTool, Sendable {
+    typealias Context = QuackToolContext
+
+    let wrapped: any AnyTool<EmptyContext>
+
+    var name: String { wrapped.name }
+    var description: String { wrapped.description }
+    var parametersSchema: JSONSchema { wrapped.parametersSchema }
+
+    func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
+        try await wrapped.execute(arguments: arguments, context: EmptyContext())
+    }
+}
+
 @Observable
 @MainActor
 public final class MCPService: MCPServiceProtocol {
@@ -27,7 +45,8 @@ public final class MCPService: MCPServiceProtocol {
     public private(set) var serverStates: [UUID: MCPServerState] = [:]
 
     /// Tools discovered from each connected server, keyed by server config ID.
-    public private(set) var toolsByServer: [UUID: [any AnyTool<EmptyContext>]] = [:]
+    /// Stored as bridged tools so they conform to `AnyTool<QuackToolContext>`.
+    public private(set) var toolsByServer: [UUID: [any AnyTool<QuackToolContext>]] = [:]
 
     // MARK: - Private State
 
@@ -41,7 +60,7 @@ public final class MCPService: MCPServiceProtocol {
     // MARK: - Derived Properties
 
     /// All tools across all connected servers.
-    public var availableTools: [any AnyTool<EmptyContext>] {
+    public var availableTools: [any AnyTool<QuackToolContext>] {
         toolsByServer.values.flatMap { $0 }
     }
 
@@ -100,8 +119,9 @@ public final class MCPService: MCPServiceProtocol {
         serverTasks[serverID] = Task { [weak self] in
             do {
                 try await session.withTools { (tools: [any AnyTool<EmptyContext>]) in
+                    let bridged = tools.map { MCPToolBridge(wrapped: $0) as any AnyTool<QuackToolContext> }
                     await MainActor.run {
-                        self?.toolsByServer[serverID] = tools
+                        self?.toolsByServer[serverID] = bridged
                         self?.serverStates[serverID] = .connected
                     }
 
@@ -162,12 +182,12 @@ public final class MCPService: MCPServiceProtocol {
         for session: ChatSession,
         allConfigs: [MCPServerConfig],
         onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] {
+    ) -> [any AnyTool<QuackToolContext>] {
         guard let enabledIDs = session.enabledMCPServerIDs else {
             return []
         }
 
-        return enabledIDs.flatMap { serverID -> [any AnyTool<EmptyContext>] in
+        return enabledIDs.flatMap { serverID -> [any AnyTool<QuackToolContext>] in
             let tools = toolsByServer[serverID] ?? []
             let serverDefault = allConfigs.first(where: { $0.id == serverID })?.toolPermission ?? .ask
 
@@ -180,13 +200,13 @@ public final class MCPService: MCPServiceProtocol {
                     wrapped: tool,
                     permission: effectivePermission,
                     onApprovalNeeded: onApprovalNeeded
-                ) as any AnyTool<EmptyContext>
+                ) as any AnyTool<QuackToolContext>
             }
         }
     }
 
     /// Returns tools for a set of server IDs (without permission wrapping, for internal use).
-    public func tools(forServerIDs ids: Set<UUID>) -> [any AnyTool<EmptyContext>] {
+    public func tools(forServerIDs ids: Set<UUID>) -> [any AnyTool<QuackToolContext>] {
         ids.flatMap { id in
             toolsByServer[id] ?? []
         }

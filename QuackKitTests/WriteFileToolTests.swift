@@ -15,7 +15,7 @@ struct WriteFileToolTests {
         defer { try? FileManager.default.removeItem(at: tmpFile) }
 
         let args = try JSONEncoder().encode(["path": tmpFile.path, "content": "Test content"])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.isError == false)
         #expect(result.content.contains("Successfully wrote"))
 
@@ -32,7 +32,7 @@ struct WriteFileToolTests {
         defer { try? FileManager.default.removeItem(at: tmpDir.deletingLastPathComponent()) }
 
         let args = try JSONEncoder().encode(["path": tmpFile.path, "content": "nested content"])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.isError == false)
 
         let contents = try String(contentsOf: tmpFile, encoding: .utf8)
@@ -41,7 +41,7 @@ struct WriteFileToolTests {
 
     @Test func writeInvalidArguments() async throws {
         let tool = WriteFileTool()
-        let result = try await tool.execute(arguments: Data("{}".utf8), context: EmptyContext())
+        let result = try await tool.execute(arguments: Data("{}".utf8), context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("Invalid arguments"))
     }

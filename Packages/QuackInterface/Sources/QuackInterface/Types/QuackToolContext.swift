@@ -14,19 +14,18 @@
 
 import Foundation
 import AgentRunKit
-import AgentRunKitFoundationModels
-import QuackInterface
 
-/// Factory utilities for Apple Foundation Models (on-device inference).
+/// Tool context carrying per-session dependencies to built-in tools.
 ///
-/// Used by `ProviderPlatform.foundationModels` to construct clients.
-/// No model listing is needed — the on-device model is the only option.
-public enum FoundationModelsClientFactory {
+/// Replaces `EmptyContext` throughout the tool chain so that tools can access
+/// session-scoped state such as the working directory.
+public struct QuackToolContext: ToolContext, Sendable {
+    /// The working directory for file and command tools.
+    /// When set, `RunCommandTool` uses this as the default CWD,
+    /// and `ReadFileTool`/`WriteFileTool` resolve relative paths against it.
+    public let workingDirectory: String?
 
-    public static func makeClient() -> (any LLMClient)? {
-        return FoundationModelsClient<QuackToolContext>(
-            tools: [] as [any AnyTool<QuackToolContext>],
-            context: QuackToolContext()
-        )
+    public init(workingDirectory: String? = nil) {
+        self.workingDirectory = workingDirectory
     }
 }

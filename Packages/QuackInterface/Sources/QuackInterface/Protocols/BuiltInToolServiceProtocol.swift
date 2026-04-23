@@ -61,7 +61,7 @@ public protocol BuiltInToolServiceProtocol: AnyObject, Observable {
     func tools(
         for session: ChatSession,
         onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>]
+    ) -> [any AnyTool<QuackToolContext>]
 }
 
 // MARK: - Environment Key
@@ -94,5 +94,5 @@ private final class PlaceholderBuiltInToolService: BuiltInToolServiceProtocol {
     func tools(
         for session: ChatSession,
         onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] { [] }
+    ) -> [any AnyTool<QuackToolContext>] { [] }
 }

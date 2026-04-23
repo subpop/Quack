@@ -54,8 +54,8 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
     /// Tools that require a build-time API key (via `Secrets.xcconfig`) are
     /// only included when the key was provided and obfuscated into the binary
     /// by `scripts/generate-secrets.sh`.
-    private let toolInstances: [BuiltInTool: any AnyTool<EmptyContext>] = {
-        var tools: [BuiltInTool: any AnyTool<EmptyContext>] = [
+    private let toolInstances: [BuiltInTool: any AnyTool<QuackToolContext>] = {
+        var tools: [BuiltInTool: any AnyTool<QuackToolContext>] = [
             .readFile: ReadFileTool(),
             .writeFile: WriteFileTool(),
             .runCommand: RunCommandTool(),
@@ -133,10 +133,10 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
     public func tools(
         for session: ChatSession,
         onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] {
+    ) -> [any AnyTool<QuackToolContext>] {
         let sessionEnabledIDs = session.enabledBuiltInToolIDs ?? []
 
-        return BuiltInTool.availableCases.compactMap { tool -> (any AnyTool<EmptyContext>)? in
+        return BuiltInTool.availableCases.compactMap { tool -> (any AnyTool<QuackToolContext>)? in
             // Don't register activate_skill when no skills are discovered.
             if tool == .activateSkill,
                SkillService.shared?.allDiscoveredSkills.isEmpty != false {
@@ -159,7 +159,7 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
                 wrapped: instance,
                 permission: effectivePermission,
                 onApprovalNeeded: onApprovalNeeded
-            ) as any AnyTool<EmptyContext>
+            ) as any AnyTool<QuackToolContext>
         }
     }
 

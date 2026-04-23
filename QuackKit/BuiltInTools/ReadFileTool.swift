@@ -18,7 +18,7 @@ import QuackInterface
 
 /// Built-in tool that reads the contents of a file at a given path.
 public struct ReadFileTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-read_file" }
     public var description: String { "Read the contents of a file at a given path." }
@@ -34,7 +34,7 @@ public struct ReadFileTool: AnyTool, Sendable {
         )
     }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let path: String
         }
@@ -47,7 +47,14 @@ public struct ReadFileTool: AnyTool, Sendable {
         }
 
         let expandedPath = NSString(string: args.path).expandingTildeInPath
-        let url = URL(fileURLWithPath: expandedPath)
+        let url: URL
+        if expandedPath.hasPrefix("/") {
+            url = URL(fileURLWithPath: expandedPath)
+        } else if let workDir = context.workingDirectory {
+            url = URL(fileURLWithPath: workDir).appendingPathComponent(expandedPath)
+        } else {
+            url = URL(fileURLWithPath: expandedPath)
+        }
 
         guard FileManager.default.fileExists(atPath: url.path) else {
             return .error("File not found: \(args.path)")

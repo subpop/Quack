@@ -418,7 +418,7 @@ struct ChatView: View {
 
     /// Combines built-in tools and MCP server tools for the current session,
     /// each wrapped with the appropriate permission enforcement.
-    private func allToolsForSession() -> [any AnyTool<EmptyContext>] {
+    private func allToolsForSession() -> [any AnyTool<QuackToolContext>] {
         let svc = chatService
         let approvalHandler: @Sendable (String, String, String) async -> Bool = { name, args, desc in
             await svc.requestApproval(toolName: name, arguments: args, description: desc)

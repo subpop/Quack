@@ -23,14 +23,14 @@ import QuackInterface
 /// When `.deny`, the tool returns an error without executing.
 /// When `.always`, the tool executes normally.
 public struct PermissionToolWrapper: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
-    public let wrapped: any AnyTool<EmptyContext>
+    public let wrapped: any AnyTool<QuackToolContext>
     public let permission: ToolPermission
     public let onApprovalNeeded: @Sendable (String, String, String) async -> Bool
 
     public init(
-        wrapped: any AnyTool<EmptyContext>,
+        wrapped: any AnyTool<QuackToolContext>,
         permission: ToolPermission,
         onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
     ) {
@@ -43,7 +43,7 @@ public struct PermissionToolWrapper: AnyTool, Sendable {
     public var description: String { wrapped.description }
     public var parametersSchema: JSONSchema { wrapped.parametersSchema }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         switch permission {
         case .always:
             return try await wrapped.execute(arguments: arguments, context: context)

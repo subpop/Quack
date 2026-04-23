@@ -18,7 +18,7 @@ import QuackInterface
 
 /// Built-in tool that writes content to a file at a given path.
 public struct WriteFileTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-write_file" }
     public var description: String { "Write content to a file at a given path." }
@@ -35,7 +35,7 @@ public struct WriteFileTool: AnyTool, Sendable {
         )
     }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let path: String
             let content: String
@@ -49,7 +49,14 @@ public struct WriteFileTool: AnyTool, Sendable {
         }
 
         let expandedPath = NSString(string: args.path).expandingTildeInPath
-        let url = URL(fileURLWithPath: expandedPath)
+        let url: URL
+        if expandedPath.hasPrefix("/") {
+            url = URL(fileURLWithPath: expandedPath)
+        } else if let workDir = context.workingDirectory {
+            url = URL(fileURLWithPath: workDir).appendingPathComponent(expandedPath)
+        } else {
+            url = URL(fileURLWithPath: expandedPath)
+        }
 
         // Ensure the parent directory exists
         let parentDir = url.deletingLastPathComponent()

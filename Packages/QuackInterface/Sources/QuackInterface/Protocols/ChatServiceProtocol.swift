@@ -129,7 +129,7 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     )
 
     func resubmitMessage(
@@ -138,7 +138,7 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     )
 
     func regenerateLastResponse(
@@ -146,7 +146,7 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     )
 
     func stopStreaming()
@@ -193,7 +193,7 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func resubmitMessage(
@@ -202,7 +202,7 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func regenerateLastResponse(
@@ -210,7 +210,7 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<EmptyContext>]
+        tools: [any AnyTool<QuackToolContext>]
     ) {}
 
     func stopStreaming() {}

@@ -14,18 +14,24 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 import QuackInterface
 
 /// Displays session statistics including token counts, a distribution bar, and estimated cost.
 struct InspectorSessionTab: View {
     @Bindable var session: ChatSession
 
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.providerService) private var providerService
     @Environment(ModelPricingService.self) private var modelPricingService
     @Query(sort: \ProviderProfile.sortOrder) private var profiles: [ProviderProfile]
 
+    @State private var showFolderPicker = false
+
     var body: some View {
         Form {
+            workingDirectorySection
+
             Section("Session") {
                 let stats = sessionStats
 
@@ -194,6 +200,99 @@ struct InspectorSessionTab: View {
             Spacer()
         }
         .padding(.vertical, 4)
+    }
+
+    // MARK: - Working Directory
+
+    @ViewBuilder
+    private var workingDirectorySection: some View {
+        Section {
+            if let workDir = session.workingDirectory, !workDir.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(.blue)
+                            .symbolRenderingMode(.hierarchical)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Project Session")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+
+                            Text(directoryDisplayName(workDir))
+                                .font(.system(.body, design: .rounded, weight: .medium))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+
+                        Spacer()
+                    }
+
+                    Text(workDir)
+                        .font(.system(.caption, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+
+                    HStack(spacing: 8) {
+                        Button("Change\u{2026}") {
+                            showFolderPicker = true
+                        }
+                        .controlSize(.small)
+
+                        Button("Clear") {
+                            session.workingDirectory = nil
+                            try? modelContext.save()
+                        }
+                        .controlSize(.small)
+                    }
+                }
+                .padding(.vertical, 2)
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: "bubble.left.and.text.bubble.right")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.secondary)
+                        .symbolRenderingMode(.hierarchical)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("General Session")
+                            .font(.system(.body, design: .rounded, weight: .medium))
+
+                        Text("No working directory set")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    Button("Set\u{2026}") {
+                        showFolderPicker = true
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 2)
+            }
+        } header: {
+            Text("Working Directory")
+        }
+        .fileImporter(
+            isPresented: $showFolderPicker,
+            allowedContentTypes: [.folder],
+            allowsMultipleSelection: false
+        ) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                session.workingDirectory = url.path(percentEncoded: false)
+                try? modelContext.save()
+            }
+        }
+    }
+
+    /// Extracts the last path component as a display name for the directory.
+    private func directoryDisplayName(_ path: String) -> String {
+        URL(fileURLWithPath: path).lastPathComponent
     }
 
     // MARK: - Stats Computation

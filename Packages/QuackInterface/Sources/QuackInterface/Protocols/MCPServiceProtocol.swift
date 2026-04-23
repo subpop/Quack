@@ -46,7 +46,7 @@ public protocol MCPServiceProtocol: AnyObject, Observable {
     var serverStates: [UUID: MCPServerState] { get }
 
     /// All tools across all connected servers.
-    var availableTools: [any AnyTool<EmptyContext>] { get }
+    var availableTools: [any AnyTool<QuackToolContext>] { get }
 
     /// Whether any server is currently connecting.
     var isConnecting: Bool { get }
@@ -72,7 +72,7 @@ public protocol MCPServiceProtocol: AnyObject, Observable {
         for session: ChatSession,
         allConfigs: [MCPServerConfig],
         onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>]
+    ) -> [any AnyTool<QuackToolContext>]
 
     /// The state of a specific server, or `.disconnected` if unknown.
     func state(for serverID: UUID) -> MCPServerState
@@ -103,7 +103,7 @@ public extension EnvironmentValues {
 @MainActor
 private final class PlaceholderMCPService: MCPServiceProtocol {
     var serverStates: [UUID: MCPServerState] = [:]
-    var availableTools: [any AnyTool<EmptyContext>] = []
+    var availableTools: [any AnyTool<QuackToolContext>] = []
     var isConnecting: Bool = false
     var isConnected: Bool = false
 
@@ -116,7 +116,7 @@ private final class PlaceholderMCPService: MCPServiceProtocol {
         for session: ChatSession,
         allConfigs: [MCPServerConfig],
         onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] { [] }
+    ) -> [any AnyTool<QuackToolContext>] { [] }
 
     func state(for serverID: UUID) -> MCPServerState { .disconnected }
     func toolCount(for serverID: UUID) -> Int { 0 }

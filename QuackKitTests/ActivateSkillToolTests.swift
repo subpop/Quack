@@ -44,7 +44,7 @@ struct ActivateSkillToolTests {
     func invalidArguments() async throws {
         let tool = ActivateSkillTool()
         let badArgs = Data("{}".utf8)
-        let result = try await tool.execute(arguments: badArgs, context: EmptyContext())
+        let result = try await tool.execute(arguments: badArgs, context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("Invalid arguments"))
     }
@@ -59,7 +59,7 @@ struct ActivateSkillToolTests {
 
         let tool = ActivateSkillTool()
         let args = try JSONEncoder().encode(["name": "test-skill"])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("not available"))
     }
@@ -74,7 +74,7 @@ struct ActivateSkillToolTests {
 
         let tool = ActivateSkillTool()
         let args = try JSONEncoder().encode(["name": "nonexistent-skill"])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("Unknown skill"))
     }

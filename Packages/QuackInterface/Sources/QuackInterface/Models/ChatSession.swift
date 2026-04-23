@@ -56,6 +56,11 @@ public final class ChatSession {
     /// nil means "use the server-level default for all tools."
     public var toolPermissionOverridesJSON: String?
 
+    /// Optional working directory for this session.
+    /// When set, tools like RunCommand, ReadFile, and WriteFile will use this
+    /// as their base directory, and the LLM will be informed of the project context.
+    public var workingDirectory: String?
+
     /// The provider profile UUID for this session, if overridden.
     public var providerID: UUID? {
         get {
@@ -164,7 +169,8 @@ public final class ChatSession {
     /// affecting the originating profile.
     public init(
         title: String = "New Chat",
-        profile: ProviderProfile? = nil
+        profile: ProviderProfile? = nil,
+        workingDirectory: String? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -172,6 +178,7 @@ public final class ChatSession {
         self.updatedAt = Date()
         self.isArchived = false
         self.isPinned = false
+        self.workingDirectory = workingDirectory
 
         // Copy from profile at creation time
         if let profile {
@@ -190,7 +197,8 @@ public final class ChatSession {
     /// inspector without affecting the originating assistant.
     public init(
         title: String = "New Chat",
-        assistant: Assistant
+        assistant: Assistant,
+        workingDirectory: String? = nil
     ) {
         self.id = UUID()
         self.title = title
@@ -198,6 +206,7 @@ public final class ChatSession {
         self.updatedAt = Date()
         self.isArchived = false
         self.isPinned = false
+        self.workingDirectory = workingDirectory
 
         self.assistantIDString = assistant.id.uuidString
         self.providerIDString = assistant.providerIDString

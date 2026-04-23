@@ -197,6 +197,11 @@ struct QuackApp: App {
                 }
                 .keyboardShortcut("n", modifiers: .command)
 
+                Button("New Chat with Options\u{2026}") {
+                    NotificationCenter.default.post(name: .newChatWithOptions, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+
                 Divider()
 
                 Button("Export Transcript…") {
@@ -236,6 +241,7 @@ struct QuackApp: App {
 
 extension Notification.Name {
     static let newChat = Notification.Name("newChat")
+    static let newChatWithOptions = Notification.Name("newChatWithOptions")
     static let exportTranscript = Notification.Name("exportTranscript")
 }
 

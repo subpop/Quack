@@ -29,6 +29,7 @@ struct MainView: View {
 
     @State private var selectedSessionID: UUID?
     @State private var showInspector = false
+    @State private var showNewChatSheet = false
     @State private var columnVisibility = NavigationSplitViewVisibility.automatic
 
     private var selectedSession: ChatSession? {
@@ -40,7 +41,8 @@ struct MainView: View {
             SidebarView(
                 selectedSessionID: $selectedSessionID,
                 assistants: assistants,
-                onNewChat: { createNewChat(with: $0) }
+                onNewChat: { createNewChat(with: $0) },
+                onNewChatWithOptions: { showNewChatSheet = true }
             )
             .navigationSplitViewColumnWidth(min: 220, ideal: 260, max: 360)
         } detail: {
@@ -92,19 +94,27 @@ struct MainView: View {
         .onReceive(NotificationCenter.default.publisher(for: .newChat)) { _ in
             createNewChat()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .newChatWithOptions)) { _ in
+            showNewChatSheet = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: .exportTranscript)) { _ in
             exportActiveSession()
         }
+        .sheet(isPresented: $showNewChatSheet) {
+            NewChatSheet(assistants: assistants) { assistant, workingDirectory in
+                createNewChat(with: assistant, workingDirectory: workingDirectory)
+            }
+        }
     }
 
-    private func createNewChat(with assistant: Assistant? = nil) {
+    private func createNewChat(with assistant: Assistant? = nil, workingDirectory: String? = nil) {
         let resolved = assistant ?? assistants.first(where: \.isDefault) ?? assistants.first
         let session: ChatSession
         if let resolved {
-            session = ChatSession(assistant: resolved)
+            session = ChatSession(assistant: resolved, workingDirectory: workingDirectory)
         } else {
             // Fallback if no assistants exist yet (shouldn't happen after seeding)
-            session = ChatSession(profile: providerService.fallbackProfile(from: profiles))
+            session = ChatSession(profile: providerService.fallbackProfile(from: profiles), workingDirectory: workingDirectory)
         }
         modelContext.insert(session)
         try? modelContext.save()

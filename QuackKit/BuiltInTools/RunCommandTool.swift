@@ -18,7 +18,7 @@ import QuackInterface
 
 /// Built-in tool that executes a shell command and returns its output.
 public struct RunCommandTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-run_command" }
     public var description: String { "Execute a shell command and return its output." }
@@ -39,7 +39,7 @@ public struct RunCommandTool: AnyTool, Sendable {
         )
     }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let command: String
             let arguments: [String]?
@@ -66,9 +66,13 @@ public struct RunCommandTool: AnyTool, Sendable {
         }
         process.arguments = ["-l", "-c", fullCommand]
 
+        // Use the explicitly provided working directory, fall back to the
+        // session-level working directory from the tool context.
         if let workDir = args.workingDirectory {
             let expandedPath = NSString(string: workDir).expandingTildeInPath
             process.currentDirectoryURL = URL(fileURLWithPath: expandedPath)
+        } else if let contextDir = context.workingDirectory {
+            process.currentDirectoryURL = URL(fileURLWithPath: contextDir)
         }
 
         let stdoutPipe = Pipe()

@@ -33,5 +33,5 @@ final class PreviewBuiltInToolService: BuiltInToolServiceProtocol {
     func tools(
         for session: ChatSession,
         onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<EmptyContext>] { [] }
+    ) -> [any AnyTool<QuackToolContext>] { [] }
 }

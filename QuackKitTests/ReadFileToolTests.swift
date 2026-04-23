@@ -16,7 +16,7 @@ struct ReadFileToolTests {
         defer { try? FileManager.default.removeItem(at: tmpFile) }
 
         let args = try JSONEncoder().encode(["path": tmpFile.path])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.content == "Hello, QuackKit!")
         #expect(result.isError == false)
     }
@@ -24,14 +24,14 @@ struct ReadFileToolTests {
     @Test func readNonexistentFile() async throws {
         let tool = ReadFileTool()
         let args = try JSONEncoder().encode(["path": "/nonexistent/path/file.txt"])
-        let result = try await tool.execute(arguments: args, context: EmptyContext())
+        let result = try await tool.execute(arguments: args, context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("not found"))
     }
 
     @Test func readInvalidArguments() async throws {
         let tool = ReadFileTool()
-        let result = try await tool.execute(arguments: Data("{}".utf8), context: EmptyContext())
+        let result = try await tool.execute(arguments: Data("{}".utf8), context: QuackToolContext())
         #expect(result.isError == true)
         #expect(result.content.contains("Invalid arguments"))
     }

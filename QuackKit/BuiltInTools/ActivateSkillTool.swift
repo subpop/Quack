@@ -28,7 +28,7 @@ import QuackInterface
 /// wrapped in identifying tags, along with a list of bundled resources
 /// that the model can load individually via file-read tools.
 public struct ActivateSkillTool: AnyTool, Sendable {
-    public typealias Context = EmptyContext
+    public typealias Context = QuackToolContext
 
     public var name: String { "builtin-activate_skill" }
 
@@ -50,7 +50,7 @@ public struct ActivateSkillTool: AnyTool, Sendable {
     // Skills are read-only knowledge packs — no side effects.
     public var isReadOnly: Bool { true }
 
-    public func execute(arguments: Data, context: EmptyContext) async throws -> ToolResult {
+    public func execute(arguments: Data, context: QuackToolContext) async throws -> ToolResult {
         struct Args: Decodable {
             let name: String
         }
