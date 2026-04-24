@@ -24,26 +24,33 @@ final class SoftwareUpdater: ObservableObject {
     @Published var canCheckForUpdates = false
 
     var automaticallyChecksForUpdates: Bool {
-        get { updater.automaticallyChecksForUpdates }
-        set { updater.automaticallyChecksForUpdates = newValue }
+        get { updaterController?.updater.automaticallyChecksForUpdates ?? false }
+        set { updaterController?.updater.automaticallyChecksForUpdates = newValue }
     }
 
-    private let updaterController: SPUStandardUpdaterController
-    private let updater: SPUUpdater
+    private let updaterController: SPUStandardUpdaterController?
 
     init() {
-        updaterController = SPUStandardUpdaterController(
+        // Sparkle must not be initialized in Xcode Previews — its startup
+        // checks (code signing, appcast URL, etc.) are incompatible with
+        // the preview host process and cause a crash.
+        guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else {
+            updaterController = nil
+            return
+        }
+
+        let controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
-        updater = updaterController.updater
+        updaterController = controller
 
-        updater.publisher(for: \.canCheckForUpdates)
+        controller.updater.publisher(for: \.canCheckForUpdates)
             .assign(to: &$canCheckForUpdates)
     }
 
     func checkForUpdates() {
-        updaterController.checkForUpdates(nil)
+        updaterController?.checkForUpdates(nil)
     }
 }

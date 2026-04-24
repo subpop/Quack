@@ -67,8 +67,8 @@ struct MainView: View {
                 }
             }
         }
-        .toolbar(id: "main") {
-            ToolbarItem(id: "inspector", placement: .primaryAction) {
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     showInspector.toggle()
                 } label: {

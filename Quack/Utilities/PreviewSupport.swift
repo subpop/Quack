@@ -21,7 +21,7 @@ import SwiftData
 enum PreviewSupport {
     /// An in-memory ModelContainer with all Quack model types.
     @MainActor
-    static var container: ModelContainer {
+    static let container: ModelContainer = {
         let schema = Schema([
             ChatSession.self,
             ChatMessageRecord.self,
@@ -32,7 +32,7 @@ enum PreviewSupport {
         ])
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try! ModelContainer(for: schema, configurations: [config])
-    }
+    }()
 
     /// Seed the container with sample data and return key objects.
     @MainActor
