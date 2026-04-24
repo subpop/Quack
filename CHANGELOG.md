@@ -1,4 +1,24 @@
 
+## 0.2.1 (6) (2026-04-24)
+
+- 💥 Fixed an issue migrating from the SwiftData schema in 0.1.3
+
+### Additional changes from 0.2.0
+
+- 🧩 Skills support for loading specialized instruction sets
+- 🤖 Default coding assistant with provider-specific system prompts and dynamic AGENTS.md injection
+- 📂 Per-session working directories with folder picker (Cmd+Shift+N) so tools operate relative to a project
+- 🌐 Environment context (`<env>` block) injected into prompts with working directory and platform info
+- 🎨 Redesigned inspector with tab-based layout
+- 💬 Improved chat session UX in inspector and new chat sheet
+- ⚙️ General Settings with appearance option
+- 💡 Response indicator replaces initial "Thinking" spinner
+- ⬆️ AgentRunKit updated to 2.0.x
+- 📊 os_signpost instrumentation for streaming markdown renderer profiling
+- 🚨 MCP server error messages now surfaced to the user
+- 🐛 Fix WebSearch tool not registering due to secret injection ordering
+- 🐛 Fix MainView preview crash caused by customizable toolbar
+
 ## 0.2.0 (5) (2026-04-24)
 
 - 🧩 Skills support for loading specialized instruction sets
