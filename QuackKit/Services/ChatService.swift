@@ -186,11 +186,9 @@ public final class ChatService: ChatServiceProtocol {
                 alwaysEnabledSkillNames: alwaysEnabled
             ) ?? basePrompt
 
-            // Inject working directory context into the system prompt
-            if let workDir = session.workingDirectory {
-                let directive = "\n\nYour current working directory is: \(workDir)\nWhen using file tools or running commands, use this as the base directory unless the user specifies otherwise. Relative paths are resolved against this directory."
-                systemPrompt = (systemPrompt ?? "") + directive
-            }
+            // Inject environment block into the system prompt
+            let envBlock = buildEnvironmentBlock(workingDirectory: session.workingDirectory)
+            systemPrompt = (systemPrompt ?? "") + envBlock
 
             let temperature = session.temperature
 
@@ -415,11 +413,9 @@ public final class ChatService: ChatServiceProtocol {
                 alwaysEnabledSkillNames: alwaysEnabled
             ) ?? basePrompt
 
-            // Inject working directory context into the system prompt
-            if let workDir = session.workingDirectory {
-                let directive = "\n\nYour current working directory is: \(workDir)\nWhen using file tools or running commands, use this as the base directory unless the user specifies otherwise. Relative paths are resolved against this directory."
-                systemPrompt = (systemPrompt ?? "") + directive
-            }
+            // Inject environment block into the system prompt
+            let envBlock = buildEnvironmentBlock(workingDirectory: session.workingDirectory)
+            systemPrompt = (systemPrompt ?? "") + envBlock
 
             let temperature = session.temperature
 
@@ -795,6 +791,56 @@ public final class ChatService: ChatServiceProtocol {
 public protocol NotificationServiceProtocol: AnyObject {
     func showToolApprovalNotification(toolName: String)
     func clearToolApprovalNotification()
+}
+
+// MARK: - Environment Block Builder
+
+/// Builds an OpenCode-style `<env>` block injected into the system prompt to
+/// give the model rich context about the session environment.
+///
+/// Always includes platform and date. When a working directory is provided,
+/// also includes the directory path and whether it is a git repository.
+private func buildEnvironmentBlock(workingDirectory: String?) -> String {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "EEE MMM d yyyy"
+    let todayString = dateFormatter.string(from: Date())
+
+    #if os(macOS)
+    let platform = "macOS"
+    #elseif os(iOS)
+    let platform = "iOS"
+    #else
+    let platform = "unknown"
+    #endif
+
+    var lines: [String] = []
+
+    if let workDir = workingDirectory {
+        lines.append("  Working directory: \(workDir)")
+
+        // Detect whether the directory is inside a git repository
+        let isGitRepo: Bool = {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/git")
+            process.arguments = ["rev-parse", "--is-inside-work-tree"]
+            process.currentDirectoryURL = URL(fileURLWithPath: workDir)
+            process.standardOutput = Pipe()
+            process.standardError = Pipe()
+            do {
+                try process.run()
+                process.waitUntilExit()
+                return process.terminationStatus == 0
+            } catch {
+                return false
+            }
+        }()
+        lines.append("  Is directory a git repo: \(isGitRepo ? "yes" : "no")")
+    }
+
+    lines.append("  Platform: \(platform)")
+    lines.append("  Today's date: \(todayString)")
+
+    return "\n\n<env>\n" + lines.joined(separator: "\n") + "\n</env>"
 }
 
 private extension ChatMessage {
