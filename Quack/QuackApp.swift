@@ -22,6 +22,8 @@ import os
 struct QuackApp: App {
     @StateObject private var updater = SoftwareUpdater()
 
+    @AppStorage("appearanceMode") private var appearanceMode: AppAppearance = .system
+
     @State private var providerService = ProviderService()
     @State private var chatService = ChatService()
     @State private var mcpService = MCPService()
@@ -158,6 +160,7 @@ struct QuackApp: App {
     var body: some Scene {
         WindowGroup(id: "main") {
             MainView()
+                .preferredColorScheme(appearanceMode.colorScheme)
                 .environment(\.providerService, providerService)
                 .environment(\.chatService, chatService)
                 .environment(\.mcpService, mcpService)
@@ -226,6 +229,7 @@ struct QuackApp: App {
 
         Settings {
             SettingsView(updater: updater)
+                .preferredColorScheme(appearanceMode.colorScheme)
                 .environment(\.providerService, providerService)
                 .environment(\.chatService, chatService)
                 .environment(\.mcpService, mcpService)

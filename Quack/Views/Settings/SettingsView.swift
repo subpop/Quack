@@ -19,6 +19,10 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
+            Tab("General", systemImage: "gear") {
+                GeneralSettingsView(updater: updater)
+            }
+
             Tab("Assistants", systemImage: "person.2") {
                 AssistantsSettingsView()
             }
@@ -37,16 +41,6 @@ struct SettingsView: View {
 
             Tab("Local Models", systemImage: "cpu") {
                 LocalModelsSettingsView()
-            }
-
-            Tab("Updates", systemImage: "arrow.triangle.2.circlepath") {
-                Form {
-                    Toggle("Automatically check for updates", isOn: Binding(
-                        get: { updater.automaticallyChecksForUpdates },
-                        set: { updater.automaticallyChecksForUpdates = $0 }
-                    ))
-                }
-                .padding()
             }
         }
         .frame(width: 600, height: 480)
