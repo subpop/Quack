@@ -106,7 +106,7 @@ public final class MCPService: MCPServiceProtocol {
         let serverID = config.id
         let mcpConfig = MCPServerConfiguration(
             name: config.name,
-            command: config.command,
+            command: config.command.trimmingCharacters(in: .whitespacesAndNewlines),
             arguments: config.arguments,
             environment: config.environmentVariables.isEmpty ? nil : config.environmentVariables,
             workingDirectory: config.workingDirectory,
