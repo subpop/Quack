@@ -79,6 +79,61 @@ public final class ChatService: ChatServiceProtocol {
 
     public init() {}
 
+    // MARK: - System Prompt Assembly
+
+    /// Assembles the complete system prompt from all layers:
+    ///
+    /// 1. **Provider-specific default prompt** — always prepended based on the
+    ///    resolved ``ProviderProfile``.
+    /// 2. **User's custom system prompt** — from the session (if any).
+    /// 3. **Skills** — via ``SkillServiceProtocol/composedSystemPrompt(basePrompt:alwaysEnabledSkillNames:)``.
+    /// 4. **Instruction files** — project-level AGENTS.md/CLAUDE.md discovered
+    ///    by walking up from the working directory.
+    /// 5. **Environment block** — working directory, git status, platform, date.
+    ///
+    /// This replaces the duplicated prompt assembly that previously existed in
+    /// both ``sendMessage(_:in:modelContext:providerService:profiles:tools:)``
+    /// and ``resubmitMessage(_:in:modelContext:providerService:profiles:tools:)``.
+    private func assembleSystemPrompt(
+        session: ChatSession,
+        profile: ProviderProfile
+    ) -> String {
+        // Layer 1: Provider-specific default prompt
+        let providerPrompt = ProviderPromptService.prompt(for: profile)
+
+        // Layer 2: User's custom system prompt
+        let userPrompt = session.systemPrompt
+
+        // Combine provider prompt + user prompt as the base for skill composition.
+        // The provider prompt always comes first; user prompt is layered on top.
+        let combinedBase: String
+        if let userPrompt, !userPrompt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            combinedBase = providerPrompt + "\n\n" + userPrompt
+        } else {
+            combinedBase = providerPrompt
+        }
+
+        // Layer 3: Skills — compose catalog and always-enabled skill content
+        let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
+        var systemPrompt = skillService?.composedSystemPrompt(
+            basePrompt: combinedBase,
+            alwaysEnabledSkillNames: alwaysEnabled
+        ) ?? combinedBase
+
+        // Layer 4: Instruction files (AGENTS.md / CLAUDE.md)
+        if let instructions = InstructionFileService.loadInstructions(
+            workingDirectory: session.workingDirectory
+        ) {
+            systemPrompt += "\n\n" + instructions
+        }
+
+        // Layer 5: Environment block
+        let envBlock = buildEnvironmentBlock(workingDirectory: session.workingDirectory)
+        systemPrompt += envBlock
+
+        return systemPrompt
+    }
+
     // MARK: - Send Message
 
     public func sendMessage(
@@ -178,17 +233,15 @@ public final class ChatService: ChatServiceProtocol {
             // Convert history to AgentRunKit messages
             let history = MessageConverter.toChatMessages(session.sortedMessages)
 
-            // Resolve session parameters — compose skill catalog into the system prompt
-            let basePrompt = session.systemPrompt
-            let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
-            var systemPrompt = self?.skillService?.composedSystemPrompt(
-                basePrompt: basePrompt,
-                alwaysEnabledSkillNames: alwaysEnabled
-            ) ?? basePrompt
+            // Resolve the provider profile for prompt selection
+            let profile = providerService.resolvedProfile(
+                for: session, profiles: profiles
+            )
 
-            // Inject environment block into the system prompt
-            let envBlock = buildEnvironmentBlock(workingDirectory: session.workingDirectory)
-            systemPrompt = (systemPrompt ?? "") + envBlock
+            // Assemble the full system prompt (provider + user + skills + instructions + env)
+            let systemPrompt: String? = profile.flatMap { p in
+                self?.assembleSystemPrompt(session: session, profile: p)
+            }
 
             let temperature = session.temperature
 
@@ -405,17 +458,15 @@ public final class ChatService: ChatServiceProtocol {
             let updatedSorted = session.sortedMessages
             let history = MessageConverter.toChatMessages(updatedSorted)
 
-            // Compose skill catalog into the system prompt
-            let basePrompt = session.systemPrompt
-            let alwaysEnabled = session.alwaysEnabledSkillNames ?? []
-            var systemPrompt = self?.skillService?.composedSystemPrompt(
-                basePrompt: basePrompt,
-                alwaysEnabledSkillNames: alwaysEnabled
-            ) ?? basePrompt
+            // Resolve the provider profile for prompt selection
+            let profile = providerService.resolvedProfile(
+                for: session, profiles: profiles
+            )
 
-            // Inject environment block into the system prompt
-            let envBlock = buildEnvironmentBlock(workingDirectory: session.workingDirectory)
-            systemPrompt = (systemPrompt ?? "") + envBlock
+            // Assemble the full system prompt (provider + user + skills + instructions + env)
+            let systemPrompt: String? = profile.flatMap { p in
+                self?.assembleSystemPrompt(session: session, profile: p)
+            }
 
             let temperature = session.temperature
 
