@@ -208,46 +208,46 @@ struct InspectorSessionTab: View {
     private var workingDirectorySection: some View {
         Section {
             if let workDir = session.workingDirectory, !workDir.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 18))
-                            .foregroundStyle(.blue)
-                            .symbolRenderingMode(.hierarchical)
+                HStack(spacing: 8) {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.blue)
+                        .symbolRenderingMode(.hierarchical)
 
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Project Session")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Project Session")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
 
-                            Text(directoryDisplayName(workDir))
-                                .font(.system(.body, design: .rounded, weight: .medium))
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
+                        Text(directoryDisplayName(workDir))
+                            .font(.system(.body, design: .rounded, weight: .medium))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
 
-                        Spacer()
+                        Text(workDir)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
                     }
 
-                    Text(workDir)
-                        .font(.system(.caption, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
+                    Spacer()
 
-                    HStack(spacing: 8) {
-                        Button("Change\u{2026}") {
-                            showFolderPicker = true
-                        }
-                        .controlSize(.small)
-
-                        Button("Clear") {
-                            session.workingDirectory = nil
-                            try? modelContext.save()
-                        }
-                        .controlSize(.small)
+                    Button("Change Working Directory", systemImage: "folder") {
+                        showFolderPicker = true
                     }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Change working directory")
+
+                    Button("Clear Working Directory", systemImage: "xmark.circle") {
+                        session.workingDirectory = nil
+                        try? modelContext.save()
+                    }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Clear working directory")
                 }
                 .padding(.vertical, 2)
             } else {

@@ -50,29 +50,72 @@ struct NewChatSheet: View {
                     }
                 }
 
-                LabeledContent("Working Directory") {
-                    HStack {
-                        TextField(
-                            "None (optional)",
-                            text: $workingDirectoryPath
-                        )
-                        .textFieldStyle(.roundedBorder)
+                Section {
+                    if workingDirectoryPath.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "bubble.left.and.text.bubble.right")
+                                .font(.system(size: 18))
+                                .foregroundStyle(.secondary)
+                                .symbolRenderingMode(.hierarchical)
 
-                        Button("Choose...") {
-                            showFolderPicker = true
-                        }
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("General Session")
+                                    .font(.system(.body, design: .rounded, weight: .medium))
 
-                        if !workingDirectoryPath.isEmpty {
-                            Button {
-                                workingDirectoryPath = ""
-                            } label: {
-                                Image(systemName: "xmark.circle.fill")
+                                Text("No working directory set")
+                                    .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
-                            .buttonStyle(.plain)
-                            .help("Clear working directory")
+
+                            Spacer()
+
+                            Button("Set\u{2026}") {
+                                showFolderPicker = true
+                            }
+                            .controlSize(.small)
                         }
+                        .padding(.vertical, 2)
+                    } else {
+                        HStack(spacing: 8) {
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(.blue)
+                                .symbolRenderingMode(.hierarchical)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Project Session")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+
+                                Text(directoryDisplayName(workingDirectoryPath))
+                                    .font(.system(.body, design: .rounded, weight: .medium))
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+
+                                Text(workingDirectoryPath)
+                                    .font(.system(.caption, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                                    .truncationMode(.middle)
+                                    .textSelection(.enabled)
+                            }
+
+                            Spacer()
+
+                            Button("Change\u{2026}") {
+                                showFolderPicker = true
+                            }
+                            .controlSize(.small)
+
+                            Button("Clear") {
+                                workingDirectoryPath = ""
+                            }
+                            .controlSize(.small)
+                        }
+                        .padding(.vertical, 2)
                     }
+                } header: {
+                    Text("Working Directory")
                 }
             }
             .formStyle(.grouped)
@@ -105,6 +148,10 @@ struct NewChatSheet: View {
                 workingDirectoryPath = url.path(percentEncoded: false)
             }
         }
+    }
+
+    private func directoryDisplayName(_ path: String) -> String {
+        URL(fileURLWithPath: path).lastPathComponent
     }
 
     private var assistantBinding: Binding<UUID> {
