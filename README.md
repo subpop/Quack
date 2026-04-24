@@ -7,16 +7,19 @@ A native macOS AI chat client that connects to multiple LLM providers from a sin
 ## Features
 
 - **Multi-provider support** -- Chat with models from OpenAI, Anthropic, Google Gemini, Vertex AI, Ollama, Apple Intelligence (on-device), MLX, OpenRouter, Groq, Together, Mistral, and any OpenAI-compatible endpoint.
-- **Built-in tools** -- Read files, write files, run shell commands, fetch URLs, and search the web without any external setup.
+- **Built-in tools** -- Read files, write files, run shell commands, fetch URLs, search the web, and activate skills without any external setup.
+- **Skills** -- Install specialized skill packages from Git repositories and activate them on demand. Skills use a progressive disclosure model, loading instructions only when needed to keep context focused.
 - **MCP integration** -- Connect external MCP servers via stdio transport with a three-tier permission model (Always Allow, Ask, Deny) and per-session server selection.
 - **MLX on-device inference** -- Download, load, and run MLX models from HuggingFace locally on Apple Silicon with no API key required.
-- **Assistants** -- Create reusable presets that bundle a provider, model, system prompt, parameters, tool permissions, and MCP servers together.
-- **Chat management** -- Persistent conversation history with session pinning, archiving, search, date-grouped sidebar, and per-session model/parameter overrides via the inspector panel.
+- **Assistants** -- Create reusable presets that bundle a provider, model, system prompt, parameters, tool permissions, MCP servers, and always-enabled skills together, with customizable icons and colors.
+- **Chat management** -- Persistent conversation history with session pinning, archiving, search, date-grouped sidebar, optional working directory per session, and per-session model/parameter overrides via the inspector panel.
 - **Streaming responses** -- Live token streaming with reasoning/thinking model support, configurable reasoning effort, and collapsible reasoning display.
 - **Token usage and cost tracking** -- Per-message and per-session token statistics with estimated cost calculation via models.dev pricing data.
 - **Transcript export** -- Export any conversation as a Markdown file (Cmd+Shift+E).
 - **Markdown rendering** -- Full CommonMark rendering of LLM output including code blocks, tables, lists, and more.
 - **Auto-generated titles** -- Chat sessions are automatically titled using on-device Apple Intelligence.
+- **Notifications** -- Receive notifications for tool approval requests when the app is in the background.
+- **Appearance** -- Light, Dark, and System appearance modes.
 - **Secure credentials** -- API keys stored in the macOS Keychain.
 - **Auto-updates** -- Built-in update mechanism via Sparkle.
 
@@ -72,6 +75,7 @@ xcodebuild test -project Quack.xcodeproj -scheme QuackKitTests
 | Run Command | Execute shell commands |
 | Web Fetch | Fetch URL contents (HTTP/HTTPS) |
 | Web Search | Search the web via Tavily |
+| Activate Skill | Load a skill's instructions on demand |
 
 Tool permissions are configurable at the global, server, per-tool, per-session, and per-assistant levels using a three-tier model: **Always Allow**, **Ask**, or **Deny**.
 
