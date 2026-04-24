@@ -705,7 +705,7 @@
 			repositoryURL = "https://github.com/Tom-Ryder/AgentRunKit";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.30.0;
+				minimumVersion = 2.0.0;
 			};
 		};
 		3BA00022300000000000F022 /* XCRemoteSwiftPackageReference "swift-markdown" */ = {

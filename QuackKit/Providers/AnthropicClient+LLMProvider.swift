@@ -37,7 +37,7 @@ public enum AnthropicClientFactory {
 
         let resolvedBaseURL = baseURL ?? AnthropicClient.anthropicBaseURL
 
-        return AnthropicClient(
+        return try? AnthropicClient(
             apiKey: apiKey,
             model: model,
             maxTokens: maxTokens,

@@ -43,7 +43,7 @@ public enum VertexAnthropicClientFactory {
 
         guard let authService = try? GoogleAuthService() else { return nil }
 
-        return VertexAnthropicClient(
+        return try? VertexAnthropicClient(
             projectID: projectID,
             location: location,
             model: model,

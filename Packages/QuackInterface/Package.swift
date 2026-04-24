@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "QuackInterface", targets: ["QuackInterface"])
     ],
     dependencies: [
-        .package(url: "https://github.com/Tom-Ryder/AgentRunKit", from: "1.30.0")
+        .package(url: "https://github.com/Tom-Ryder/AgentRunKit", from: "2.0.0")
     ],
     targets: [
         .target(
