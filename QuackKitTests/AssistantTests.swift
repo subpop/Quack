@@ -110,6 +110,16 @@ struct AssistantTests {
         #expect(assistant.colorRaw == "blue")
     }
 
+    @Test func codingAssistant() {
+        let assistant = Assistant.codingAssistant()
+        #expect(assistant.name == "Coding")
+        #expect(assistant.systemPrompt?.contains("expert software engineering assistant") == true)
+        #expect(assistant.isDefault == false)
+        #expect(assistant.sortOrder == 1)
+        #expect(assistant.iconName == "chevron.left.forwardslash.chevron.right")
+        #expect(assistant.colorRaw == "purple")
+    }
+
     @Test func resolvedIconDefault() {
         let assistant = Assistant(name: "Test")
         #expect(assistant.resolvedIcon == "person.crop.circle.fill")

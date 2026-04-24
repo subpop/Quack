@@ -161,12 +161,20 @@ struct MainView: View {
         }
 
         if assistants.isEmpty {
-            let assistant = Assistant.defaultAssistant()
-            // Link the default assistant to the first enabled provider
-            if let first = profiles.first(where: \.isEnabled) {
-                assistant.providerIDString = first.id.uuidString
+            let firstEnabled = profiles.first(where: \.isEnabled)
+
+            let general = Assistant.defaultAssistant()
+            if let firstEnabled {
+                general.providerIDString = firstEnabled.id.uuidString
             }
-            modelContext.insert(assistant)
+            modelContext.insert(general)
+
+            let coding = Assistant.codingAssistant()
+            if let firstEnabled {
+                coding.providerIDString = firstEnabled.id.uuidString
+            }
+            modelContext.insert(coding)
+
             try? modelContext.save()
         }
     }

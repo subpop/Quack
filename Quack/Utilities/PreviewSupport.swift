@@ -51,14 +51,9 @@ enum PreviewSupport {
         defaultAssistant.providerIDString = openAI.id.uuidString
         context.insert(defaultAssistant)
 
-        let codeAssistant = Assistant(
-            name: "Code Review",
-            systemPrompt: "You are a code review assistant. Focus on correctness, performance, and maintainability.",
-            sortOrder: 1
-        )
-        codeAssistant.iconName = "chevron.left.forwardslash.chevron.right"
-        codeAssistant.colorRaw = "orange"
-        context.insert(codeAssistant)
+        let codingAssistant = Assistant.codingAssistant()
+        codingAssistant.providerIDString = openAI.id.uuidString
+        context.insert(codingAssistant)
 
         // MCP Server
         let mcpServer = MCPServerConfig(
@@ -106,7 +101,7 @@ enum PreviewSupport {
 
         return SeedData(
             profiles: profiles,
-            assistants: [defaultAssistant, codeAssistant],
+            assistants: [defaultAssistant, codingAssistant],
             mcpServer: mcpServer,
             session: session1,
             emptySession: emptySession,

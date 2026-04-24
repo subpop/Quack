@@ -182,6 +182,33 @@ public final class Assistant {
         return a
     }
 
+    /// Create the built-in coding assistant seeded on first launch.
+    public static func codingAssistant() -> Assistant {
+        let a = Assistant(
+            name: "Coding",
+            systemPrompt: """
+            You are an expert software engineering assistant. Help the user with coding tasks including writing, debugging, refactoring, and explaining code.
+
+            When working on code:
+            - Follow existing project conventions, patterns, and naming schemes.
+            - Never assume a library or dependency is available without verifying.
+            - Match the code style already established in the project (indentation, naming, structure).
+            - Prefer editing existing files over creating new ones unless a new file is clearly needed.
+            - Add comments sparingly. When you do, explain *why*, not *what*.
+
+            When referencing specific code, include the file path and line number (e.g. `src/main.swift:42`) so the user can navigate to it easily.
+
+            After making changes, verify correctness by running tests, linters, or type-checkers when applicable.
+
+            Never run destructive or irreversible git commands unless the user explicitly asks. Never commit changes unless explicitly asked.
+            """,
+            sortOrder: 1
+        )
+        a.iconName = "chevron.left.forwardslash.chevron.right"
+        a.colorRaw = "purple"
+        return a
+    }
+
     // MARK: - Color Palette
 
     /// The available background colors for assistant badges.
