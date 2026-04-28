@@ -2,6 +2,21 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <item>
+            <title>0.2.2</title>
+            <pubDate>Mon, 27 Apr 2026 21:48:02 -0400</pubDate>
+            <link>https://subpop.github.io/Quack</link>
+            <sparkle:version>7</sparkle:version>
+            <sparkle:shortVersionString>0.2.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.2</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/subpop/Quack/releases/download/v0.2.2/Quack-0.2.2.dmg" length="20546838" type="application/octet-stream" sparkle:edSignature="Jokwrog+QTeVWycZGdYYm36deK8QedN4Fz0oCQCEGlNwCrwzwqLeFnuUy0enrfA3Tg/YmTMZQGDgV/Jd2pfcCw=="/>
+        <description><![CDATA[<div>
+    <h2>0.2.2 (7) (2026-04-27)</h2>
+<ul>
+<li>🐛 Fixed an issue running multiple MCP servers simultaneously</li>
+</ul>
+</div>]]></description>
+</item>
+        <item>
             <title>0.2.1</title>
             <pubDate>Fri, 24 Apr 2026 12:14:13 -0400</pubDate>
             <link>https://subpop.github.io/Quack</link>
