@@ -1,3 +1,6 @@
+## 0.2.2 (7) (2026-04-27)
+
+- 🐛 Fixed an issue running multiple MCP servers simultaneously
 
 ## 0.2.1 (6) (2026-04-24)
 
