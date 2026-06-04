@@ -14,6 +14,7 @@
 
 import AppKit
 import UserNotifications
+import QuackKit
 
 /// Manages Notification Center notifications and dock icon badges for events
 /// that require user attention when the app is not frontmost.
@@ -22,7 +23,7 @@ import UserNotifications
 /// display banners and play sounds even when the app is running.
 @Observable
 @MainActor
-final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
+final class NotificationService: NSObject, UNUserNotificationCenterDelegate, NotificationServiceProtocol {
     private static let toolApprovalIdentifier = "tool-approval"
 
     override init() {
