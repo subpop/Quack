@@ -56,6 +56,35 @@ enum TextGenerationService {
         return title
     }
 
+    // MARK: - Chat Summaries
+
+    @MainActor
+    static func generateSummary(for message: String) async -> String {
+        let model = SystemLanguageModel.default
+        guard model.isAvailable else {
+            return truncatedSummary(from: message)
+        }
+
+        do {
+            let session = LanguageModelSession(instructions: """
+                Generate a brief one-sentence summary (10 to 20 words) that describes \
+                what the user is asking about or working on. Respond with only the \
+                summary text, no quotes, no extra explanation.
+                """)
+            let response = try await session.respond(to: message)
+            let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return summary.isEmpty ? truncatedSummary(from: message) : summary
+        } catch {
+            return truncatedSummary(from: message)
+        }
+    }
+
+    private static func truncatedSummary(from text: String) -> String {
+        var summary = String(text.prefix(80))
+        if text.count > 80 { summary += "..." }
+        return summary
+    }
+
     // MARK: - System Prompts
 
     /// Generate a system prompt from a natural language description of an assistant.

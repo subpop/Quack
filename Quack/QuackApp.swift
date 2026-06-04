@@ -175,6 +175,9 @@ struct QuackApp: App {
                     chatService.titleGenerator = { message in
                         await TextGenerationService.generateTitle(for: message)
                     }
+                    chatService.summaryGenerator = { message in
+                        await TextGenerationService.generateSummary(for: message)
+                    }
                     notificationService.requestAuthorization()
                     providerService.mlxModelService = mlxModelService
 

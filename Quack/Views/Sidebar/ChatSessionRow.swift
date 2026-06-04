@@ -22,15 +22,8 @@ struct ChatSessionRow: View {
     let isRenaming: Bool
     @Binding var renameText: String
 
-    private var lastMessage: ChatMessageRecord? {
-        session.sortedMessages.last
-    }
-
     private var subtitle: String {
-        if let last = lastMessage {
-            return String(last.content.prefix(80))
-        }
-        return "No messages yet"
+        session.summary ?? "No messages yet"
     }
 
     // MARK: - Avatar

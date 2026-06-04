@@ -71,6 +71,10 @@ public final class ChatService: ChatServiceProtocol {
     /// Falls back to simple truncation when not set.
     public var titleGenerator: (@MainActor @Sendable (String) async -> String)?
 
+    /// Optional closure that generates a brief summary from a user message.
+    /// Set this from the app layer to use on-device Foundation Models.
+    public var summaryGenerator: (@MainActor @Sendable (String) async -> String)?
+
     /// Optional skill service for composing skills into the system prompt.
     /// Set this from the app layer after creating the SkillService.
     public var skillService: (any SkillServiceProtocol)?
@@ -156,7 +160,7 @@ public final class ChatService: ChatServiceProtocol {
         session.updatedAt = Date()
         try? modelContext.save()
 
-        // Auto-generate title from first message using on-device Foundation Model
+        // Auto-generate title and summary from first message using on-device Foundation Model
         if session.messages.count == 1 {
             let sessionID = session.id
             let messageText = text
@@ -165,10 +169,17 @@ public final class ChatService: ChatServiceProtocol {
                 if let generator = self.titleGenerator {
                     title = await generator(messageText)
                 } else {
-                    // Simple fallback: truncate to 50 characters
                     var t = String(messageText.prefix(50))
                     if messageText.count > 50 { t += "..." }
                     title = t
+                }
+                let summary: String?
+                if let generator = self.summaryGenerator {
+                    summary = await generator(messageText)
+                } else {
+                    var s = String(messageText.prefix(80))
+                    if messageText.count > 80 { s += "..." }
+                    summary = s
                 }
                 // Re-fetch session to avoid stale reference
                 let descriptor = FetchDescriptor<ChatSession>(
@@ -176,6 +187,7 @@ public final class ChatService: ChatServiceProtocol {
                 )
                 if let session = try? modelContext.fetch(descriptor).first {
                     session.title = title
+                    session.summary = summary
                     try? modelContext.save()
                 }
             }

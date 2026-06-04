@@ -56,6 +56,9 @@ public final class ChatSession {
     /// nil means "use the server-level default for all tools."
     public var toolPermissionOverridesJSON: String?
 
+    /// Auto-generated summary of the session topic, displayed as the row subtitle.
+    public var summary: String?
+
     /// Optional working directory for this session.
     /// When set, tools like RunCommand, ReadFile, and WriteFile will use this
     /// as their base directory, and the LLM will be informed of the project context.
