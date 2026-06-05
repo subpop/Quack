@@ -37,10 +37,17 @@ struct QuackApp: App {
 
     @Environment(\.openWindow) private var openWindow
 
+    private static let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
+
     init() {
         let service = MLXModelService()
         _mlxModelService = State(initialValue: service)
         _mlxModelServiceBox = State(initialValue: MLXModelServiceBox(service: service))
+
+        guard !Self.isPreview else {
+            _builtInToolService = State(initialValue: BuiltInToolService())
+            return
+        }
 
         // Inject build-time secrets into the framework — must happen before
         // BuiltInToolService is created so it can see the Tavily key.
@@ -109,6 +116,20 @@ struct QuackApp: App {
     }
 
     var sharedModelContainer: SwiftData.ModelContainer = {
+        if isPreview {
+            do {
+                let config = ModelConfiguration(isStoredInMemoryOnly: true)
+                return try ModelContainer(
+                    for: ChatSession.self, ChatMessageRecord.self,
+                         ProviderProfile.self, MCPServerConfig.self,
+                         Assistant.self, AgentSkill.self,
+                    configurations: config
+                )
+            } catch {
+                fatalError("Cannot create preview ModelContainer: \(error)")
+            }
+        }
+
         let appSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -170,6 +191,8 @@ struct QuackApp: App {
                 .environment(modelPricingService)
                 .environment(\.mlxModelServiceBox, mlxModelServiceBox)
                 .task {
+                    guard !Self.isPreview else { return }
+
                     chatService.notificationService = notificationService
                     chatService.skillService = skillService
                     chatService.titleGenerator = { message in
