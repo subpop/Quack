@@ -32,12 +32,16 @@ public struct ActiveToolCall: Identifiable, Sendable {
     public let name: String
     public var arguments: String?
     public var state: ActiveToolCallState
+    /// A brief on-device generated summary of what the tool call did.
+    /// Populated asynchronously after the tool call completes.
+    public var summary: String?
 
-    public init(id: String, name: String, arguments: String? = nil, state: ActiveToolCallState) {
+    public init(id: String, name: String, arguments: String? = nil, state: ActiveToolCallState, summary: String? = nil) {
         self.id = id
         self.name = name
         self.arguments = arguments
         self.state = state
+        self.summary = summary
     }
 }
 
@@ -57,13 +61,16 @@ public struct CompletedToolCallData: Codable, Sendable {
     public let arguments: String?
     public let result: String?
     public let isError: Bool
+    /// A brief on-device generated summary of what the tool call did.
+    public let summary: String?
 
-    public init(id: String, name: String, arguments: String?, result: String?, isError: Bool) {
+    public init(id: String, name: String, arguments: String?, result: String?, isError: Bool, summary: String? = nil) {
         self.id = id
         self.name = name
         self.arguments = arguments
         self.result = result
         self.isError = isError
+        self.summary = summary
     }
 }
 

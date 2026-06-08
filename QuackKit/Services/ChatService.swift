@@ -80,6 +80,11 @@ public final class ChatService: ChatServiceProtocol {
     /// Set this from the app layer to use on-device Foundation Models.
     public var summaryGenerator: (@MainActor @Sendable (String) async -> String)?
 
+    /// Optional closure that generates a brief summary of a completed tool call.
+    /// Receives (toolName, arguments, result) and returns a short summary phrase.
+    /// Set this from the app layer to use on-device Foundation Models.
+    public var toolCallSummaryGenerator: (@MainActor @Sendable (String, String?, String?) async -> String?)?
+
     /// Optional skill service for composing skills into the system prompt.
     /// Set this from the app layer after creating the SkillService.
     public var skillService: (any SkillServiceProtocol)?
@@ -608,11 +613,24 @@ public final class ChatService: ChatServiceProtocol {
             activeToolCalls.append(ActiveToolCall(id: id, name: name, state: .running))
             streamingSegments.append(.toolCall(id: id))
 
-        case .toolCallCompleted(let id, _, let result):
+        case .toolCallCompleted(let id, let name, let result):
             if let index = activeToolCalls.firstIndex(where: { $0.id == id }) {
                 activeToolCalls[index].state = result.isError
                     ? .failed(result.content)
                     : .completed(result.content)
+
+                // Generate a summary asynchronously using the on-device model.
+                if !result.isError, let generator = toolCallSummaryGenerator {
+                    let toolName = name
+                    let arguments = activeToolCalls[index].arguments
+                    let resultContent = result.content
+                    Task { @MainActor [weak self] in
+                        guard let summary = await generator(toolName, arguments, resultContent) else { return }
+                        if let idx = self?.activeToolCalls.firstIndex(where: { $0.id == id }) {
+                            self?.activeToolCalls[idx].summary = summary
+                        }
+                    }
+                }
             }
 
         case .toolApprovalRequested:
@@ -876,7 +894,8 @@ public final class ChatService: ChatServiceProtocol {
             case .completed(let result):
                 return CompletedToolCallData(
                     id: call.id, name: call.name,
-                    arguments: call.arguments, result: result, isError: false
+                    arguments: call.arguments, result: result, isError: false,
+                    summary: call.summary
                 )
             case .failed(let error):
                 return CompletedToolCallData(

@@ -85,6 +85,42 @@ enum TextGenerationService {
         return summary
     }
 
+    // MARK: - Tool Call Summaries
+
+    /// Generate a brief, human-readable summary of what a tool call did.
+    ///
+    /// Uses the on-device Foundation Model to produce a short phrase (under 10 words)
+    /// describing the tool call's action and outcome. Returns `nil` if the model is
+    /// unavailable or generation fails.
+    @MainActor
+    static func generateToolCallSummary(
+        name: String,
+        arguments: String?,
+        result: String?
+    ) async -> String? {
+        let model = SystemLanguageModel.default
+        guard model.isAvailable else { return nil }
+
+        let input = """
+            Tool: \(name)
+            Arguments: \(arguments ?? "none")
+            Result: \((result ?? "").prefix(500))
+            """
+
+        do {
+            let session = LanguageModelSession(instructions: """
+                Summarize what this tool call did in a short phrase (under 10 words). \
+                Be specific about the action and key details (file names, counts, etc.). \
+                Respond with only the summary phrase, no quotes, no punctuation at the end.
+                """)
+            let response = try await session.respond(to: input)
+            let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return summary.isEmpty ? nil : summary
+        } catch {
+            return nil
+        }
+    }
+
     // MARK: - System Prompts
 
     /// Generate a system prompt from a natural language description of an assistant.

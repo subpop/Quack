@@ -24,6 +24,8 @@ struct ToolCallDisplayData: Identifiable {
     let name: String
     let arguments: String?
     let state: State
+    /// A brief on-device generated summary of what the tool call did.
+    let summary: String?
 
     enum State {
         case running
@@ -38,6 +40,7 @@ struct ToolCallDisplayData: Identifiable {
         self.id = active.id
         self.name = active.name
         self.arguments = active.arguments
+        self.summary = active.summary
         switch active.state {
         case .running:
             self.state = .running
@@ -57,6 +60,7 @@ struct ToolCallDisplayData: Identifiable {
         self.id = completed.id
         self.name = completed.name
         self.arguments = completed.arguments
+        self.summary = completed.summary
         self.state = completed.isError
             ? .failed(completed.result ?? "Unknown error")
             : .completed(completed.result ?? "")
@@ -108,6 +112,14 @@ struct ToolCallView: View {
                     Text(toolCall.name)
                         .font(.callout.monospaced())
                         .foregroundStyle(.primary)
+
+                    if let summary = toolCall.summary, !isExpanded {
+                        Text(summary)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .transition(.opacity)
+                    }
 
                     Spacer()
 
