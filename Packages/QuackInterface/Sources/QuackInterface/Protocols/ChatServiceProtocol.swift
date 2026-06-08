@@ -44,21 +44,10 @@ public struct ActiveToolCall: Identifiable, Sendable {
 /// The state of an active tool call.
 public enum ActiveToolCallState: Sendable {
     case running
+    case pendingApproval(arguments: String, description: String)
+    case denied(reason: String?)
     case completed(String)
     case failed(String)
-}
-
-/// Pending tool call that requires user permission before executing.
-public struct PendingToolApproval: Identifiable, Sendable {
-    public let id: String
-    public let name: String
-    public let arguments: String
-
-    public init(id: String, name: String, arguments: String) {
-        self.id = id
-        self.name = name
-        self.arguments = arguments
-    }
 }
 
 /// Serializable representation of a completed tool call with arguments and result.
@@ -121,7 +110,9 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
     var errorSessionID: UUID? { get }
     var streamingSegments: [StreamingSegment] { get }
     var activeToolCalls: [ActiveToolCall] { get }
-    var pendingApproval: PendingToolApproval? { get }
+
+    /// The tool call ID that is currently awaiting user approval, if any.
+    var pendingApprovalToolCallID: String? { get }
 
     func sendMessage(
         _ text: String,
@@ -129,7 +120,8 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     )
 
     func resubmitMessage(
@@ -138,7 +130,8 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     )
 
     func regenerateLastResponse(
@@ -146,17 +139,14 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     )
 
     func stopStreaming()
     func dismissError()
-    func approveToolCall()
-    func denyToolCall()
-
-    /// Called by the permission wrapper when a tool needs user approval.
-    /// Suspends until the user approves or denies.
-    func requestApproval(toolName: String, arguments: String, description: String) async -> Bool
+    func approveToolCall(id: String)
+    func denyToolCall(id: String)
 }
 
 // MARK: - Environment Key
@@ -185,7 +175,7 @@ private final class PlaceholderChatService: ChatServiceProtocol {
     var errorSessionID: UUID? = nil
     var streamingSegments: [StreamingSegment] = []
     var activeToolCalls: [ActiveToolCall] = []
-    var pendingApproval: PendingToolApproval? = nil
+    var pendingApprovalToolCallID: String? = nil
 
     func sendMessage(
         _ text: String,
@@ -193,7 +183,8 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func resubmitMessage(
@@ -202,7 +193,8 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func regenerateLastResponse(
@@ -210,12 +202,12 @@ private final class PlaceholderChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func stopStreaming() {}
     func dismissError() {}
-    func approveToolCall() {}
-    func denyToolCall() {}
-    func requestApproval(toolName: String, arguments: String, description: String) async -> Bool { false }
+    func approveToolCall(id: String) {}
+    func denyToolCall(id: String) {}
 }

@@ -27,6 +27,8 @@ struct ToolCallDisplayData: Identifiable {
 
     enum State {
         case running
+        case pendingApproval(arguments: String, description: String)
+        case denied(reason: String?)
         case completed(String)
         case failed(String)
     }
@@ -37,9 +39,16 @@ struct ToolCallDisplayData: Identifiable {
         self.name = active.name
         self.arguments = active.arguments
         switch active.state {
-        case .running: self.state = .running
-        case .completed(let r): self.state = .completed(r)
-        case .failed(let e): self.state = .failed(e)
+        case .running:
+            self.state = .running
+        case .pendingApproval(let args, let desc):
+            self.state = .pendingApproval(arguments: args, description: desc)
+        case .denied(let reason):
+            self.state = .denied(reason: reason)
+        case .completed(let r):
+            self.state = .completed(r)
+        case .failed(let e):
+            self.state = .failed(e)
         }
     }
 
@@ -59,12 +68,25 @@ struct ToolCallDisplayData: Identifiable {
 struct ToolCallView: View {
     let toolCall: ToolCallDisplayData
 
+    /// Action to approve a pending tool call, provided by the parent view.
+    var onApprove: ((String) -> Void)? = nil
+    /// Action to deny a pending tool call, provided by the parent view.
+    var onDeny: ((String) -> Void)? = nil
+
     @State private var isExpanded = false
 
     private var isFinished: Bool {
         switch toolCall.state {
+        case .running, .pendingApproval: false
+        case .completed, .failed, .denied: true
+        }
+    }
+
+    private var isExpandable: Bool {
+        switch toolCall.state {
+        case .completed, .failed, .denied: true
+        case .pendingApproval: true
         case .running: false
-        case .completed, .failed: true
         }
     }
 
@@ -72,7 +94,7 @@ struct ToolCallView: View {
         VStack(alignment: .leading, spacing: 0) {
             // Header row — always visible
             Button {
-                if isFinished {
+                if isExpandable {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         isExpanded.toggle()
                     }
@@ -93,6 +115,12 @@ struct ToolCallView: View {
                     case .running:
                         ProgressView()
                             .controlSize(.small)
+                    case .pendingApproval:
+                        Image(systemName: "shield.lefthalf.filled.badge.checkmark")
+                            .foregroundStyle(.orange)
+                    case .denied:
+                        Image(systemName: "hand.raised.fill")
+                            .foregroundStyle(.red)
                     case .completed:
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.green)
@@ -107,7 +135,7 @@ struct ToolCallView: View {
                         }
                     }
 
-                    if isFinished {
+                    if isExpandable {
                         Image(systemName: "chevron.right")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
@@ -119,7 +147,45 @@ struct ToolCallView: View {
             }
             .buttonStyle(.plain)
 
-            // Detail — arguments + result (shown by default when finished)
+            // Approval buttons — shown inline when pending
+            if case .pendingApproval(let arguments, _) = toolCall.state {
+                Divider()
+                    .padding(.horizontal, 8)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    if !arguments.isEmpty {
+                        structuredDetailSection(title: "Parameters", jsonString: arguments)
+                    }
+
+                    HStack(spacing: 12) {
+                        Button {
+                            onApprove?(toolCall.id)
+                        } label: {
+                            Label("Allow", systemImage: "checkmark.shield.fill")
+                                .font(.callout.weight(.medium))
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                        .controlSize(.small)
+
+                        Button {
+                            onDeny?(toolCall.id)
+                        } label: {
+                            Label("Deny", systemImage: "hand.raised.fill")
+                                .font(.callout.weight(.medium))
+                        }
+                        .buttonStyle(.bordered)
+                        .tint(.red)
+                        .controlSize(.small)
+
+                        Spacer()
+                    }
+                }
+                .padding(8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+
+            // Detail — arguments + result (expandable for finished states)
             if isFinished && isExpanded {
                 Divider()
                     .padding(.horizontal, 8)
@@ -130,7 +196,7 @@ struct ToolCallView: View {
                         structuredDetailSection(title: "Parameters", jsonString: args)
                     }
 
-                    // Result
+                    // Result / status
                     switch toolCall.state {
                     case .completed(let result):
                         if !result.isEmpty {
@@ -138,7 +204,11 @@ struct ToolCallView: View {
                         }
                     case .failed(let error):
                         structuredDetailSection(title: "Error", jsonString: error, fallbackStyle: .red)
-                    case .running:
+                    case .denied(let reason):
+                        if let reason, !reason.isEmpty {
+                            structuredDetailSection(title: "Denied", jsonString: reason, fallbackStyle: .red)
+                        }
+                    case .running, .pendingApproval:
                         EmptyView()
                     }
                 }
@@ -181,6 +251,8 @@ struct ToolCallView: View {
     private var iconName: String {
         switch toolCall.state {
         case .running: "wrench.and.screwdriver"
+        case .pendingApproval: "shield.lefthalf.filled"
+        case .denied: "hand.raised.fill"
         case .completed, .failed: "wrench.and.screwdriver.fill"
         }
     }
@@ -188,6 +260,8 @@ struct ToolCallView: View {
     private var iconColor: Color {
         switch toolCall.state {
         case .running: .accentColor
+        case .pendingApproval: .orange
+        case .denied: .red
         case .completed: .green
         case .failed: .red
         }
@@ -200,6 +274,24 @@ struct ToolCallView: View {
     ToolCallView(toolCall: ToolCallDisplayData(
         from: ActiveToolCall(id: "1", name: "read_file", state: .running)
     ))
+    .padding()
+    .frame(width: 400)
+}
+
+#Preview("Pending Approval") {
+    ToolCallView(
+        toolCall: ToolCallDisplayData(
+            from: ActiveToolCall(
+                id: "4", name: "execute_command",
+                state: .pendingApproval(
+                    arguments: "{\"command\": \"swift build\"}",
+                    description: "Execute a shell command"
+                )
+            )
+        ),
+        onApprove: { _ in },
+        onDeny: { _ in }
+    )
     .padding()
     .frame(width: 400)
 }

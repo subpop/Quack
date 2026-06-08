@@ -76,17 +76,9 @@ struct ChatView: View {
                         .id(message.id)
                     }
 
-                    // Streaming content
+                    // Streaming content (includes inline tool approval UI)
                     if isStreamingThisSession {
                         streamingBubble
-                    }
-
-                    // Tool permission prompt
-                    if let approval = chatService.pendingApproval,
-                       isStreamingThisSession {
-                        toolApprovalView(approval)
-                            .padding(.horizontal, 16)
-                            .id("approval")
                     }
 
                     // Error display
@@ -111,8 +103,8 @@ struct ChatView: View {
                     scrollToBottom(proxy: proxy)
                 }
             }
-            .onChange(of: chatService.pendingApproval?.id) {
-                if chatService.pendingApproval != nil {
+            .onChange(of: chatService.pendingApprovalToolCallID) {
+                if chatService.pendingApprovalToolCallID != nil {
                     scrollToBottom(proxy: proxy)
                 }
             }
@@ -164,8 +156,12 @@ struct ChatView: View {
                         }
                     case .toolCall(let id):
                         if let toolCall = chatService.activeToolCalls.first(where: { $0.id == id }) {
-                            ToolCallView(toolCall: ToolCallDisplayData(from: toolCall))
-                                .padding(.horizontal, 16)
+                            ToolCallView(
+                                toolCall: ToolCallDisplayData(from: toolCall),
+                                onApprove: { chatService.approveToolCall(id: $0) },
+                                onDeny: { chatService.denyToolCall(id: $0) }
+                            )
+                            .padding(.horizontal, 16)
                         }
                     }
                 }
@@ -257,67 +253,10 @@ struct ChatView: View {
         .background(.red.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func toolApprovalView(_ approval: PendingToolApproval) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Image(systemName: "exclamationmark.shield.fill")
-                    .foregroundStyle(.orange)
-                    .font(.title3)
-                Text("Tool Permission Required")
-                    .font(.callout.weight(.semibold))
-            }
-
-            HStack(spacing: 6) {
-                Image(systemName: "wrench.and.screwdriver")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Text(approval.name)
-                    .font(.callout.monospaced())
-            }
-
-            if !approval.arguments.isEmpty {
-                if let jsonValue = JSONValue.parse(approval.arguments) {
-                    StructuredContentView(jsonValue)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(6)
-                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
-                } else {
-                    Text(approval.arguments)
-                        .font(.caption.monospaced())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(6)
-                        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 6))
-                }
-            }
-
-            HStack(spacing: 12) {
-                Spacer()
-                Button("Deny") {
-                    chatService.denyToolCall()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Allow") {
-                    chatService.approveToolCall()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-
 
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
-            if chatService.pendingApproval != nil, isStreamingThisSession {
-                proxy.scrollTo("approval", anchor: .bottom)
-            } else if chatService.streamingError != nil, chatService.errorSessionID == session.id {
+            if chatService.streamingError != nil, chatService.errorSessionID == session.id {
                 proxy.scrollTo("error", anchor: .bottom)
             } else if isStreamingThisSession {
                 proxy.scrollTo("streaming", anchor: .bottom)
@@ -391,7 +330,7 @@ struct ChatView: View {
 
         inputText = ""
 
-        let tools = allToolsForSession()
+        let (tools, approvalPolicy) = allToolsForSession()
 
         chatService.sendMessage(
             text,
@@ -399,12 +338,13 @@ struct ChatView: View {
             modelContext: modelContext,
             providerService: providerService,
             profiles: profiles,
-            tools: tools
+            tools: tools,
+            approvalPolicy: approvalPolicy
         )
     }
 
     private func resubmitMessage(_ message: ChatMessageRecord) {
-        let tools = allToolsForSession()
+        let (tools, approvalPolicy) = allToolsForSession()
 
         chatService.resubmitMessage(
             message,
@@ -412,30 +352,23 @@ struct ChatView: View {
             modelContext: modelContext,
             providerService: providerService,
             profiles: profiles,
-            tools: tools
+            tools: tools,
+            approvalPolicy: approvalPolicy
         )
     }
 
-    /// Combines built-in tools and MCP server tools for the current session,
-    /// each wrapped with the appropriate permission enforcement.
-    private func allToolsForSession() -> [any AnyTool<QuackToolContext>] {
-        let svc = chatService
-        let approvalHandler: @Sendable (String, String, String) async -> Bool = { name, args, desc in
-            await svc.requestApproval(toolName: name, arguments: args, description: desc)
-        }
+    /// Combines built-in tools and MCP server tools for the current session.
+    /// Returns the tools along with a `ToolApprovalPolicy` that identifies
+    /// which tools require user approval before execution.
+    private func allToolsForSession() -> (tools: [any AnyTool<QuackToolContext>], approvalPolicy: ToolApprovalPolicy) {
+        let builtIn = builtInToolService.tools(for: session)
+        let mcp = mcpService.tools(for: session, allConfigs: mcpServerConfigs)
 
-        let builtIn = builtInToolService.tools(
-            for: session,
-            onApprovalNeeded: approvalHandler
-        )
+        let allTools = builtIn.tools + mcp.tools
+        let allAskNames = builtIn.askToolNames.union(mcp.askToolNames)
 
-        let mcp = mcpService.tools(
-            for: session,
-            allConfigs: mcpServerConfigs,
-            onApprovalNeeded: approvalHandler
-        )
-
-        return builtIn + mcp
+        let policy: ToolApprovalPolicy = allAskNames.isEmpty ? .none : .tools(allAskNames)
+        return (allTools, policy)
     }
 
     private var modelSubtitle: String {

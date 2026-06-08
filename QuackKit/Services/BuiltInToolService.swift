@@ -125,29 +125,30 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
 
     // MARK: - Tool Provisioning
 
-    /// Returns permission-wrapped built-in tools for a specific chat session.
+    /// Returns built-in tools for a specific chat session, along with the set
+    /// of tool names that require user approval (effective permission `.ask`).
     ///
     /// Only tools that are both globally enabled AND enabled for the session
-    /// are returned. Each tool is wrapped with the effective permission
-    /// (session override > global default).
+    /// are returned. Tools with `.deny` permission are excluded entirely.
     public func tools(
-        for session: ChatSession,
-        onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] {
+        for session: ChatSession
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) {
         let sessionEnabledIDs = session.enabledBuiltInToolIDs ?? []
+        var tools: [any AnyTool<QuackToolContext>] = []
+        var askNames: Set<String> = []
 
-        return BuiltInTool.availableCases.compactMap { tool -> (any AnyTool<QuackToolContext>)? in
+        for tool in BuiltInTool.availableCases {
             // Don't register activate_skill when no skills are discovered.
             if tool == .activateSkill,
                SkillService.shared?.allDiscoveredSkills.isEmpty != false {
-                return nil
+                continue
             }
 
             // Must be globally enabled AND enabled for this session
             guard enabledTools.contains(tool),
                   sessionEnabledIDs.contains(tool.rawValue),
                   let instance = toolInstances[tool]
-            else { return nil }
+            else { continue }
 
             let globalDefault = defaultPermissions[tool] ?? .ask
             let effectivePermission = session.effectivePermission(
@@ -155,12 +156,16 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
                 serverDefault: globalDefault
             )
 
-            return PermissionToolWrapper(
-                wrapped: instance,
-                permission: effectivePermission,
-                onApprovalNeeded: onApprovalNeeded
-            ) as any AnyTool<QuackToolContext>
+            // Exclude denied tools entirely
+            if effectivePermission == .deny { continue }
+
+            tools.append(instance)
+            if effectivePermission == .ask {
+                askNames.insert(instance.name)
+            }
         }
+
+        return (tools, askNames)
     }
 
     /// Returns all globally-enabled built-in tools as summaries (for UI display).

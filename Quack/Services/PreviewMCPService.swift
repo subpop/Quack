@@ -33,9 +33,8 @@ final class PreviewMCPService: MCPServiceProtocol {
 
     func tools(
         for session: ChatSession,
-        allConfigs: [MCPServerConfig],
-        onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] { [] }
+        allConfigs: [MCPServerConfig]
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) { ([], []) }
 
     func state(for serverID: UUID) -> MCPServerState { .disconnected }
     func toolCount(for serverID: UUID) -> Int { 0 }

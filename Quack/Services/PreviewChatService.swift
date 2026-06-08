@@ -30,7 +30,7 @@ final class PreviewChatService: ChatServiceProtocol {
     var errorSessionID: UUID? = nil
     var streamingSegments: [StreamingSegment] = []
     var activeToolCalls: [ActiveToolCall] = []
-    var pendingApproval: PendingToolApproval? = nil
+    var pendingApprovalToolCallID: String? = nil
 
     func sendMessage(
         _ text: String,
@@ -38,7 +38,8 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func resubmitMessage(
@@ -47,7 +48,8 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func regenerateLastResponse(
@@ -55,12 +57,12 @@ final class PreviewChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {}
 
     func stopStreaming() {}
     func dismissError() {}
-    func approveToolCall() {}
-    func denyToolCall() {}
-    func requestApproval(toolName: String, arguments: String, description: String) async -> Bool { false }
+    func approveToolCall(id: String) {}
+    func denyToolCall(id: String) {}
 }

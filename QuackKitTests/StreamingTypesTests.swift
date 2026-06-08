@@ -23,11 +23,26 @@ struct StreamingTypesTests {
         } else { Issue.record("Expected failed") }
     }
 
-    @Test func pendingToolApproval() {
-        let approval = PendingToolApproval(id: "pa_1", name: "writeFile", arguments: "{}")
-        #expect(approval.id == "pa_1")
-        #expect(approval.name == "writeFile")
-        #expect(approval.arguments == "{}")
+    @Test func pendingApprovalState() {
+        let call = ActiveToolCall(
+            id: "pa_1", name: "writeFile",
+            state: .pendingApproval(arguments: "{}", description: "Write a file")
+        )
+        if case .pendingApproval(let args, let desc) = call.state {
+            #expect(args == "{}")
+            #expect(desc == "Write a file")
+        } else {
+            Issue.record("Expected pendingApproval")
+        }
+    }
+
+    @Test func deniedState() {
+        let call = ActiveToolCall(id: "d_1", name: "deleteFile", state: .denied(reason: "Denied by user."))
+        if case .denied(let reason) = call.state {
+            #expect(reason == "Denied by user.")
+        } else {
+            Issue.record("Expected denied")
+        }
     }
 
     @Test func streamingSegmentText() {

@@ -31,7 +31,6 @@ final class PreviewBuiltInToolService: BuiltInToolServiceProtocol {
     func defaultPermission(for tool: BuiltInTool) -> ToolPermission { .ask }
 
     func tools(
-        for session: ChatSession,
-        onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] { [] }
+        for session: ChatSession
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) { ([], []) }
 }

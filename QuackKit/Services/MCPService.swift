@@ -168,41 +168,42 @@ public final class MCPService: MCPServiceProtocol {
 
     // MARK: - Per-Session Tool Filtering
 
-    /// Get tools for a specific chat session, filtered by the session's enabled MCP servers
-    /// and wrapped with permission enforcement.
-    ///
-    /// Each tool's effective permission is resolved by checking for a per-session per-tool
-    /// override first, then falling back to the server-level default.
-    ///
-    /// - Parameter session: The chat session, used to check enabled servers and per-tool overrides.
-    /// - Parameter allConfigs: All MCP server configs, used to look up server-level permission defaults.
-    /// - Parameter onApprovalNeeded: Called when a tool with `.ask` permission needs user approval.
-    ///   Receives (toolName, arguments, description) and returns true if approved.
+    /// Get tools for a specific chat session, filtered by the session's enabled
+    /// MCP servers. Returns the tools along with the set of tool names that
+    /// require user approval (effective permission `.ask`).
+    /// Tools with `.deny` permission are excluded from the returned array.
     public func tools(
         for session: ChatSession,
-        allConfigs: [MCPServerConfig],
-        onApprovalNeeded: @escaping @Sendable @concurrent (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] {
+        allConfigs: [MCPServerConfig]
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) {
         guard let enabledIDs = session.enabledMCPServerIDs else {
-            return []
+            return ([], [])
         }
 
-        return enabledIDs.flatMap { serverID -> [any AnyTool<QuackToolContext>] in
-            let tools = toolsByServer[serverID] ?? []
+        var resultTools: [any AnyTool<QuackToolContext>] = []
+        var askNames: Set<String> = []
+
+        for serverID in enabledIDs {
+            let serverTools = toolsByServer[serverID] ?? []
             let serverDefault = allConfigs.first(where: { $0.id == serverID })?.toolPermission ?? .ask
 
-            return tools.map { tool in
+            for tool in serverTools {
                 let effectivePermission = session.effectivePermission(
                     for: tool.name,
                     serverDefault: serverDefault
                 )
-                return PermissionToolWrapper(
-                    wrapped: tool,
-                    permission: effectivePermission,
-                    onApprovalNeeded: onApprovalNeeded
-                ) as any AnyTool<QuackToolContext>
+
+                // Exclude denied tools entirely
+                if effectivePermission == .deny { continue }
+
+                resultTools.append(tool)
+                if effectivePermission == .ask {
+                    askNames.insert(tool.name)
+                }
             }
         }
+
+        return (resultTools, askNames)
     }
 
     /// Returns tools for a set of server IDs (without permission wrapping, for internal use).

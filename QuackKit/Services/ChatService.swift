@@ -57,9 +57,14 @@ public final class ChatService: ChatServiceProtocol {
     /// Used during finalization to persist intermediate assistant/tool messages.
     private var finishedHistory: [ChatMessage]?
 
-    /// User's response to a tool permission prompt.
-    public var pendingApproval: PendingToolApproval?
-    public var approvalContinuation: CheckedContinuation<Bool, Never>?
+    /// The tool call ID currently awaiting user approval, if any.
+    /// Used by the UI to scroll to and highlight the pending approval.
+    public var pendingApprovalToolCallID: String?
+
+    /// Per-tool-call approval continuations, keyed by tool call ID.
+    /// Each entry suspends the AgentRunKit approval handler until the
+    /// user approves or denies the tool call.
+    private var approvalContinuations: [String: CheckedContinuation<ToolApprovalDecision, Never>] = [:]
 
     /// Optional notification service for alerting the user when a tool approval
     /// is pending and the app is not frontmost.
@@ -146,7 +151,8 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {
         guard let providerService = providerService as? ProviderService else { return }
 
@@ -267,21 +273,36 @@ public final class ChatService: ChatServiceProtocol {
             // Resolve max tool rounds (default 10 matches AgentRunKit)
             let maxToolRounds = session.maxToolRounds ?? 10
 
-            // Create Chat instance and stream
+            // Create Chat instance with approval policy and stream
             let toolContext = QuackToolContext(workingDirectory: session.workingDirectory)
             let chat = Chat<QuackToolContext>(
                 client: client,
                 tools: tools,
                 systemPrompt: systemPrompt,
-                maxToolRounds: maxToolRounds
+                maxToolRounds: maxToolRounds,
+                approvalPolicy: approvalPolicy
             )
+
+            // Build approval handler that suspends until the user responds.
+            // The continuation must be stored before updating UI state to
+            // avoid a race where the user taps Allow before the continuation
+            // is available.
+            let approvalHandler: ToolApprovalHandler = { [weak self] request in
+                return await withCheckedContinuation { continuation in
+                    Task { @MainActor in
+                        self?.approvalContinuations[request.toolCallId] = continuation
+                        self?.handleApprovalRequest(request)
+                    }
+                }
+            }
 
             do {
                 for try await event in chat.stream(
                     history.last?.isUser == true ? text : text,
                     history: Array(history.dropLast()),
                     context: toolContext,
-                    requestContext: requestContext
+                    requestContext: requestContext,
+                    approvalHandler: approvalHandler
                 ) {
                     guard !Task.isCancelled else { break }
                     self?.handleStreamEvent(event, sessionID: sessionID)
@@ -301,6 +322,13 @@ public final class ChatService: ChatServiceProtocol {
     }
 
     public func stopStreaming() {
+        // Cancel any pending approval continuations
+        for (_, continuation) in approvalContinuations {
+            continuation.resume(returning: .deny(reason: "Streaming was stopped."))
+        }
+        approvalContinuations.removeAll()
+        pendingApprovalToolCallID = nil
+
         streamTask?.cancel()
         streamTask = nil
         isStreaming = false
@@ -312,40 +340,52 @@ public final class ChatService: ChatServiceProtocol {
         errorSessionID = nil
     }
 
-    /// Called by the permission wrapper when a tool needs user approval.
-    /// Suspends until the user approves or denies.
-    public func requestApproval(toolName: String, arguments: String, description: String) async -> Bool {
-        await withCheckedContinuation { continuation in
-            Task { @MainActor in
-                self.pendingApproval = PendingToolApproval(
-                    id: UUID().uuidString,
-                    name: toolName,
-                    arguments: arguments
-                )
-                self.approvalContinuation = continuation
-                if let ns = self.notificationService {
-                    // Call showToolApprovalNotification if available via NotificationService
-                    (ns as? any NotificationServiceProtocol)?.showToolApprovalNotification(toolName: toolName)
-                }
-            }
+    /// Called internally when a `.toolApprovalRequested` event is received
+    /// from the stream to set up the UI state. The actual suspension happens
+    /// in the approval handler closure passed to `chat.stream()`.
+    private func handleApprovalRequest(_ request: ToolApprovalRequest) {
+        // Update the tool call state to pendingApproval
+        if let index = activeToolCalls.firstIndex(where: { $0.id == request.toolCallId }) {
+            activeToolCalls[index].state = .pendingApproval(
+                arguments: request.arguments,
+                description: request.toolDescription
+            )
+        }
+        pendingApprovalToolCallID = request.toolCallId
+
+        // Send notification if app is not frontmost
+        if let ns = notificationService as? any NotificationServiceProtocol {
+            ns.showToolApprovalNotification(toolName: request.toolName)
         }
     }
 
     /// User approved the pending tool call.
-    public func approveToolCall() {
-        approvalContinuation?.resume(returning: true)
-        approvalContinuation = nil
-        pendingApproval = nil
+    public func approveToolCall(id: String) {
+        approvalContinuations[id]?.resume(returning: .approve)
+        approvalContinuations.removeValue(forKey: id)
+        if pendingApprovalToolCallID == id {
+            pendingApprovalToolCallID = nil
+        }
+        // Transition back to running state
+        if let index = activeToolCalls.firstIndex(where: { $0.id == id }) {
+            activeToolCalls[index].state = .running
+        }
         if let ns = notificationService as? any NotificationServiceProtocol {
             ns.clearToolApprovalNotification()
         }
     }
 
     /// User denied the pending tool call.
-    public func denyToolCall() {
-        approvalContinuation?.resume(returning: false)
-        approvalContinuation = nil
-        pendingApproval = nil
+    public func denyToolCall(id: String) {
+        approvalContinuations[id]?.resume(returning: .deny(reason: "Denied by user."))
+        approvalContinuations.removeValue(forKey: id)
+        if pendingApprovalToolCallID == id {
+            pendingApprovalToolCallID = nil
+        }
+        // Transition to denied state
+        if let index = activeToolCalls.firstIndex(where: { $0.id == id }) {
+            activeToolCalls[index].state = .denied(reason: "Denied by user.")
+        }
         if let ns = notificationService as? any NotificationServiceProtocol {
             ns.clearToolApprovalNotification()
         }
@@ -356,7 +396,8 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {
         // Remove all assistant and tool messages after the last user message.
         // With multi-turn tool loops, there may be multiple assistant + tool
@@ -378,7 +419,8 @@ public final class ChatService: ChatServiceProtocol {
                 modelContext: modelContext,
                 providerService: providerService,
                 profiles: profiles,
-                tools: tools
+                tools: tools,
+                approvalPolicy: approvalPolicy
             )
         }
     }
@@ -392,7 +434,8 @@ public final class ChatService: ChatServiceProtocol {
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
         profiles: [ProviderProfile],
-        tools: [any AnyTool<QuackToolContext>]
+        tools: [any AnyTool<QuackToolContext>],
+        approvalPolicy: ToolApprovalPolicy
     ) {
         guard let providerService = providerService as? ProviderService else { return }
         guard message.role == .user else { return }
@@ -496,15 +539,27 @@ public final class ChatService: ChatServiceProtocol {
                 client: client,
                 tools: tools,
                 systemPrompt: systemPrompt,
-                maxToolRounds: maxToolRounds
+                maxToolRounds: maxToolRounds,
+                approvalPolicy: approvalPolicy
             )
+
+            // Build approval handler that suspends until the user responds.
+            let approvalHandler: ToolApprovalHandler = { [weak self] request in
+                return await withCheckedContinuation { continuation in
+                    Task { @MainActor in
+                        self?.approvalContinuations[request.toolCallId] = continuation
+                        self?.handleApprovalRequest(request)
+                    }
+                }
+            }
 
             do {
                 for try await event in chat.stream(
                     text,
                     history: Array(history.dropLast()),
                     context: toolContext,
-                    requestContext: requestContext
+                    requestContext: requestContext,
+                    approvalHandler: approvalHandler
                 ) {
                     guard !Task.isCancelled else { break }
                     self?.handleStreamEvent(event, sessionID: sessionID)
@@ -559,6 +614,16 @@ public final class ChatService: ChatServiceProtocol {
                     ? .failed(result.content)
                     : .completed(result.content)
             }
+
+        case .toolApprovalRequested:
+            // Approval state is managed by handleApprovalRequest() called
+            // from the approval handler closure. No additional action needed.
+            break
+
+        case .toolApprovalResolved:
+            // State transitions are handled by approveToolCall(id:) and
+            // denyToolCall(id:) called from the UI. No additional action needed.
+            break
 
         case .finished(let usage, _, _, let history):
             streamedInputTokens = usage.input
@@ -643,7 +708,9 @@ public final class ChatService: ChatServiceProtocol {
                     resultContent = content
                 case .failed(let content):
                     resultContent = content
-                case .running:
+                case .denied(let reason):
+                    resultContent = reason ?? "Denied by user."
+                case .running, .pendingApproval:
                     resultContent = "Tool call was interrupted."
                 }
                 let toolRecord = ChatMessageRecord(
@@ -816,7 +883,12 @@ public final class ChatService: ChatServiceProtocol {
                     id: call.id, name: call.name,
                     arguments: call.arguments, result: error, isError: true
                 )
-            case .running:
+            case .denied(let reason):
+                return CompletedToolCallData(
+                    id: call.id, name: call.name,
+                    arguments: call.arguments, result: reason ?? "Denied by user.", isError: true
+                )
+            case .running, .pendingApproval:
                 return CompletedToolCallData(
                     id: call.id, name: call.name,
                     arguments: call.arguments, result: "Tool call was interrupted.", isError: true

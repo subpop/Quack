@@ -66,13 +66,14 @@ public protocol MCPServiceProtocol: AnyObject, Observable {
     /// Disconnect all MCP servers.
     func disconnectAll()
 
-    /// Get tools for a specific chat session, filtered by the session's enabled MCP servers
-    /// and wrapped with permission enforcement.
+    /// Get tools for a specific chat session, filtered by the session's enabled
+    /// MCP servers. Returns the tools along with the set of tool names that
+    /// require user approval (effective permission `.ask`).
+    /// Tools with `.deny` permission are excluded from the returned array.
     func tools(
         for session: ChatSession,
-        allConfigs: [MCPServerConfig],
-        onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>]
+        allConfigs: [MCPServerConfig]
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>)
 
     /// The state of a specific server, or `.disconnected` if unknown.
     func state(for serverID: UUID) -> MCPServerState
@@ -114,9 +115,8 @@ private final class PlaceholderMCPService: MCPServiceProtocol {
 
     func tools(
         for session: ChatSession,
-        allConfigs: [MCPServerConfig],
-        onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] { [] }
+        allConfigs: [MCPServerConfig]
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) { ([], []) }
 
     func state(for serverID: UUID) -> MCPServerState { .disconnected }
     func toolCount(for serverID: UUID) -> Int { 0 }

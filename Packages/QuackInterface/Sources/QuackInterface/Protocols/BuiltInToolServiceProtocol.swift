@@ -57,11 +57,12 @@ public protocol BuiltInToolServiceProtocol: AnyObject, Observable {
     /// The global default permission for a specific built-in tool.
     func defaultPermission(for tool: BuiltInTool) -> ToolPermission
 
-    /// Returns permission-wrapped built-in tools for a specific chat session.
+    /// Returns built-in tools for a specific chat session, along with the set
+    /// of tool names that require user approval (effective permission `.ask`).
+    /// Tools with `.deny` permission are excluded from the returned array.
     func tools(
-        for session: ChatSession,
-        onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>]
+        for session: ChatSession
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>)
 }
 
 // MARK: - Environment Key
@@ -92,7 +93,6 @@ private final class PlaceholderBuiltInToolService: BuiltInToolServiceProtocol {
     func defaultPermission(for tool: BuiltInTool) -> ToolPermission { .ask }
 
     func tools(
-        for session: ChatSession,
-        onApprovalNeeded: @escaping @Sendable (String, String, String) async -> Bool
-    ) -> [any AnyTool<QuackToolContext>] { [] }
+        for session: ChatSession
+    ) -> (tools: [any AnyTool<QuackToolContext>], askToolNames: Set<String>) { ([], []) }
 }
