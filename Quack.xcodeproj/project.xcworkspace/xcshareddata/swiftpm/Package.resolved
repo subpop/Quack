@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Tom-Ryder/AgentRunKit",
       "state" : {
-        "revision" : "6f89a357c166d10b4b421390ec76c582d0851e0e",
-        "version" : "2.3.2"
+        "revision" : "1f5bb2437ed15b1e5f282b9b64fc6ec2e595fdd9",
+        "version" : "4.3.0"
       }
     },
     {
