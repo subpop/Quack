@@ -53,6 +53,7 @@ public final class ChatService: ChatServiceProtocol {
 
     /// Active signpost interval state for the current streaming session.
     private var streamIntervalState: OSSignpostIntervalState?
+
     /// The complete message history returned by the `.finished` event.
     /// Used during finalization to persist intermediate assistant/tool messages.
     private var finishedHistory: [ChatMessage]?
@@ -598,8 +599,8 @@ public final class ChatService: ChatServiceProtocol {
             let totalChars = self.streamingContent.count + text.count
             Self.signposter.emitEvent("streamDelta", "\(text.count) chars, total \(totalChars)")
             streamingContent += text
-            // Append to the current text segment, or create one if the last
-            // segment is a tool call (or there are no segments yet).
+
+            // Append to the last text segment, or create a new one.
             if case .text(let existing) = streamingSegments.last {
                 streamingSegments[streamingSegments.count - 1] = .text(existing + text)
             } else {

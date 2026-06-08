@@ -22,12 +22,19 @@ import SwiftUI
 struct MarkdownContentView: View {
     let blocks: [MarkdownBlock]
 
+    /// When `true`, text fades in as new chunks arrive during streaming.
+    /// Set to `false` (the default) for stored messages so they appear
+    /// instantly.
+    var isStreaming: Bool = false
+
     var body: some View {
-        ForEach(blocks) { block in
+        ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
             switch block {
             case .attributedString(let content):
                 Text(content)
                     .textSelection(.enabled)
+                    .contentTransition(.interpolate)
+                    .animation(isStreaming ? .easeOut(duration: 0.15) : nil, value: content)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(

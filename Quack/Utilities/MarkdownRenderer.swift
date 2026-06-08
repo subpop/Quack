@@ -28,10 +28,8 @@ enum MarkdownBlock: Identifiable {
 
     var id: String {
         switch self {
-        case .attributedString(let s):
-            return "text-\(s.hashValue)"
-        case .table(let t):
-            return "table-\(t.hashValue)"
+        case .attributedString(let s): "text-\(s.hashValue)"
+        case .table(let t): "table-\(t.hashValue)"
         }
     }
 }

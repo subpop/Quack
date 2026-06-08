@@ -148,7 +148,7 @@ struct ChatView: View {
                     case .text(let text):
                         if !text.isEmpty {
                             VStack(alignment: .leading, spacing: 6) {
-                                MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(text))
+                                MarkdownContentView(blocks: MarkdownRenderer.renderBlocks(text), isStreaming: true)
                             }
                             .padding(.trailing, 60)
                             .padding(.horizontal, 16)
