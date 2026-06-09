@@ -34,6 +34,7 @@ final class PreviewChatService: ChatServiceProtocol {
 
     func sendMessage(
         _ text: String,
+        attachments: [Attachment],
         in session: ChatSession,
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,

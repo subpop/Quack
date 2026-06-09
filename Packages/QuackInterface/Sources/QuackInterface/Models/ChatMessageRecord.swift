@@ -38,6 +38,10 @@ public final class ChatMessageRecord {
     /// When nil, legacy layout is used (tool calls first, then content).
     public var contentSegmentsJSON: String?
 
+    /// JSON-encoded attachments (images, PDFs) for user messages.
+    /// Decoded via ``decodeAttachments(from:)`` and encoded via ``encodeAttachments(_:)``.
+    public var attachmentsJSON: String?
+
     // Tool result metadata (for tool role messages)
     public var toolCallId: String?
     public var toolName: String?
@@ -58,6 +62,7 @@ public final class ChatMessageRecord {
         reasoningTokens: Int? = nil,
         toolCallsJSON: String? = nil,
         contentSegmentsJSON: String? = nil,
+        attachmentsJSON: String? = nil,
         toolCallId: String? = nil,
         toolName: String? = nil
     ) {
@@ -71,6 +76,7 @@ public final class ChatMessageRecord {
         self.reasoningTokens = reasoningTokens
         self.toolCallsJSON = toolCallsJSON
         self.contentSegmentsJSON = contentSegmentsJSON
+        self.attachmentsJSON = attachmentsJSON
         self.toolCallId = toolCallId
         self.toolName = toolName
     }

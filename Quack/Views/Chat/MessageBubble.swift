@@ -40,15 +40,23 @@ struct MessageBubble: View {
 
     private var userBubble: some View {
         VStack(alignment: .trailing, spacing: 4) {
-            Text(message.content)
-                .textSelection(.enabled)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(
-                    Color.accentColor,
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
-                )
-                .foregroundStyle(.white)
+            let attachments = decodeAttachments(from: message.attachmentsJSON)
+
+            if !attachments.isEmpty {
+                UserAttachmentsView(attachments: attachments)
+            }
+
+            if !message.content.isEmpty {
+                Text(message.content)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(
+                        Color.accentColor,
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+                    .foregroundStyle(.white)
+            }
 
             if isHovering {
                 HStack(spacing: 6) {
@@ -250,4 +258,31 @@ struct MessageBubble: View {
     }
     .frame(width: 550, height: 600)
     .modelContainer(container)
+}
+
+// MARK: - User Attachments
+
+private struct UserAttachmentsView: View {
+    let attachments: [Attachment]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(attachments) { attachment in
+                if attachment.type == .image, let nsImage = NSImage(data: attachment.data) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(maxWidth: 200, maxHeight: 200)
+                        .clipShape(.rect(cornerRadius: 12))
+                } else {
+                    Label(attachment.fileName ?? "PDF", systemImage: "doc.fill")
+                        .font(.caption)
+                        .lineLimit(1)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.quaternary, in: .rect(cornerRadius: 8))
+                }
+            }
+        }
+    }
 }

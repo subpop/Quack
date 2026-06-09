@@ -24,7 +24,12 @@ public enum MessageConverter {
             case .system:
                 return .system(record.content)
             case .user:
-                return .user(record.content)
+                let attachments = decodeAttachments(from: record.attachmentsJSON)
+                if attachments.isEmpty {
+                    return .user(record.content)
+                } else {
+                    return .userMultimodal(contentParts(text: record.content, attachments: attachments))
+                }
             case .assistant:
                 let toolCalls = decodeToolCalls(from: record.toolCallsJSON)
                 let reasoning: ReasoningContent? = if let text = record.reasoning {
@@ -169,5 +174,24 @@ public enum MessageConverter {
               let json = String(data: jsonData, encoding: .utf8)
         else { return nil }
         return json
+    }
+
+    // MARK: - Content Parts
+
+    /// Build an array of `ContentPart` values from message text and attachments.
+    public static func contentParts(text: String, attachments: [Attachment]) -> [ContentPart] {
+        var parts: [ContentPart] = []
+        if !text.isEmpty {
+            parts.append(.text(text))
+        }
+        for attachment in attachments {
+            switch attachment.type {
+            case .image:
+                parts.append(.imageBase64(data: attachment.data, mimeType: attachment.mimeType))
+            case .pdf:
+                parts.append(.pdfBase64(data: attachment.data))
+            }
+        }
+        return parts
     }
 }

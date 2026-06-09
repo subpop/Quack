@@ -153,6 +153,7 @@ public final class ChatService: ChatServiceProtocol {
 
     public func sendMessage(
         _ text: String,
+        attachments: [Attachment],
         in session: ChatSession,
         modelContext: ModelContext,
         providerService: any ProviderServiceProtocol,
@@ -166,7 +167,11 @@ public final class ChatService: ChatServiceProtocol {
         stopStreaming()
 
         // Create and persist user message
-        let userRecord = ChatMessageRecord(role: .user, content: text)
+        let userRecord = ChatMessageRecord(
+            role: .user,
+            content: text,
+            attachmentsJSON: encodeAttachments(attachments)
+        )
         userRecord.session = session
         session.messages.append(userRecord)
         session.updatedAt = Date()
@@ -303,13 +308,33 @@ public final class ChatService: ChatServiceProtocol {
             }
 
             do {
-                for try await event in chat.stream(
-                    history.last?.isUser == true ? text : text,
-                    history: Array(history.dropLast()),
-                    context: toolContext,
-                    requestContext: requestContext,
-                    approvalHandler: approvalHandler
-                ) {
+                // Build content parts when attachments are present so the
+                // LLM receives the images/PDFs alongside the text.
+                let contentParts: [ContentPart]? = if !attachments.isEmpty {
+                    MessageConverter.contentParts(text: text, attachments: attachments)
+                } else {
+                    nil
+                }
+
+                let stream: AsyncThrowingStream<StreamEvent, Error> = if let contentParts {
+                    chat.stream(
+                        contentParts,
+                        history: Array(history.dropLast()),
+                        context: toolContext,
+                        requestContext: requestContext,
+                        approvalHandler: approvalHandler
+                    )
+                } else {
+                    chat.stream(
+                        history.last?.isUser == true ? text : text,
+                        history: Array(history.dropLast()),
+                        context: toolContext,
+                        requestContext: requestContext,
+                        approvalHandler: approvalHandler
+                    )
+                }
+
+                for try await event in stream {
                     guard !Task.isCancelled else { break }
                     self?.handleStreamEvent(event, sessionID: sessionID)
                 }
@@ -419,8 +444,10 @@ public final class ChatService: ChatServiceProtocol {
 
         // Re-send the last user message
         if let lastUser = session.sortedMessages.last(where: { $0.role == .user }) {
+            let attachments = decodeAttachments(from: lastUser.attachmentsJSON)
             sendMessage(
                 lastUser.content,
+                attachments: attachments,
                 in: session,
                 modelContext: modelContext,
                 providerService: providerService,
@@ -559,16 +586,36 @@ public final class ChatService: ChatServiceProtocol {
                 }
             }
 
+            let resubmitAttachments = decodeAttachments(from: message.attachmentsJSON)
+            let streamHistory = Array(history.dropLast())
+
             do {
-                for try await event in chat.stream(
-                    text,
-                    history: Array(history.dropLast()),
-                    context: toolContext,
-                    requestContext: requestContext,
-                    approvalHandler: approvalHandler
-                ) {
-                    guard !Task.isCancelled else { break }
-                    self?.handleStreamEvent(event, sessionID: sessionID)
+                if resubmitAttachments.isEmpty {
+                    for try await event in chat.stream(
+                        text,
+                        history: streamHistory,
+                        context: toolContext,
+                        requestContext: requestContext,
+                        approvalHandler: approvalHandler
+                    ) {
+                        guard !Task.isCancelled else { break }
+                        self?.handleStreamEvent(event, sessionID: sessionID)
+                    }
+                } else {
+                    let contentParts = MessageConverter.contentParts(
+                        text: text,
+                        attachments: resubmitAttachments
+                    )
+                    for try await event in chat.stream(
+                        contentParts,
+                        history: streamHistory,
+                        context: toolContext,
+                        requestContext: requestContext,
+                        approvalHandler: approvalHandler
+                    ) {
+                        guard !Task.isCancelled else { break }
+                        self?.handleStreamEvent(event, sessionID: sessionID)
+                    }
                 }
             } catch {
                 await MainActor.run {

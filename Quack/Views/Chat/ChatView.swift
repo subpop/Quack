@@ -29,8 +29,8 @@ struct ChatView: View {
 
     let session: ChatSession
 
-    @State private var inputText = ""
-    @FocusState private var isInputFocused: Bool
+    @State private var isDropTargeted = false
+    @State private var droppedURLs: [URL] = []
 
     private var isStreamingThisSession: Bool {
         chatService.isStreaming && chatService.streamingSessionID == session.id
@@ -45,7 +45,26 @@ struct ChatView: View {
                             .padding(.vertical, 6)
                     }
                     TokenStatsBar(session: session)
-                    composer
+                    ComposerView(
+                        isDropTargeted: $isDropTargeted,
+                        droppedURLs: $droppedURLs,
+                        isStreaming: isStreamingThisSession,
+                        onSend: { text, attachments in sendMessage(text, attachments: attachments) },
+                        onStop: { chatService.stopStreaming() }
+                    )
+                }
+            }
+            .overlay {
+                if isDropTargeted {
+                    dropOverlay
+                }
+            }
+            .dropDestination(for: URL.self) { urls, _ in
+                droppedURLs = urls
+                return !urls.isEmpty
+            } isTargeted: { targeted in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isDropTargeted = targeted
                 }
             }
             .navigationTitle(session.title)
@@ -254,6 +273,25 @@ struct ChatView: View {
     }
 
 
+    private var dropOverlay: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+
+            VStack(spacing: 12) {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.secondary)
+                Text("Drop images or PDFs to attach")
+                    .font(.title3.weight(.medium))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .transition(.opacity)
+    }
+
     private func scrollToBottom(proxy: ScrollViewProxy) {
         withAnimation(.easeOut(duration: 0.2)) {
             if chatService.streamingError != nil, chatService.errorSessionID == session.id {
@@ -266,74 +304,14 @@ struct ChatView: View {
         }
     }
 
-    // MARK: - Composer
-
-    private var composer: some View {
-        GlassEffectContainer {
-            HStack(alignment: .bottom, spacing: 8) {
-                TextField("Message", text: $inputText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...12)
-                    .focused($isInputFocused)
-                    .font(.body)
-                    .onSubmit {
-                        if !NSEvent.modifierFlags.contains(.shift) {
-                            sendMessage()
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .glassEffect(in: .rect(cornerRadius: 20))
-
-                if isStreamingThisSession {
-                    Button {
-                        chatService.stopStreaming()
-                    } label: {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.red)
-                            .frame(width: 32, height: 32)
-                            .contentShape(Circle())
-                            .glassEffect(in: .circle)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Stop generating")
-                } else {
-                    Button(action: sendMessage) {
-                        Image(systemName: "arrow.up")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(
-                                inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                                    ? Color.secondary
-                                    : Color.accentColor
-                            )
-                            .frame(width: 32, height: 32)
-                            .contentShape(Circle())
-                            .glassEffect(in: .circle)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .help("Send message (Return)")
-                    .keyboardShortcut(.return, modifiers: [])
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-    }
-
     // MARK: - Actions
 
-    private func sendMessage() {
-        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        inputText = ""
-
+    private func sendMessage(_ text: String, attachments: [Attachment]) {
         let (tools, approvalPolicy) = allToolsForSession()
 
         chatService.sendMessage(
             text,
+            attachments: attachments,
             in: session,
             modelContext: modelContext,
             providerService: providerService,
