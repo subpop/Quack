@@ -27,6 +27,10 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
     case webFetch = "builtin-web_fetch"
     case webSearch = "builtin-web_search"
     case activateSkill = "builtin-activate_skill"
+    case gitStatus = "builtin-git_status"
+    case gitDiff = "builtin-git_diff"
+    case gitLog = "builtin-git_log"
+    case gitCommit = "builtin-git_commit"
 
     public var id: String { rawValue }
 
@@ -51,6 +55,10 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .webFetch: "Web Fetch"
         case .webSearch: "Web Search"
         case .activateSkill: "Activate Skill"
+        case .gitStatus: "Git Status"
+        case .gitDiff: "Git Diff"
+        case .gitLog: "Git Log"
+        case .gitCommit: "Git Commit"
         }
     }
 
@@ -63,6 +71,10 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .webFetch: "Fetch the content of a URL and return the response body."
         case .webSearch: "Search the web using Tavily and return relevant results."
         case .activateSkill: "Load specialized skill instructions on demand."
+        case .gitStatus: "Show the working tree status of a Git repository."
+        case .gitDiff: "Show changes in the working tree or between commits."
+        case .gitLog: "Show recent commit history of a Git repository."
+        case .gitCommit: "Stage files and create a commit in a Git repository."
         }
     }
 
@@ -75,6 +87,10 @@ public enum BuiltInTool: String, CaseIterable, Codable, Identifiable, Sendable {
         case .webFetch: "globe"
         case .webSearch: "magnifyingglass"
         case .activateSkill: "sparkles"
+        case .gitStatus: "arrow.triangle.branch"
+        case .gitDiff: "text.line.first.and.arrowtriangle.forward"
+        case .gitLog: "clock.arrow.circlepath"
+        case .gitCommit: "checkmark.circle"
         }
     }
 

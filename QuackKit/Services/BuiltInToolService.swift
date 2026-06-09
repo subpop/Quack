@@ -61,6 +61,10 @@ public final class BuiltInToolService: BuiltInToolServiceProtocol {
             .runCommand: RunCommandTool(),
             .webFetch: WebFetchTool(),
             .activateSkill: ActivateSkillTool(),
+            .gitStatus: GitStatusTool(),
+            .gitDiff: GitDiffTool(),
+            .gitLog: GitLogTool(),
+            .gitCommit: GitCommitTool(),
         ]
 
         // Register WebSearch only when a Tavily API key was provided at

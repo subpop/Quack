@@ -10,6 +10,10 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.webFetch.rawValue == "builtin-web_fetch")
         #expect(BuiltInTool.webSearch.rawValue == "builtin-web_search")
         #expect(BuiltInTool.activateSkill.rawValue == "builtin-activate_skill")
+        #expect(BuiltInTool.gitStatus.rawValue == "builtin-git_status")
+        #expect(BuiltInTool.gitDiff.rawValue == "builtin-git_diff")
+        #expect(BuiltInTool.gitLog.rawValue == "builtin-git_log")
+        #expect(BuiltInTool.gitCommit.rawValue == "builtin-git_commit")
     }
 
     @Test func identifiers() {
@@ -25,6 +29,10 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.webFetch.displayName == "Web Fetch")
         #expect(BuiltInTool.webSearch.displayName == "Web Search")
         #expect(BuiltInTool.activateSkill.displayName == "Activate Skill")
+        #expect(BuiltInTool.gitStatus.displayName == "Git Status")
+        #expect(BuiltInTool.gitDiff.displayName == "Git Diff")
+        #expect(BuiltInTool.gitLog.displayName == "Git Log")
+        #expect(BuiltInTool.gitCommit.displayName == "Git Commit")
     }
 
     @Test func toolDescriptions() {
@@ -40,6 +48,10 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.webFetch.iconName == "globe")
         #expect(BuiltInTool.webSearch.iconName == "magnifyingglass")
         #expect(BuiltInTool.activateSkill.iconName == "sparkles")
+        #expect(BuiltInTool.gitStatus.iconName == "arrow.triangle.branch")
+        #expect(BuiltInTool.gitDiff.iconName == "text.line.first.and.arrowtriangle.forward")
+        #expect(BuiltInTool.gitLog.iconName == "clock.arrow.circlepath")
+        #expect(BuiltInTool.gitCommit.iconName == "checkmark.circle")
     }
 
     @Test func requiresBuildTimeKey() {
@@ -49,10 +61,14 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.webFetch.requiresBuildTimeKey == false)
         #expect(BuiltInTool.webSearch.requiresBuildTimeKey == true)
         #expect(BuiltInTool.activateSkill.requiresBuildTimeKey == false)
+        #expect(BuiltInTool.gitStatus.requiresBuildTimeKey == false)
+        #expect(BuiltInTool.gitDiff.requiresBuildTimeKey == false)
+        #expect(BuiltInTool.gitLog.requiresBuildTimeKey == false)
+        #expect(BuiltInTool.gitCommit.requiresBuildTimeKey == false)
     }
 
     @Test func allCasesCount() {
-        #expect(BuiltInTool.allCases.count == 6)
+        #expect(BuiltInTool.allCases.count == 10)
     }
 
     @Test func codableRoundTrip() throws {
@@ -69,5 +85,9 @@ struct BuiltInToolTests {
         #expect(BuiltInTool.runCommand.buildTimeKey == nil)
         #expect(BuiltInTool.webFetch.buildTimeKey == nil)
         #expect(BuiltInTool.activateSkill.buildTimeKey == nil)
+        #expect(BuiltInTool.gitStatus.buildTimeKey == nil)
+        #expect(BuiltInTool.gitDiff.buildTimeKey == nil)
+        #expect(BuiltInTool.gitLog.buildTimeKey == nil)
+        #expect(BuiltInTool.gitCommit.buildTimeKey == nil)
     }
 }
