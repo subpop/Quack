@@ -86,6 +86,11 @@ public final class ChatService: ChatServiceProtocol {
     /// Set this from the app layer to use on-device Foundation Models.
     public var toolCallSummaryGenerator: (@MainActor @Sendable (String, String?, String?) async -> String?)?
 
+    /// Optional closure that generates a structured summary for context compaction.
+    /// Receives an array of (role, content) tuples and returns a summary string.
+    /// Set this from the app layer to use on-device Foundation Models.
+    public var conversationSummaryGenerator: (@MainActor @Sendable ([(role: String, content: String)]) async -> String)?
+
     /// Optional skill service for composing skills into the system prompt.
     /// Set this from the app layer after creating the SkillService.
     public var skillService: (any SkillServiceProtocol)?
@@ -260,12 +265,21 @@ public final class ChatService: ChatServiceProtocol {
             }
 
             // Convert history to AgentRunKit messages
-            let history = MessageConverter.toChatMessages(session.sortedMessages)
+            var history = MessageConverter.toChatMessages(session.sortedMessages)
 
             // Resolve the provider profile for prompt selection
             let profile = providerService.resolvedProfile(
                 for: session, profiles: profiles
             )
+
+            // Apply context window management: compaction then windowing
+            if let self {
+                history = await self.compactHistoryIfNeeded(
+                    history, session: session, profile: profile,
+                    modelContext: modelContext
+                )
+                history = self.applyMaxMessagesWindow(history, session: session)
+            }
 
             // Assemble the full system prompt (provider + user + skills + instructions + env)
             let systemPrompt: String? = profile.flatMap { p in
@@ -422,6 +436,30 @@ public final class ChatService: ChatServiceProtocol {
         }
     }
 
+    // MARK: - Context Management
+
+    public func compactConversation(
+        in session: ChatSession,
+        modelContext: ModelContext,
+        providerService: any ProviderServiceProtocol,
+        profiles: [ProviderProfile]
+    ) async {
+        guard let providerService = providerService as? ProviderService else { return }
+
+        let history = MessageConverter.toChatMessages(session.sortedMessages)
+        guard history.count > 2 else { return }
+
+        let profile = providerService.resolvedProfile(for: session, profiles: profiles)
+        let contextWindowSize = profile?.contextWindowSize ?? 128_000
+
+        _ = await performCompaction(
+            history,
+            session: session,
+            targetTokenBudget: Int(Double(contextWindowSize) * 0.4),
+            modelContext: modelContext
+        )
+    }
+
     public func regenerateLastResponse(
         in session: ChatSession,
         modelContext: ModelContext,
@@ -544,12 +582,21 @@ public final class ChatService: ChatServiceProtocol {
 
             // Build history up to and including the resubmitted user message
             let updatedSorted = session.sortedMessages
-            let history = MessageConverter.toChatMessages(updatedSorted)
+            var history = MessageConverter.toChatMessages(updatedSorted)
 
             // Resolve the provider profile for prompt selection
             let profile = providerService.resolvedProfile(
                 for: session, profiles: profiles
             )
+
+            // Apply context window management: compaction then windowing
+            if let self {
+                history = await self.compactHistoryIfNeeded(
+                    history, session: session, profile: profile,
+                    modelContext: modelContext
+                )
+                history = self.applyMaxMessagesWindow(history, session: session)
+            }
 
             // Assemble the full system prompt (provider + user + skills + instructions + env)
             let systemPrompt: String? = profile.flatMap { p in
@@ -931,6 +978,217 @@ public final class ChatService: ChatServiceProtocol {
 
             record.session = session
             session.messages.append(record)
+        }
+    }
+
+    // MARK: - Context Window Management
+
+    /// Apply `maxMessages` windowing to a message history.
+    ///
+    /// If `maxMessages` is set on the session, keeps only the most recent
+    /// messages while always preserving any leading system messages. The
+    /// persisted `ChatMessageRecord` objects are not affected.
+    private func applyMaxMessagesWindow(
+        _ history: [ChatMessage],
+        session: ChatSession
+    ) -> [ChatMessage] {
+        guard let maxMessages = session.maxMessages, maxMessages > 0,
+              history.count > maxMessages else {
+            return history
+        }
+
+        // Separate leading system messages from the rest
+        let systemPrefix = history.prefix(while: { msg in
+            if case .system = msg { return true }
+            return false
+        })
+        let rest = history.dropFirst(systemPrefix.count)
+
+        // Keep the most recent messages from the non-system portion
+        let windowSize = max(1, maxMessages - systemPrefix.count)
+        let windowed = rest.suffix(windowSize)
+
+        return Array(systemPrefix) + Array(windowed)
+    }
+
+    /// Check whether the conversation should be compacted and, if so, perform
+    /// compaction by summarizing older messages using the on-device model.
+    ///
+    /// Returns a (possibly modified) message history where older messages have
+    /// been replaced with a summary. Also persists the compaction summary as a
+    /// `ChatMessageRecord` in the session.
+    ///
+    /// - Parameters:
+    ///   - history: The full converted message history.
+    ///   - session: The current chat session.
+    ///   - profile: The resolved provider profile (for context window size).
+    ///   - modelContext: The SwiftData model context for persistence.
+    /// - Returns: The message history, compacted if needed.
+    private func compactHistoryIfNeeded(
+        _ history: [ChatMessage],
+        session: ChatSession,
+        profile: ProviderProfile?,
+        modelContext: ModelContext
+    ) async -> [ChatMessage] {
+        guard let contextWindowSize = profile?.contextWindowSize, contextWindowSize > 0 else {
+            return history
+        }
+
+        let threshold = session.compactionThreshold ?? 0.7
+        let tokenLimit = Int(Double(contextWindowSize) * threshold)
+
+        // Estimate token usage from the history
+        let estimatedTokens = Self.estimateTokenCount(history)
+        guard estimatedTokens > tokenLimit else {
+            return history
+        }
+
+        return await performCompaction(
+            history,
+            session: session,
+            targetTokenBudget: Int(Double(contextWindowSize) * 0.4),
+            modelContext: modelContext
+        )
+    }
+
+    /// Unconditionally compact the conversation history by summarizing older
+    /// messages and replacing them with a summary.
+    ///
+    /// Keeps the most recent messages that fit within `targetTokenBudget` and
+    /// summarizes everything before that point.
+    private func performCompaction(
+        _ history: [ChatMessage],
+        session: ChatSession,
+        targetTokenBudget: Int,
+        modelContext: ModelContext
+    ) async -> [ChatMessage] {
+        // Separate leading system messages
+        let systemPrefix = history.prefix(while: { msg in
+            if case .system = msg { return true }
+            return false
+        })
+        let rest = Array(history.dropFirst(systemPrefix.count))
+
+        guard rest.count > 2 else { return history }
+
+        // Walk backwards from the end to find the split point: keep recent
+        // messages that fit within the target budget.
+        var recentTokens = 0
+        var splitIndex = rest.count
+        for i in stride(from: rest.count - 1, through: 0, by: -1) {
+            let msgTokens = Self.estimateMessageTokenCount(rest[i])
+            if recentTokens + msgTokens > targetTokenBudget {
+                splitIndex = i + 1
+                break
+            }
+            recentTokens += msgTokens
+            if i == 0 { splitIndex = 0 }
+        }
+
+        // Ensure we're summarizing at least something
+        guard splitIndex > 0 else { return history }
+
+        // Ensure the split doesn't break a tool_use/tool_result pair.
+        // If the message at splitIndex is a .tool result, move the split
+        // forward to include it and its preceding assistant message.
+        var adjustedSplit = splitIndex
+        while adjustedSplit < rest.count {
+            if case .tool = rest[adjustedSplit] {
+                adjustedSplit += 1
+            } else {
+                break
+            }
+        }
+        splitIndex = adjustedSplit
+
+        let olderMessages = Array(rest[..<splitIndex])
+        let recentMessages = Array(rest[splitIndex...])
+
+        guard !olderMessages.isEmpty else { return history }
+
+        // Build the transcript for summarization
+        let transcript: [(role: String, content: String)] = olderMessages.compactMap { msg in
+            switch msg {
+            case .system(let content):
+                return (role: "system", content: content)
+            case .user(let content):
+                return (role: "user", content: content)
+            case .userMultimodal:
+                return (role: "user", content: "[multimodal content]")
+            case .assistant(let assistantMsg):
+                return (role: "assistant", content: assistantMsg.content)
+            case .tool(_, let name, let content):
+                return (role: "tool(\(name))", content: String(content.prefix(200)))
+            @unknown default:
+                return nil
+            }
+        }
+
+        // Generate the summary
+        let summary: String
+        if let generator = conversationSummaryGenerator {
+            summary = await generator(transcript)
+        } else {
+            // Inline fallback if no generator is set
+            let userLines = transcript
+                .filter { $0.role == "user" }
+                .map { "- \(String($0.content.prefix(200)))" }
+            summary = "Previous conversation summary:\n" + userLines.joined(separator: "\n")
+        }
+
+        // Persist the compaction summary as a system message
+        let summaryRecord = ChatMessageRecord(
+            role: .system,
+            content: summary,
+            isCompactionSummary: true,
+            compactedMessageCount: olderMessages.count
+        )
+        summaryRecord.session = session
+        session.messages.append(summaryRecord)
+        try? modelContext.save()
+
+        // Build the compacted history
+        let summaryMessage: ChatMessage = .system(summary)
+        return Array(systemPrefix) + [summaryMessage] + recentMessages
+    }
+
+    /// Rough token count estimation for a message history.
+    ///
+    /// Uses persisted token counts from assistant messages where available,
+    /// and a character-based heuristic (1 token per 4 characters) for other
+    /// message types.
+    private static func estimateTokenCount(_ history: [ChatMessage]) -> Int {
+        history.reduce(0) { total, msg in total + estimateMessageTokenCount(msg) }
+    }
+
+    /// Estimate the token count of a single message.
+    private static func estimateMessageTokenCount(_ message: ChatMessage) -> Int {
+        switch message {
+        case .system(let content), .user(let content):
+            return max(1, content.count / 4)
+        case .userMultimodal(let parts):
+            return parts.reduce(0) { subtotal, part in
+                switch part {
+                case .text(let text):
+                    return subtotal + max(1, text.count / 4)
+                case .imageBase64:
+                    return subtotal + 1000  // rough estimate for images
+                case .pdfBase64:
+                    return subtotal + 2000
+                @unknown default:
+                    return subtotal + 100
+                }
+            }
+        case .assistant(let assistantMsg):
+            // Use actual token count if available
+            if let usage = assistantMsg.tokenUsage {
+                return usage.input + usage.output
+            }
+            return max(1, assistantMsg.content.count / 4)
+        case .tool(_, _, let content):
+            return max(1, content.count / 4)
+        @unknown default:
+            return 100
         }
     }
 

@@ -66,4 +66,11 @@ final class PreviewChatService: ChatServiceProtocol {
     func dismissError() {}
     func approveToolCall(id: String) {}
     func denyToolCall(id: String) {}
+
+    func compactConversation(
+        in session: ChatSession,
+        modelContext: ModelContext,
+        providerService: any ProviderServiceProtocol,
+        profiles: [ProviderProfile]
+    ) async {}
 }

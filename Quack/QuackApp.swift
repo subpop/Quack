@@ -206,6 +206,11 @@ struct QuackApp: App {
                             name: name, arguments: arguments, result: result
                         )
                     }
+                    chatService.conversationSummaryGenerator = { messages in
+                        await TextGenerationService.generateConversationSummary(
+                            messages: messages
+                        )
+                    }
                     notificationService.requestAuthorization()
                     providerService.mlxModelService = mlxModelService
 

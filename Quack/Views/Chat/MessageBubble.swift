@@ -188,19 +188,24 @@ struct MessageBubble: View {
 
     // MARK: - System Message
 
+    @ViewBuilder
     private var systemBubble: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "gearshape.fill")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-            Text(message.content)
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
-                .italic()
+        if message.isCompactionSummary == true {
+            CompactionSummaryView(message: message)
+        } else {
+            HStack(spacing: 6) {
+                Image(systemName: "gearshape.fill")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                Text(message.content)
+                    .font(.subheadline)
+                    .foregroundStyle(.tertiary)
+                    .italic()
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     // MARK: - Tool Message
@@ -258,6 +263,61 @@ struct MessageBubble: View {
     }
     .frame(width: 550, height: 600)
     .modelContainer(container)
+}
+
+// MARK: - Compaction Summary
+
+private struct CompactionSummaryView: View {
+    let message: ChatMessageRecord
+    @State private var isExpanded = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "text.redaction")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let count = message.compactedMessageCount {
+                        Text("Context summarized (\(count) messages)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Context summarized")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                Divider()
+                    .padding(.horizontal, 12)
+                Text(message.content)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+            }
+        }
+        .background(.fill.quaternary, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 40)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
 }
 
 // MARK: - User Attachments

@@ -42,6 +42,13 @@ public final class ChatMessageRecord {
     /// Decoded via ``decodeAttachments(from:)`` and encoded via ``encodeAttachments(_:)``.
     public var attachmentsJSON: String?
 
+    /// Whether this system message is an auto-generated compaction summary.
+    /// Optional so that lightweight migration can add the column to existing rows.
+    public var isCompactionSummary: Bool?
+
+    /// The number of messages that were summarized into this compaction summary.
+    public var compactedMessageCount: Int?
+
     // Tool result metadata (for tool role messages)
     public var toolCallId: String?
     public var toolName: String?
@@ -63,6 +70,8 @@ public final class ChatMessageRecord {
         toolCallsJSON: String? = nil,
         contentSegmentsJSON: String? = nil,
         attachmentsJSON: String? = nil,
+        isCompactionSummary: Bool? = nil,
+        compactedMessageCount: Int? = nil,
         toolCallId: String? = nil,
         toolName: String? = nil
     ) {
@@ -77,6 +86,8 @@ public final class ChatMessageRecord {
         self.toolCallsJSON = toolCallsJSON
         self.contentSegmentsJSON = contentSegmentsJSON
         self.attachmentsJSON = attachmentsJSON
+        self.isCompactionSummary = isCompactionSummary
+        self.compactedMessageCount = compactedMessageCount
         self.toolCallId = toolCallId
         self.toolName = toolName
     }

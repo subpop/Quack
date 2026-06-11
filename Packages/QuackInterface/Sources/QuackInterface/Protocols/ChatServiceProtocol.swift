@@ -155,6 +155,16 @@ public protocol ChatServiceProtocol: AnyObject, Observable, Sendable {
     func dismissError()
     func approveToolCall(id: String)
     func denyToolCall(id: String)
+
+    // MARK: - Context Management
+
+    /// Manually compact the conversation by summarizing older messages.
+    func compactConversation(
+        in session: ChatSession,
+        modelContext: ModelContext,
+        providerService: any ProviderServiceProtocol,
+        profiles: [ProviderProfile]
+    ) async
 }
 
 // MARK: - Environment Key
@@ -219,4 +229,11 @@ private final class PlaceholderChatService: ChatServiceProtocol {
     func dismissError() {}
     func approveToolCall(id: String) {}
     func denyToolCall(id: String) {}
+
+    func compactConversation(
+        in session: ChatSession,
+        modelContext: ModelContext,
+        providerService: any ProviderServiceProtocol,
+        profiles: [ProviderProfile]
+    ) async {}
 }

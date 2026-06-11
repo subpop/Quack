@@ -121,6 +121,56 @@ enum TextGenerationService {
         }
     }
 
+    // MARK: - Conversation Summaries (Compaction)
+
+    /// Generate a structured summary of a conversation for context compaction.
+    ///
+    /// Uses the on-device Foundation Model to produce a summary that preserves
+    /// key decisions, task state, file paths, and constraints. Falls back to
+    /// a bullet-point extraction of user messages when the model is unavailable.
+    @MainActor
+    static func generateConversationSummary(
+        messages: [(role: String, content: String)]
+    ) async -> String {
+        let transcript = messages.map { "\($0.role): \($0.content)" }
+            .joined(separator: "\n\n")
+        // Limit input to avoid exceeding the on-device model's context
+        let truncated = String(transcript.prefix(8000))
+
+        let model = SystemLanguageModel.default
+        guard model.isAvailable else {
+            return fallbackConversationSummary(messages: messages)
+        }
+
+        do {
+            let session = LanguageModelSession(instructions: """
+                Summarize the following conversation for context continuity. \
+                Preserve: key decisions made, current task state, file paths \
+                and code references mentioned, constraints and requirements \
+                established, and any unresolved questions. Be concise but \
+                thorough. Use bullet points. Respond with only the summary, \
+                no preamble.
+                """)
+            let response = try await session.respond(to: truncated)
+            let summary = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+            return summary.isEmpty
+                ? fallbackConversationSummary(messages: messages)
+                : summary
+        } catch {
+            return fallbackConversationSummary(messages: messages)
+        }
+    }
+
+    /// Fallback: extract user messages as bullet points.
+    private static func fallbackConversationSummary(
+        messages: [(role: String, content: String)]
+    ) -> String {
+        let userMessages = messages
+            .filter { $0.role == "user" }
+            .map { "- \(String($0.content.prefix(200)))" }
+        return "Previous conversation summary:\n" + userMessages.joined(separator: "\n")
+    }
+
     // MARK: - System Prompts
 
     /// Generate a system prompt from a natural language description of an assistant.

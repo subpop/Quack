@@ -31,6 +31,7 @@ struct ChatView: View {
 
     @State private var isDropTargeted = false
     @State private var droppedURLs: [URL] = []
+    @State private var isCompacting = false
 
     private var isStreamingThisSession: Bool {
         chatService.isStreaming && chatService.streamingSessionID == session.id
@@ -69,6 +70,11 @@ struct ChatView: View {
             }
             .navigationTitle(session.title)
             .navigationSubtitle(modelSubtitle)
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    contextManagementMenu
+                }
+            }
     }
 
     // MARK: - Message List
@@ -302,6 +308,25 @@ struct ChatView: View {
                 proxy.scrollTo(last.id, anchor: .bottom)
             }
         }
+    }
+
+    // MARK: - Context Management Menu
+
+    @ViewBuilder
+    private var contextManagementMenu: some View {
+        Button("Compact Conversation", systemImage: "text.redaction") {
+            isCompacting = true
+            Task {
+                await chatService.compactConversation(
+                    in: session,
+                    modelContext: modelContext,
+                    providerService: providerService,
+                    profiles: profiles
+                )
+                isCompacting = false
+            }
+        }
+        .disabled(isStreamingThisSession || isCompacting || session.messages.count < 3)
     }
 
     // MARK: - Actions
