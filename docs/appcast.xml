@@ -2,6 +2,37 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
     <channel>
         <item>
+            <title>0.2.3</title>
+            <pubDate>Thu, 11 Jun 2026 09:22:45 -0400</pubDate>
+            <link>https://subpop.github.io/Quack</link>
+            <sparkle:version>8</sparkle:version>
+            <sparkle:shortVersionString>0.2.3</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>26.2</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/subpop/Quack/releases/download/v0.2.3/Quack-0.2.3.dmg" length="21220965" type="application/octet-stream" sparkle:edSignature="BLYs4b4EyabIYQzSIpEFxf+gFukeuC7rdGLBS3R0XMYeBRdcIGBqVFsRc19EQaNJMRUdh1i1JGXKDabknqGaBg=="/>
+        <description><![CDATA[<div>
+    <h2>0.2.3 (8) (2026-06-11)</h2>
+<ul>
+<li>🧠 Context window management with automatic compaction for
+long-running sessions</li>
+<li>🖼️ Image and PDF attachments with multimodal support (paste, drag
+&amp; drop, file picker)</li>
+<li>🔧 Built-in Git tools (status, diff, log, commit) replacing
+shell-based Git workflows</li>
+<li>💬 Auto-generated session summaries in the sidebar</li>
+<li>✨ Streaming text chunks fade in smoothly with content
+transitions</li>
+<li>🤖 On-device Foundation Model summarization for tool call
+results</li>
+<li>🔨 Refactored tool call lifecycle with inline permission
+prompts</li>
+<li>⬆️ AgentRunKit updated to 4.3.0</li>
+<li>🐛 Fix notifications not being sent due to missing protocol
+conformance</li>
+<li>🐛 Fix previews crashing by using an in-memory ModelContainer</li>
+</ul>
+</div>]]></description>
+</item>
+        <item>
             <title>0.2.2</title>
             <pubDate>Mon, 27 Apr 2026 21:48:02 -0400</pubDate>
             <link>https://subpop.github.io/Quack</link>
