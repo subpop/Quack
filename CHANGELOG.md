@@ -1,3 +1,16 @@
+## 0.2.3 (8) (2026-06-11)
+
+- 🧠 Context window management with automatic compaction for long-running sessions
+- 🖼️ Image and PDF attachments with multimodal support (paste, drag & drop, file picker)
+- 🔧 Built-in Git tools (status, diff, log, commit) replacing shell-based Git workflows
+- 💬 Auto-generated session summaries in the sidebar
+- ✨ Streaming text chunks fade in smoothly with content transitions
+- 🤖 On-device Foundation Model summarization for tool call results
+- 🔨 Refactored tool call lifecycle with inline permission prompts
+- ⬆️ AgentRunKit updated to 4.3.0
+- 🐛 Fix notifications not being sent due to missing protocol conformance
+- 🐛 Fix previews crashing by using an in-memory ModelContainer
+
 ## 0.2.2 (7) (2026-04-27)
 
 - 🐛 Fixed an issue running multiple MCP servers simultaneously
