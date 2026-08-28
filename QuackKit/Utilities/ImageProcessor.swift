@@ -29,7 +29,7 @@ public enum ImageProcessor {
     /// Create an `Attachment` from a file URL, resizing images as needed.
     ///
     /// Images are resized to fit within ``maxDimension`` and compressed to
-    /// JPEG. PDFs are stored as-is.
+    /// JPEG. PDFs and text files are stored as-is.
     public static func attachment(from url: URL) throws -> Attachment {
         let data = try Data(contentsOf: url)
         let mimeType = Self.mimeType(for: url)
@@ -37,6 +37,12 @@ public enum ImageProcessor {
 
         if mimeType == "application/pdf" {
             return Attachment(type: .pdf, mimeType: mimeType, data: data, fileName: fileName)
+        }
+
+        let textType = Self.textType(for: url)
+        if let textType {
+            let type: AttachmentType = textType == "text/markdown" ? .markdown : .text
+            return Attachment(type: type, mimeType: textType, data: data, fileName: fileName)
         }
 
         let processed = try processImageData(data)
@@ -95,6 +101,16 @@ public enum ImageProcessor {
               let rep = NSBitmapImageRep(data: tiff)
         else { return nil }
         return rep.representation(using: .jpeg, properties: [.compressionFactor: jpegQuality])
+    }
+
+    /// The MIME type for a text file URL, or `nil` if it is not text.
+    private static func textType(for url: URL) -> String? {
+        guard let utType = UTType(filenameExtension: url.pathExtension) else { return nil }
+        if utType.conforms(to: .init("net.daringfireball.markdown")!) { return "text/markdown" }
+        if utType.conforms(to: .plainText) { return "text/plain" }
+        if utType.conforms(to: .utf8PlainText) { return "text/plain" }
+        if utType.conforms(to: .text) { return "text/plain" }
+        return nil
     }
 
     private static func mimeType(for url: URL) -> String {

@@ -335,7 +335,10 @@ private struct UserAttachmentsView: View {
                         .frame(maxWidth: 200, maxHeight: 200)
                         .clipShape(.rect(cornerRadius: 12))
                 } else {
-                    Label(attachment.fileName ?? "PDF", systemImage: "doc.fill")
+                    Label(
+                        attachment.fileName ?? "Document",
+                        systemImage: attachment.systemImage
+                    )
                         .font(.caption)
                         .lineLimit(1)
                         .padding(.horizontal, 10)

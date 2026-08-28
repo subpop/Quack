@@ -190,6 +190,9 @@ public enum MessageConverter {
                 parts.append(.imageBase64(data: attachment.data, mimeType: attachment.mimeType))
             case .pdf:
                 parts.append(.pdfBase64(data: attachment.data))
+            case .text, .markdown:
+                guard let text = String(data: attachment.data, encoding: .utf8) else { continue }
+                parts.append(.text(text))
             }
         }
         return parts

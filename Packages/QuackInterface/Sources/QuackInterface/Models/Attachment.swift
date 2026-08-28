@@ -18,6 +18,8 @@ import Foundation
 public enum AttachmentType: String, Codable, Sendable {
     case image
     case pdf
+    case text
+    case markdown
 }
 
 /// A file attachment (image or PDF) associated with a chat message.
@@ -31,6 +33,14 @@ public struct Attachment: Codable, Sendable, Identifiable, Equatable {
     public let mimeType: String
     public let data: Data
     public let fileName: String?
+
+    public var systemImage: String {
+        switch type {
+        case .markdown: "doc.richtext"
+        case .text: "doc.text"
+        case .image, .pdf: "doc.fill"
+        }
+    }
 
     public init(
         id: UUID = UUID(),

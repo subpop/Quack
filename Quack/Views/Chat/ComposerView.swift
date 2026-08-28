@@ -50,7 +50,7 @@ struct ComposerView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .onPasteCommand(of: [.image, .pdf]) { providers in
+        .onPasteCommand(of: [.image, .pdf, .plainText, .utf8PlainText, UTType("net.daringfireball.markdown")!]) { providers in
             pasteItems(providers)
         }
         .onChange(of: droppedURLs) {
@@ -61,7 +61,7 @@ struct ComposerView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.image, .pdf],
+            allowedContentTypes: [.image, .pdf, .plainText, .utf8PlainText, UTType("net.daringfireball.markdown")!],
             allowsMultipleSelection: true
         ) { result in
             if case .success(let urls) = result {
@@ -105,7 +105,7 @@ struct ComposerView: View {
             .frame(width: 32, height: 32)
             .contentShape(Circle())
             .glassEffect(in: .circle)
-            .help("Attach image or PDF")
+            .help("Attach image, PDF, or text file")
     }
 
     private var messageField: some View {
@@ -210,6 +210,23 @@ struct ComposerView: View {
                         }
                     }
                 }
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier)
+                        || provider.hasItemConformingToTypeIdentifier("net.daringfireball.markdown") {
+                let isMarkdown = provider.hasItemConformingToTypeIdentifier("net.daringfireball.markdown")
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.plainText.identifier) { data, _ in
+                    guard let data else { return }
+                    Task { @MainActor in
+                        let attachment = Attachment(
+                            type: isMarkdown ? .markdown : .text,
+                            mimeType: isMarkdown ? "text/markdown" : "text/plain",
+                            data: data,
+                            fileName: isMarkdown ? "Pasted Document.md" : "Pasted Document.txt"
+                        )
+                        withAnimation {
+                            attachments.append(attachment)
+                        }
+                    }
+                }
             }
         }
     }
@@ -231,7 +248,8 @@ private struct AttachmentThumbnail: View {
                         .frame(width: 80, height: 80)
                         .clipShape(.rect(cornerRadius: 8))
                 } else {
-                    Label(attachment.fileName ?? "PDF", systemImage: "doc.fill")
+                    Label(attachment.fileName ?? "Document",
+                          systemImage: attachment.systemImage)
                         .font(.caption)
                         .lineLimit(2)
                         .frame(width: 80, height: 80)
