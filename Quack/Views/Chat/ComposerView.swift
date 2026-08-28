@@ -97,15 +97,17 @@ struct ComposerView: View {
     }
 
     private var attachButton: some View {
-        Button("Attach file", systemImage: "plus", action: { showFilePicker = true })
-            .labelStyle(.iconOnly)
-            .buttonStyle(.plain)
-            .font(.system(size: 15, weight: .semibold))
-            .foregroundStyle(.secondary)
-            .frame(width: 32, height: 32)
-            .contentShape(Circle())
-            .glassEffect(in: .circle)
-            .help("Attach image, PDF, or text file")
+        Button {
+            showFilePicker = true
+        } label: {
+            Image(systemName: "paperclip")
+                .font(.system(size: 15, weight: .semibold))
+                .frame(width: 36, height: 36)
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .glassEffect(in: .circle)
+        .help("Attach image, PDF, or text file")
     }
 
     private var messageField: some View {
@@ -132,22 +134,22 @@ struct ComposerView: View {
                 Image(systemName: "stop.fill")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.red)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .contentShape(Circle())
-                    .glassEffect(in: .circle)
             }
             .buttonStyle(.plain)
+            .glassEffect(in: .circle)
             .help("Stop generating")
         } else {
             Button(action: send) {
                 Image(systemName: "arrow.up")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(canSend ? Color.accentColor : Color.secondary)
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .contentShape(Circle())
-                    .glassEffect(in: .circle)
             }
             .buttonStyle(.plain)
+            .glassEffect(in: .circle)
             .disabled(!canSend)
             .help("Send message (Return)")
             .keyboardShortcut(.return, modifiers: [])
